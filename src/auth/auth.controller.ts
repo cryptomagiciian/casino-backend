@@ -1,17 +1,32 @@
 import { Controller, Post, Body, Get, UseGuards, Request } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiProperty } from '@nestjs/swagger';
+import { IsString, IsEmail, MinLength } from 'class-validator';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { UserPayload } from '../shared/types';
 
 export class RegisterDto {
+  @ApiProperty()
+  @IsString()
   handle: string;
+
+  @ApiProperty()
+  @IsEmail()
   email: string;
+
+  @ApiProperty()
+  @IsString()
+  @MinLength(6)
   password: string;
 }
 
 export class LoginDto {
+  @ApiProperty()
+  @IsString()
   handle: string;
+
+  @ApiProperty()
+  @IsString()
   password: string;
 }
 
