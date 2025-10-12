@@ -16,8 +16,8 @@ COPY . .
 RUN npx prisma generate
 
 # Build the application
-RUN npx nest build || (echo "nest build failed, trying tsc" && npx tsc -p tsconfig.build.json)
-RUN echo "=== Checking dist folder ===" && ls -la dist/ || echo "dist folder not found"
+RUN echo "Building with TypeScript compiler..." && npx tsc -p tsconfig.build.json
+RUN echo "=== Checking dist folder ===" && ls -laR dist/ | head -50
 
 # Expose port
 EXPOSE 3000
