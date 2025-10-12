@@ -16,10 +16,10 @@ COPY . .
 RUN npx prisma generate
 
 # Build the application
-RUN npm run build
+RUN npm run build && ls -la dist/
 
 # Expose port
 EXPOSE 3000
 
 # Start script that pushes schema then starts the app
-CMD ["sh", "-c", "npx prisma db push --accept-data-loss && npm run start:prod"]
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node dist/main"]
