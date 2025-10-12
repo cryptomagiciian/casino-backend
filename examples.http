@@ -1,0 +1,315 @@
+### Casino API Examples
+### Base URL: http://localhost:3000/api/v1
+
+### Health Check
+GET http://localhost:3000/api/v1/health
+
+### Register User
+POST http://localhost:3000/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "handle": "testuser",
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### Login User
+POST http://localhost:3000/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "handle": "testuser",
+  "password": "password123"
+}
+
+### Get Current User (requires auth)
+GET http://localhost:3000/api/v1/auth/me
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+### Get All Games
+GET http://localhost:3000/api/v1/games
+
+### Get Game Configuration
+GET http://localhost:3000/api/v1/games/candle_flip
+
+### Preview Bet
+POST http://localhost:3000/api/v1/bets/preview
+Content-Type: application/json
+
+{
+  "game": "candle_flip",
+  "currency": "USDC",
+  "stake": "10.00",
+  "params": {
+    "prediction": "red"
+  }
+}
+
+### Place Bet (requires auth)
+POST http://localhost:3000/api/v1/bets/place
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+{
+  "game": "candle_flip",
+  "currency": "USDC",
+  "stake": "10.00",
+  "clientSeed": "my_client_seed_123",
+  "params": {
+    "prediction": "red"
+  }
+}
+
+### Get Bet Details (requires auth)
+GET http://localhost:3000/api/v1/bets/BET_ID
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+### Resolve Bet (admin only)
+POST http://localhost:3000/api/v1/bets/resolve/BET_ID
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+### Cashout Bet (for crash games)
+POST http://localhost:3000/api/v1/bets/cashout/BET_ID
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+### Get User Bets (requires auth)
+GET http://localhost:3000/api/v1/bets?limit=20&offset=0
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+### Get Wallet Balances (requires auth)
+GET http://localhost:3000/api/v1/wallets
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+### Get Balance for Specific Currency (requires auth)
+GET http://localhost:3000/api/v1/wallets/balance?currency=USDC
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+### Faucet (Demo Mode Only)
+POST http://localhost:3000/api/v1/wallets/faucet
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+{
+  "currency": "USDC",
+  "amount": "100.00"
+}
+
+### Get Ledger Entries (requires auth)
+GET http://localhost:3000/api/v1/wallets/ledger?currency=USDC&limit=20&offset=0
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+### Get Current Fairness Seed (requires auth)
+GET http://localhost:3000/api/v1/fairness/seed/current
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+### Rotate Fairness Seed (admin only)
+POST http://localhost:3000/api/v1/fairness/seed/rotate
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+### Reveal Fairness Seed (admin only)
+POST http://localhost:3000/api/v1/fairness/seed/reveal
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+{
+  "seedId": "SEED_ID"
+}
+
+### Verify Fairness
+POST http://localhost:3000/api/v1/fairness/verify
+Content-Type: application/json
+
+{
+  "serverSeed": "revealed_server_seed",
+  "clientSeed": "client_seed_used",
+  "nonce": 1,
+  "game": "candle_flip",
+  "betId": "BET_ID"
+}
+
+### Create Deposit Request (requires auth)
+POST http://localhost:3000/api/v1/deposits
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+{
+  "currency": "USDC",
+  "amount": "100.00",
+  "provider": "coinbase",
+  "txRef": "tx_123456789"
+}
+
+### Process Deposit Webhook
+POST http://localhost:3000/api/v1/deposits/provider/webhook
+Content-Type: application/json
+
+{
+  "provider": "coinbase",
+  "payload": {
+    "txRef": "tx_123456789",
+    "status": "confirmed",
+    "amount": "100.00",
+    "currency": "USDC"
+  }
+}
+
+### Get User Deposits (requires auth)
+GET http://localhost:3000/api/v1/deposits?limit=20&offset=0
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+### Create Withdrawal Request (requires auth)
+POST http://localhost:3000/api/v1/withdrawals
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+{
+  "currency": "USDC",
+  "amount": "50.00",
+  "address": "0x1234567890123456789012345678901234567890"
+}
+
+### Get User Withdrawals (requires auth)
+GET http://localhost:3000/api/v1/withdrawals?limit=20&offset=0
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+### Get Pending Withdrawals (admin only)
+GET http://localhost:3000/api/v1/withdrawals/pending?limit=20&offset=0
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+### Get Daily Leaderboard
+GET http://localhost:3000/api/v1/leaderboard/daily?limit=100
+
+### Get User Leaderboard Position (requires auth)
+GET http://localhost:3000/api/v1/leaderboard/position
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+### Get User Leaderboard History (requires auth)
+GET http://localhost:3000/api/v1/leaderboard/history?days=30
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+### Game-Specific Examples
+
+### Candle Flip Bet
+POST http://localhost:3000/api/v1/bets/place
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+{
+  "game": "candle_flip",
+  "currency": "USDC",
+  "stake": "10.00",
+  "params": {
+    "prediction": "red"
+  }
+}
+
+### Pump or Dump Bet
+POST http://localhost:3000/api/v1/bets/place
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+{
+  "game": "pump_or_dump",
+  "currency": "USDC",
+  "stake": "10.00",
+  "params": {
+    "prediction": "pump"
+  }
+}
+
+### Support or Resistance Bet
+POST http://localhost:3000/api/v1/bets/place
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+{
+  "game": "support_or_resistance",
+  "currency": "USDC",
+  "stake": "10.00",
+  "params": {
+    "prediction": "break",
+    "level": 50000
+  }
+}
+
+### Bull vs Bear Battle Bet
+POST http://localhost:3000/api/v1/bets/place
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+{
+  "game": "bull_vs_bear_battle",
+  "currency": "USDC",
+  "stake": "10.00",
+  "params": {
+    "prediction": "bull"
+  }
+}
+
+### Leverage Ladder Bet
+POST http://localhost:3000/api/v1/bets/place
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+{
+  "game": "leverage_ladder",
+  "currency": "USDC",
+  "stake": "10.00",
+  "params": {
+    "targetRung": 3
+  }
+}
+
+### Stop Loss Roulette Bet
+POST http://localhost:3000/api/v1/bets/place
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+{
+  "game": "stop_loss_roulette",
+  "currency": "USDC",
+  "stake": "10.00",
+  "params": {
+    "stopLossDistance": 0.05
+  }
+}
+
+### Freeze the Bag Bet
+POST http://localhost:3000/api/v1/bets/place
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+{
+  "game": "freeze_the_bag",
+  "currency": "USDC",
+  "stake": "10.00",
+  "params": {}
+}
+
+### To the Moon Bet
+POST http://localhost:3000/api/v1/bets/place
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+{
+  "game": "to_the_moon",
+  "currency": "USDC",
+  "stake": "10.00",
+  "params": {}
+}
+
+### Diamond Hands Bet
+POST http://localhost:3000/api/v1/bets/place
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+{
+  "game": "diamond_hands",
+  "currency": "USDC",
+  "stake": "10.00",
+  "params": {
+    "mines": 3,
+    "picks": [0, 1, 2, 3, 4]
+  }
+}
