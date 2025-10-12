@@ -22,6 +22,6 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src/**/*", "prisma/**/*"],
-  "exclude": ["node_modules", "dist", "lovable-files", "examples.http", "*.md"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "lovable-files", "examples.http", "*.md", "prisma"]
 }

@@ -1,5 +1,5 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["node_modules", "dist", "test", "**/*spec.ts", "lovable-files"]
+  "exclude": ["node_modules", "dist", "test", "**/*spec.ts", "lovable-files", "prisma"]
 }
 
