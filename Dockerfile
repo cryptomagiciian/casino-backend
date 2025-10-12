@@ -16,10 +16,11 @@ COPY . .
 RUN npx prisma generate
 
 # Build the application
-RUN npm run build && ls -la dist/
+RUN npm run build
+RUN echo "=== Checking dist folder ===" && ls -la && ls -la dist/ || echo "dist folder not found"
 
 # Expose port
 EXPOSE 3000
 
 # Start script that pushes schema then starts the app
-CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node dist/main"]
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && ls -la /app && ls -la /app/dist && node dist/main.js"]
