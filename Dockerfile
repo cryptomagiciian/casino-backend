@@ -23,4 +23,4 @@ RUN echo "=== Checking dist folder ===" && ls -laR dist/ | head -50
 EXPOSE 3000
 
 # Start script that pushes schema then starts the app
-CMD ["sh", "-c", "npx prisma db push --accept-data-loss && ls -la /app && ls -la /app/dist && node dist/main.js"]
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node dist/main.js"]
