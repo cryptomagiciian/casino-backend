@@ -46,21 +46,28 @@ export const StopLossRoulette: React.FC = () => {
         if (spinCount >= 40) { // Stop after ~2 seconds
           if (intervalRef.current) clearInterval(intervalRef.current);
           
-          // Resolve bet
-          apiService.resolveBet(bet.id).then(async (resolved) => {
-            const won = resolved.resultMultiplier > 0;
-            const stopLossHit = !won;
-            
-            await fetchBalances();
-            
-            if (stopLossHit) {
-              setResult('⚡ STOP LOSS HIT! You lost!');
-            } else {
-              setResult(`🎉 SAFE! You won ${getMultiplier(riskLevel)}×!`);
-            }
-            
-            setIsSpinning(false);
-          });
+          // Resolve bet with error handling
+          apiService.resolveBet(bet.id)
+            .then(async (resolved) => {
+              const won = resolved.resultMultiplier > 0;
+              const stopLossHit = !won;
+              
+              await fetchBalances();
+              
+              if (stopLossHit) {
+                setResult('⚡ STOP LOSS HIT! You lost!');
+              } else {
+                setResult(`🎉 SAFE! You won ${getMultiplier(riskLevel)}×!`);
+              }
+              
+              setIsSpinning(false);
+            })
+            .catch(async (error) => {
+              console.error('Bet resolution failed:', error);
+              await fetchBalances();
+              setResult('❌ Error: ' + error.message);
+              setIsSpinning(false);
+            });
         }
       }, 50);
 

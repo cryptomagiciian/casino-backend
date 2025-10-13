@@ -53,22 +53,32 @@ export const SupportOrResistance: React.FC = () => {
           // Final decision
           if (intervalRef.current) clearInterval(intervalRef.current);
           
-          // Resolve bet
-          apiService.resolveBet(bet.id).then(async (resolved) => {
-            const won = resolved.resultMultiplier > 0;
-            const actualOutcome = resolved.outcome === 'break' ? 'break' : 'reject';
-            
-            // Animate to final position
-            if (actualOutcome === 'break') {
-              setPrice(resistance + 500);
-            } else {
-              setPrice(support - 500);
-            }
-            
-            await fetchBalances();
-            setResult(won ? '🎉 YOU WON! 2.0×' : '💥 YOU LOST!');
-            setPriceMoving(false);
-          });
+          // Resolve bet with error handling
+          apiService.resolveBet(bet.id)
+            .then(async (resolved) => {
+              const won = resolved.resultMultiplier > 0;
+              const actualOutcome = won ? prediction : (prediction === 'break' ? 'reject' : 'break');
+              
+              // Animate to final position
+              if (actualOutcome === 'break') {
+                setPrice(resistance + 500);
+              } else {
+                setPrice(support - 500);
+              }
+              
+              await fetchBalances();
+              setResult(won ? '🎉 YOU WON! 2.0×' : '💥 YOU LOST!');
+              setPriceMoving(false);
+            })
+            .catch(async (error) => {
+              console.error('Bet resolution failed:', error);
+              await fetchBalances();
+              setResult('❌ Error: ' + error.message);
+              setPriceMoving(false);
+            })
+            .finally(() => {
+              setIsPlaying(false);
+            });
         }
       }, 200);
 

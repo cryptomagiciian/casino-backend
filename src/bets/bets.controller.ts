@@ -70,7 +70,15 @@ export class BetsController {
     @Request() req: { user: { sub: string } },
     @Body() placeDto: BetPlaceDto,
   ) {
-    return this.betsService.placeBet(req.user.sub, placeDto as BetPlaceRequest);
+    try {
+      console.log(`🎲 Placing bet for user ${req.user.sub}: game=${placeDto.game}, stake=${placeDto.stake}`);
+      const result = await this.betsService.placeBet(req.user.sub, placeDto as BetPlaceRequest);
+      console.log(`✅ Bet placed: ${result.id}`);
+      return result;
+    } catch (error) {
+      console.error(`❌ Bet placement failed:`, error.message, error.stack);
+      throw error;
+    }
   }
 
   @Post('resolve/:id')
@@ -80,7 +88,15 @@ export class BetsController {
   @ApiResponse({ status: 200, description: 'Bet resolved successfully' })
   @ApiResponse({ status: 404, description: 'Bet not found' })
   async resolveBet(@Param('id') betId: string) {
-    return this.betsService.resolveBet(betId);
+    try {
+      console.log(`🎲 Resolving bet: ${betId}`);
+      const result = await this.betsService.resolveBet(betId);
+      console.log(`✅ Bet resolved: ${betId}, outcome: ${result.outcome}, multiplier: ${result.resultMultiplier}`);
+      return result;
+    } catch (error) {
+      console.error(`❌ Bet resolution failed for ${betId}:`, error.message, error.stack);
+      throw error;
+    }
   }
 
   @Post('cashout/:id')

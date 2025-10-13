@@ -70,16 +70,24 @@ export const PumpOrDump: React.FC = () => {
 
       // Wait for countdown to finish
       setTimeout(async () => {
-        const resolved = await apiService.resolveBet(bet.id);
-        await fetchBalances();
-        
-        const won = resolved.resultMultiplier > 0;
-        setResult(won ? '🎉 YOU WON!' : '💥 YOU LOST!');
-        
-        // Auto restart after 3 seconds
-        setTimeout(() => {
-          startRound();
-        }, 3000);
+        try {
+          const resolved = await apiService.resolveBet(bet.id);
+          await fetchBalances();
+          
+          const won = resolved.resultMultiplier > 0;
+          setResult(won ? '🎉 YOU WON!' : '💥 YOU LOST!');
+          
+          // Auto restart after 3 seconds
+          setTimeout(() => {
+            startRound();
+          }, 3000);
+        } catch (error) {
+          console.error('Bet resolution failed:', error);
+          await fetchBalances();
+          setResult('❌ Error: ' + (error as Error).message);
+          setIsPlaying(false);
+          setCanBet(true);
+        }
       }, countdown * 1000);
 
     } catch (error) {

@@ -50,17 +50,26 @@ export const BullVsBear: React.FC = () => {
           if (steps >= 20) {
             if (intervalRef.current) clearInterval(intervalRef.current);
             
-            // Resolve bet
-            apiService.resolveBet(bet.id).then(async (resolved) => {
-              const won = resolved.resultMultiplier > 0;
-              const winner = resolved.outcome === 'bull' ? 'bull' : 'bear';
-              
-              // Animate to winning side
-              setBarPosition(winner === 'bull' ? 95 : 5);
-              
-              await fetchBalances();
-              setResult(won ? '🎉 YOUR SIDE WON! 1.98×' : '💥 YOUR SIDE LOST!');
-            });
+            // Resolve bet with timeout and error handling
+            apiService.resolveBet(bet.id)
+              .then(async (resolved) => {
+                const won = resolved.resultMultiplier > 0;
+                const winner = won ? side : (side === 'bull' ? 'bear' : 'bull');
+                
+                // Animate to winning side
+                setBarPosition(winner === 'bull' ? 95 : 5);
+                
+                await fetchBalances();
+                setResult(won ? '🎉 YOUR SIDE WON! 1.98×' : '💥 YOUR SIDE LOST!');
+              })
+              .catch(async (error) => {
+                console.error('Bet resolution failed:', error);
+                await fetchBalances();
+                setResult('❌ Error: ' + error.message);
+              })
+              .finally(() => {
+                setIsPlaying(false);
+              });
           }
           
           return newPos;
