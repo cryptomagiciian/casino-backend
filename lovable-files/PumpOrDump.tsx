@@ -311,13 +311,16 @@ export const PumpOrDump: React.FC = () => {
 
 
   const resetGame = () => {
+    console.log('🔄 RESET GAME called');
     if (intervalRef.current) clearInterval(intervalRef.current);
     if (countdownRef.current) clearInterval(countdownRef.current);
     setIsPlaying(false);
     setCanBet(true);
     setResult(null);
     setCurrentCandle(null);
-    setBetId(null);
+    // DON'T clear betId here - it will be cleared by setTimeout after result shows
+    // setBetId(null); // ❌ Removed - causes alternating rounds to fail
+    console.log('✅ Game reset, ready for new round');
   };
 
   const renderCandle = (candle: Candle, index: number, isLive = false) => {
