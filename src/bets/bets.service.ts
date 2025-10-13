@@ -318,11 +318,12 @@ export class BetsService {
       case 'candle_flip':
       case 'pump_or_dump':
       case 'bull_vs_bear_battle':
-        const winChance = 0.495;
+        // HOUSE EDGE: 44% win chance × 1.88× payout = ~17% house edge
+        const winChance = 0.44;
         const won = rng < winChance;
         return {
           result: won ? 'win' : 'lose',
-          multiplier: won ? 1.98 : 0,
+          multiplier: won ? 1.88 : 0,
         };
 
       case 'support_or_resistance':
