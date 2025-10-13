@@ -160,37 +160,48 @@ export const PumpOrDump: React.FC = () => {
 
     const updateSpeed = TIME_OPTIONS.find(t => t.value === timeframe)?.speed || 150;
     
-    // HIGH VOLATILITY CRYPTO MEMECOIN CHART SIMULATION
+    // REALISTIC PSYCHOLOGICAL CHART SIMULATION
     let tickCount = 0;
-    const ticksPerCandle = 5; // New candle every 5 ticks
-    let rugpullTriggered = false;
-    let pumpTriggered = false;
+    const ticksPerCandle = 3; // New candle every 3 ticks (faster formation)
+    let totalTicks = timeframe * 10; // Estimate total ticks in round
+    let progress = 0; // 0 to 1 progress through round
+    
+    // Create realistic price progression (will be adjusted to match backend result)
+    let priceHistory = [open]; // Track price progression
     
     intervalRef.current = setInterval(() => {
       setPrice(prev => {
         tickCount++;
+        progress = tickCount / totalTicks;
         
-        // 🚨 RUGPULL EVENT (5% chance per round)
-        if (!rugpullTriggered && Math.random() < 0.05) {
-          rugpullTriggered = true;
-          const rugAmount = prev * (0.15 + Math.random() * 0.25); // Drop 15-40%
-          console.log('🚨 RUGPULL! Price crashed -' + (rugAmount / prev * 100).toFixed(1) + '%');
-          return prev - rugAmount;
+        // Create realistic price movement with psychological tension
+        let newPrice = prev;
+        
+        // Base movement: gradual drift with realistic volatility
+        const baseVolatility = (Math.random() - 0.5) * open * 0.006; // ±0.6% base volatility
+        const trend = (Math.random() - 0.5) * open * 0.004; // ±0.4% trend
+        const momentum = priceHistory.length > 1 ? (prev - priceHistory[priceHistory.length - 2]) * 0.3 : 0; // 30% momentum
+        
+        newPrice = prev + baseVolatility + trend + momentum;
+        
+        // Add realistic wicks (30% chance)
+        if (Math.random() < 0.3) {
+          const wickSize = (Math.random() - 0.5) * open * 0.012; // ±1.2% wick
+          newPrice += wickSize;
         }
         
-        // 🚀 PUMP EVENT (8% chance per round)
-        if (!pumpTriggered && Math.random() < 0.08) {
-          pumpTriggered = true;
-          const pumpAmount = prev * (0.10 + Math.random() * 0.20); // Pump 10-30%
-          console.log('🚀 MOON PUMP! Price surged +' + (pumpAmount / prev * 100).toFixed(1) + '%');
-          return prev + pumpAmount;
+        // Keep price within reasonable bounds (±5% of entry)
+        const maxDeviation = open * 0.05;
+        if (Math.abs(newPrice - open) > maxDeviation) {
+          newPrice = open + (Math.sign(newPrice - open) * maxDeviation);
         }
         
-        // Normal high volatility movement (memecoin style)
-        const volatility = (Math.random() - 0.5) * prev * 0.03; // ±3% swings
-        const trend = (Math.random() - 0.5) * prev * 0.015; // ±1.5% trend
-        const wick = Math.random() < 0.3 ? (Math.random() - 0.5) * prev * 0.05 : 0; // 30% chance of big wick
-        const newPrice = Math.max(prev + volatility + trend + wick, open * 0.5); // Don't go below 50% of open
+        // Safety floor
+        newPrice = Math.max(newPrice, open * 0.8);
+        
+        // Track price history for momentum
+        priceHistory.push(newPrice);
+        if (priceHistory.length > 10) priceHistory.shift(); // Keep last 10 prices
         
         // Close current candle and start new one every N ticks
         if (tickCount % ticksPerCandle === 0 && !isFinalizingRef.current) {
