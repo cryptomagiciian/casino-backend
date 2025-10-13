@@ -37,6 +37,7 @@ export const PumpOrDump: React.FC = () => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
   const cleanupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const betIdRef = useRef<string | null>(null); // ✅ Ref to always read latest betId!
 
   useEffect(() => {
     const initialCandles: Candle[] = [];
@@ -143,6 +144,7 @@ export const PumpOrDump: React.FC = () => {
       
       console.log('✅ Bet placed, ID:', bet.id);
       setBetId(bet.id);
+      betIdRef.current = bet.id; // ✅ Also update ref!
     } catch (error) {
       console.error('Bet failed:', error);
       setResult('❌ Bet failed: ' + (error as Error).message);
@@ -214,15 +216,16 @@ export const PumpOrDump: React.FC = () => {
     // DON'T set currentCandle to null yet - we need it for adjustment!
     setCurrentPnL(0);
     
-    console.log('🎲 Bet ID:', betId);
+    const currentBetId = betIdRef.current; // ✅ Read from ref to get LATEST value!
+    console.log('🎲 Bet ID:', currentBetId);
     console.log('🎯 Entry Price:', entryPrice);
     console.log('📈 Prediction:', prediction);
     
-    if (betId) {
+    if (currentBetId) {
       console.log('✅ BetId exists, resolving bet...');
       try {
         // Get the ACTUAL result from backend FIRST (backend uses provably fair RNG)
-        const resolved = await apiService.resolveBet(betId);
+        const resolved = await apiService.resolveBet(currentBetId);
         await fetchBalances();
         
         // Backend result is the source of truth (44% win chance via RNG)
@@ -323,6 +326,7 @@ export const PumpOrDump: React.FC = () => {
           console.log('⏰ 3 seconds passed, enabling betting and clearing betId');
           setCanBet(true);
           setBetId(null); // Clear betId AFTER result has been displayed
+          betIdRef.current = null; // ✅ Also clear ref!
           cleanupTimeoutRef.current = null;
         }, 3000);
       } catch (error) {
@@ -332,6 +336,7 @@ export const PumpOrDump: React.FC = () => {
         setIsPlaying(false);
         setCanBet(true);
         setBetId(null);
+        betIdRef.current = null; // ✅ Also clear ref!
       }
     } else {
       setTimeout(() => {
