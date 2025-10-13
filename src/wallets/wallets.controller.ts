@@ -1,12 +1,19 @@
 import { Controller, Get, Post, Body, UseGuards, Request, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiProperty } from '@nestjs/swagger';
+import { IsString, IsIn } from 'class-validator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WalletsService } from './wallets.service';
 import { FaucetRequest, WalletBalance } from '../shared/types';
 import { Currency } from '../shared/constants';
 
 export class FaucetDto {
+  @ApiProperty({ description: 'Currency to request', example: 'USDC' })
+  @IsString()
+  @IsIn(['BTC', 'ETH', 'SOL', 'USDC', 'USDT'])
   currency: Currency;
+
+  @ApiProperty({ description: 'Amount to request', example: '1000' })
+  @IsString()
   amount: string;
 }
 
