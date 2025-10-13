@@ -172,31 +172,43 @@ export const PumpOrDump: React.FC = () => {
         // FAIR OUTCOME: Player wins if they predicted correctly
         const won = (prediction === 'pump' && isPump) || (prediction === 'dump' && !isPump);
         
+        console.log('🎲 PUMP OR DUMP RESULT:', {
+          entryPrice,
+          finalPrice,
+          isPump,
+          prediction,
+          won,
+          priceChange: `${priceChange}%`
+        });
+        
         const resolved = await apiService.resolveBet(betId);
         await fetchBalances();
         
-        // Show detailed result
-        if (won) {
-          const winAmount = (parseFloat(stake) * 1.88).toFixed(2); // HOUSE EDGE: 1.88x payout (not 2x)
-          setResult(`🎉 WON! Price ${isPump ? 'PUMPED ⬆️' : 'DUMPED ⬇️'} ${Math.abs(parseFloat(priceChange))}%! +${winAmount} USDC`);
-        } else {
-          setResult(`💥 LOST! Price ${isPump ? 'PUMPED ⬆️' : 'DUMPED ⬇️'} ${Math.abs(parseFloat(priceChange))}%. You bet ${prediction.toUpperCase()}. -${stake} USDC`);
-        }
+        // Show detailed result - ALWAYS show win or loss
+        const resultMessage = won 
+          ? `🎉 WON! Price ${isPump ? 'PUMPED ⬆️' : 'DUMPED ⬇️'} ${Math.abs(parseFloat(priceChange))}%! +${(parseFloat(stake) * 1.88).toFixed(2)} USDC`
+          : `💥 LOST! Price ${isPump ? 'PUMPED ⬆️' : 'DUMPED ⬇️'} ${Math.abs(parseFloat(priceChange))}%. You bet ${prediction.toUpperCase()}. -${stake} USDC`;
+        
+        console.log('📢 Setting result:', resultMessage);
+        setResult(resultMessage);
         
         setTimeout(() => {
           setIsPlaying(false);
+          setCanBet(true);
         }, 3000);
       } catch (error) {
         console.error('Bet resolution failed:', error);
         await fetchBalances();
         setResult('❌ Error: ' + (error as Error).message);
         setIsPlaying(false);
+        setCanBet(true);
       } finally {
         setBetId(null);
       }
     } else {
       setTimeout(() => {
         setIsPlaying(false);
+        setCanBet(true);
       }, 2000);
     }
   };
@@ -332,16 +344,27 @@ export const PumpOrDump: React.FC = () => {
         )}
 
         {/* Entry Price indicator line (YELLOW = STARTING PRICE) */}
-        {entryPrice > 0 && (
-          <div className="absolute left-0 right-0 border-t-2 border-dashed border-yellow-400" style={{ top: '50%' }}>
-            <div className="absolute left-4 -top-3 bg-yellow-400 text-black text-xs px-3 py-1 rounded-full font-bold shadow-lg">
-              📍 ENTRY: ${entryPrice.toFixed(0)}
+        {entryPrice > 0 && (() => {
+          const allCandles = [...candles, ...(currentCandle ? [currentCandle] : [])];
+          const minPrice = Math.min(...allCandles.map(c => c.low));
+          const maxPrice = Math.max(...allCandles.map(c => c.high));
+          const priceRange = maxPrice - minPrice || 1;
+          const entryPosition = ((entryPrice - minPrice) / priceRange) * 100;
+          
+          return (
+            <div 
+              className="absolute left-0 right-0 border-t-2 border-dashed border-yellow-400 z-10" 
+              style={{ bottom: `${entryPosition}%` }}
+            >
+              <div className="absolute left-4 -top-3 bg-yellow-400 text-black text-xs px-3 py-1 rounded-full font-bold shadow-lg">
+                📍 ENTRY: ${entryPrice.toFixed(0)}
+              </div>
+              <div className="absolute right-4 -top-3 bg-yellow-400 text-black text-xs px-3 py-1 rounded-full font-bold shadow-lg">
+                {isPlaying ? '⏳ CURRENT' : '✅ FINAL'}: ${price.toFixed(0)}
+              </div>
             </div>
-            <div className="absolute right-4 -top-3 bg-yellow-400 text-black text-xs px-3 py-1 rounded-full font-bold shadow-lg">
-              {isPlaying ? '⏳ CURRENT' : '✅ FINAL'}: ${price.toFixed(0)}
-            </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
 
       {/* Volume bars */}
