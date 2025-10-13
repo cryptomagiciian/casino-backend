@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { apiService } from '../services/api';
 import { useWallet } from '../hooks/useWallet';
 import { PumpOrDumpCanvas } from './PumpOrDumpCanvas';
+import { sfx } from './SFXSystem';
 
 interface RngTrace {
   pWin: number;
@@ -47,6 +48,7 @@ export const PumpOrDumpV2: React.FC = () => {
   const [showFairnessModal, setShowFairnessModal] = useState(false);
   const [autoMode, setAutoMode] = useState(false);
   const [autoRounds, setAutoRounds] = useState(10);
+  const [sfxEnabled, setSfxEnabled] = useState(true);
   
   const { fetchBalances } = useWallet();
   const microCopyIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -135,6 +137,13 @@ export const PumpOrDumpV2: React.FC = () => {
       
       setResult(resultMessage);
       setIsPlaying(false);
+      
+      // Play win/lose sound
+      if (won) {
+        sfx.win();
+      } else {
+        sfx.lose();
+      }
       
       // Auto mode
       if (autoMode && autoRounds > 0) {
@@ -268,6 +277,23 @@ export const PumpOrDumpV2: React.FC = () => {
                 />
                 <label htmlFor="autoMode" className="text-sm text-gray-300">
                   Auto Mode ({autoRounds} rounds)
+                </label>
+              </div>
+              
+              {/* SFX Toggle */}
+              <div className="mt-1 flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="sfxEnabled"
+                  checked={sfxEnabled}
+                  onChange={(e) => {
+                    setSfxEnabled(e.target.checked);
+                    sfx.setEnabled(e.target.checked);
+                  }}
+                  className="w-4 h-4 text-teal-600 bg-gray-700 border-gray-600 rounded focus:ring-teal-500"
+                />
+                <label htmlFor="sfxEnabled" className="text-sm text-gray-300">
+                  Sound Effects
                 </label>
               </div>
             </div>

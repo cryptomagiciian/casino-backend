@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { apiService } from '../services/api';
 import { useWallet } from '../hooks/useWallet';
+import { sfx } from './SFXSystem';
 
 interface Candle {
   open: number;
@@ -123,6 +124,7 @@ export const PumpOrDumpCanvas: React.FC<PumpOrDumpCanvasProps> = ({
     
     if (progress >= 1 && !isComplete) {
       setIsComplete(true);
+      sfx.final(); // Play final sound
       onComplete({ price: currentPrice, candles });
       return;
     }
@@ -143,6 +145,9 @@ export const PumpOrDumpCanvas: React.FC<PumpOrDumpCanvasProps> = ({
         };
         
         setCandles(prev => [...prev.slice(-20), newCandle]); // Keep last 20 candles
+        
+        // Play tick sound for new candle
+        sfx.tick();
       }
     }
     
