@@ -64,6 +64,20 @@ export const PumpOrDump: React.FC = () => {
   }, []);
 
   const startRound = async () => {
+    console.log('🚀 START ROUND called');
+    
+    // CRITICAL: Clear any existing intervals from previous rounds!
+    if (intervalRef.current) {
+      console.log('⚠️ Clearing old price interval');
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    if (countdownRef.current) {
+      console.log('⚠️ Clearing old countdown interval');
+      clearInterval(countdownRef.current);
+      countdownRef.current = null;
+    }
+    
     setIsPlaying(true);
     setCanBet(false); // Disable betting immediately
     setCountdown(timeframe);
@@ -121,6 +135,7 @@ export const PumpOrDump: React.FC = () => {
         params: { prediction },
       });
       
+      console.log('✅ Bet placed, ID:', bet.id);
       setBetId(bet.id);
     } catch (error) {
       console.error('Bet failed:', error);
