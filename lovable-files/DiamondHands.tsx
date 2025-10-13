@@ -16,15 +16,17 @@ interface DifficultyOption {
 }
 
 const DIFFICULTIES: DifficultyOption[] = [
-  { mines: 5, name: 'Easy', color: 'from-green-600 to-green-500', baseMultiplier: 1.2, description: 'Lower Risk' },
-  { mines: 8, name: 'Medium', color: 'from-yellow-600 to-yellow-500', baseMultiplier: 1.4, description: 'Medium Risk' },
-  { mines: 12, name: 'Hard', color: 'from-red-600 to-red-500', baseMultiplier: 1.7, description: 'High Risk' },
-  { mines: 15, name: 'Extreme', color: 'from-purple-600 to-purple-500', baseMultiplier: 2.2, description: 'Very High Risk' },
+  { mines: 1, name: 'Super Easy', color: 'from-blue-600 to-blue-500', baseMultiplier: 1.08, description: 'Very Low Risk - Low Rewards' },
+  { mines: 5, name: 'Easy', color: 'from-green-600 to-green-500', baseMultiplier: 1.15, description: 'Lower Risk' },
+  { mines: 8, name: 'Medium', color: 'from-yellow-600 to-yellow-500', baseMultiplier: 1.25, description: 'Medium Risk' },
+  { mines: 12, name: 'Hard', color: 'from-orange-600 to-orange-500', baseMultiplier: 1.4, description: 'High Risk' },
+  { mines: 15, name: 'Extreme', color: 'from-red-600 to-red-500', baseMultiplier: 1.6, description: 'Very High Risk' },
+  { mines: 18, name: 'Insane', color: 'from-purple-600 to-purple-500', baseMultiplier: 1.9, description: 'Extreme Risk - Max Rewards' },
 ];
 
 export const DiamondHands: React.FC = () => {
   const [stake, setStake] = useState('10.00');
-  const [difficulty, setDifficulty] = useState<DifficultyOption>(DIFFICULTIES[2]); // Default: Medium
+  const [difficulty, setDifficulty] = useState<DifficultyOption>(DIFFICULTIES[0]); // Default: Super Easy
   const [isPlaying, setIsPlaying] = useState(false);
   const [betId, setBetId] = useState<string | null>(null);
   const [grid, setGrid] = useState<TileState[]>(Array(TOTAL_TILES).fill('hidden'));
@@ -35,10 +37,22 @@ export const DiamondHands: React.FC = () => {
   const { fetchBalances } = useWallet();
 
   const calculateMultiplier = (safePicks: number) => {
-    // Exponential growth based on difficulty with hard cap
+    // Exponential growth based on difficulty with scaled max cap
     const base = difficulty.baseMultiplier;
     const mult = Math.pow(base, safePicks);
-    return Math.min(mult, 25.0); // HOUSE EDGE: Cap at 25x max payout
+    
+    // HOUSE EDGE: Max payout scales with risk level
+    const maxPayouts: { [key: number]: number } = {
+      1: 5,     // Super Easy: max 5x (very low)
+      5: 10,    // Easy: max 10x
+      8: 20,    // Medium: max 20x
+      12: 40,   // Hard: max 40x
+      15: 75,   // Extreme: max 75x
+      18: 150,  // Insane: max 150x (highest risk, highest reward)
+    };
+    
+    const maxPayout = maxPayouts[difficulty.mines] || 25;
+    return Math.min(mult, maxPayout);
   };
 
   const getPotentialWin = () => {
