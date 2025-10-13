@@ -167,7 +167,7 @@ export class BetsService {
   /**
    * Cash out a bet (for crash games)
    */
-  async cashoutBet(betId: string) {
+  async cashoutBet(betId: string, cashoutMultiplier?: number) {
     const bet = await this.prisma.bet.findUnique({
       where: { id: betId },
     });
@@ -180,22 +180,26 @@ export class BetsService {
       throw new BadRequestException('Bet already resolved');
     }
 
-    // Only crash games support cashout
-    if (!['freeze_the_bag', 'to_the_moon'].includes(bet.game)) {
+    // Games that support cashout
+    const cashoutGames = ['freeze_the_bag', 'to_the_moon', 'leverage_ladder'];
+    if (!cashoutGames.includes(bet.game)) {
       throw new BadRequestException('This game does not support cashout');
     }
 
-    // For now, we'll resolve the bet with a manual cashout
-    // In a real implementation, this would depend on the current multiplier
+    // Use provided multiplier or default to 1.0 (return stake)
+    const actualMultiplier = cashoutMultiplier || 1.0;
+    
+    // Minimum multiplier of 1.0 (can't cash out for less than stake)
+    const finalMultiplier = Math.max(1.0, actualMultiplier);
+    
     const stakeFloat = parseFloat(fromSmallestUnits(bet.stake, bet.currency as Currency));
-    const cashoutMultiplier = 2.0; // Example multiplier
-    const payout = stakeFloat * cashoutMultiplier;
+    const payout = stakeFloat * finalMultiplier;
 
     const updatedBet = await this.prisma.bet.update({
       where: { id: betId },
       data: {
         outcome: 'cashed_out',
-        resultMultiplier: cashoutMultiplier,
+        resultMultiplier: finalMultiplier,
         status: 'CASHED_OUT',
         resolvedAt: new Date(),
       },
@@ -223,7 +227,7 @@ export class BetsService {
       currency: bet.currency as Currency,
       stake: fromSmallestUnits(bet.stake, bet.currency as Currency),
       outcome: 'cashed_out',
-      resultMultiplier: cashoutMultiplier,
+      resultMultiplier: finalMultiplier,
       payout: payout.toString(),
       status: 'CASHED_OUT',
     };

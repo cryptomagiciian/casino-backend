@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { apiService } from '../services/api';
 import { useWallet } from '../hooks/useWallet';
 
@@ -8,9 +8,25 @@ export const ToTheMoon: React.FC = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [betId, setBetId] = useState<string | null>(null);
   const [crashed, setCrashed] = useState(false);
+  const [cashedOut, setCashedOut] = useState(false);
   const { fetchBalances } = useWallet();
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, []);
 
   const startGame = async () => {
+    // Clear any existing interval
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    
     try {
       const bet = await apiService.placeBet({
         game: 'to_the_moon',
@@ -23,17 +39,21 @@ export const ToTheMoon: React.FC = () => {
       setBetId(bet.id);
       setIsRunning(true);
       setCrashed(false);
+      setCashedOut(false);
       setMultiplier(1.0);
       
       // Simulate multiplier growth
-      const interval = setInterval(() => {
+      intervalRef.current = setInterval(() => {
         setMultiplier(prev => {
           const newMultiplier = prev + 0.01;
           // Random crash simulation (1% chance each step)
           if (Math.random() < 0.01) {
+            if (intervalRef.current) {
+              clearInterval(intervalRef.current);
+              intervalRef.current = null;
+            }
             setCrashed(true);
             setIsRunning(false);
-            clearInterval(interval);
             resolveBet(bet.id, newMultiplier);
             return newMultiplier;
           }
@@ -48,12 +68,18 @@ export const ToTheMoon: React.FC = () => {
   };
 
   const cashout = async () => {
-    if (betId) {
+    if (betId && intervalRef.current) {
+      // Stop the game immediately
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+      setIsRunning(false);
+      setCashedOut(true);
+      
       try {
-        await apiService.cashoutBet(betId);
-        setIsRunning(false);
+        // Send current multiplier to backend
+        await apiService.cashoutBet(betId, multiplier);
         await fetchBalances();
-        alert(`Cashed out at ${multiplier.toFixed(2)}x!`);
+        alert(`Cashed out at ${multiplier.toFixed(2)}x! 🎉`);
       } catch (error) {
         console.error('Cashout failed:', error);
         alert('Cashout failed: ' + (error as Error).message);
@@ -110,9 +136,14 @@ export const ToTheMoon: React.FC = () => {
           </button>
         )}
         
-        {crashed && (
+        {(crashed || cashedOut) && (
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              setCrashed(false);
+              setCashedOut(false);
+              setMultiplier(1.0);
+              setBetId(null);
+            }}
             className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold transition-colors"
           >
             Play Again

@@ -39,7 +39,8 @@ export const CandleFlip: React.FC = () => {
       const result = await apiService.resolveBet(bet.id);
       await fetchBalances();
       
-      alert(`Bet placed! Outcome: ${result.outcome}, Multiplier: ${result.resultMultiplier}x`);
+      alert(`Bet placed! Outcome: ${result.outcome}, Multiplier: ${result.resultMultiplier}x, You ${result.resultMultiplier > 0 ? 'WON' : 'LOST'}!`);
+      setPreview(null); // Reset preview after bet
     } catch (error) {
       console.error('Bet failed:', error);
       alert('Bet failed: ' + (error as Error).message);

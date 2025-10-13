@@ -90,8 +90,11 @@ export class BetsController {
   @ApiResponse({ status: 200, description: 'Bet cashed out successfully' })
   @ApiResponse({ status: 404, description: 'Bet not found' })
   @ApiResponse({ status: 400, description: 'Bet cannot be cashed out' })
-  async cashoutBet(@Param('id') betId: string) {
-    return this.betsService.cashoutBet(betId);
+  async cashoutBet(
+    @Param('id') betId: string,
+    @Body() body?: { multiplier?: number }
+  ) {
+    return this.betsService.cashoutBet(betId, body?.multiplier);
   }
 
   @Get(':id')

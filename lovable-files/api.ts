@@ -33,13 +33,35 @@ class ApiService {
       ...options,
     };
 
+    console.log('API Request:', options.method || 'GET', endpoint);
+
     const response = await fetch(url, config);
     
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Network error' }));
+      const error = await response.json().catch(() => ({ 
+        message: 'Network error',
+        statusCode: response.status 
+      }));
+      
+      console.error('API Error:', response.status, error);
+      
+      // Handle 401 Unauthorized - token expired
+      if (response.status === 401) {
+        console.warn('Token expired or invalid - logging out');
+        this.clearToken();
+        window.location.href = '/'; // Redirect to login
+        throw new Error('Session expired. Please login again.');
+      }
+      
+      // Handle rate limiting
+      if (response.status === 429) {
+        throw new Error('Too many requests. Please wait a moment and try again.');
+      }
+      
       throw new Error(error.message || `API Error: ${response.status}`);
     }
 
+    console.log('API Response:', options.method || 'GET', endpoint, 'OK');
     return response.json();
   }
 
@@ -96,6 +118,13 @@ class ApiService {
   async resolveBet(betId: string) {
     return this.request(`/bets/resolve/${betId}`, {
       method: 'POST',
+    });
+  }
+
+  async cashoutBet(betId: string, multiplier?: number) {
+    return this.request(`/bets/cashout/${betId}`, {
+      method: 'POST',
+      body: JSON.stringify({ multiplier }),
     });
   }
 
