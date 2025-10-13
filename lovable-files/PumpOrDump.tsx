@@ -165,32 +165,43 @@ export const PumpOrDump: React.FC = () => {
     
     if (betId) {
       try {
-        // Determine outcome: PUMP = close > entry, DUMP = close < entry
-        const isPump = finalPrice > entryPrice;
-        const priceChange = ((finalPrice - entryPrice) / entryPrice * 100).toFixed(2);
+        // ═══════════════════════════════════════════════════════════
+        // CLEAR GAME RULES:
+        // Yellow line = Entry price (where candle starts)
+        // Close ABOVE yellow = PUMP ⬆️
+        // Close BELOW yellow = DUMP ⬇️
+        // ═══════════════════════════════════════════════════════════
         
-        // HOUSE EDGE: 56% house wins (6% bias)
-        const rand = Math.random();
-        const houseBias = 0.06;
+        const priceChange = finalPrice - entryPrice;
+        const priceChangePercent = ((priceChange / entryPrice) * 100).toFixed(2);
         
-        let won;
-        if (prediction === 'pump') {
-          // Player bet pump: reduce win chance by house bias
-          won = isPump && rand > houseBias;
+        // Determine actual outcome based on FINAL price vs ENTRY price
+        let actualOutcome: 'pump' | 'dump';
+        
+        if (finalPrice > entryPrice) {
+          // Closed ABOVE yellow line = PUMP
+          actualOutcome = 'pump';
         } else {
-          // Player bet dump: reduce win chance by house bias
-          won = !isPump && rand > houseBias;
+          // Closed BELOW yellow line = DUMP
+          actualOutcome = 'dump';
         }
+        
+        // Check if player's prediction matches actual outcome
+        const won = (prediction === actualOutcome);
         
         const resolved = await apiService.resolveBet(betId);
         await fetchBalances();
         
-        // Show detailed result
+        // Show detailed result with CLEAR outcome
+        const outcomeText = actualOutcome === 'pump' 
+          ? `PUMPED ⬆️ +${priceChangePercent}%` 
+          : `DUMPED ⬇️ ${priceChangePercent}%`;
+        
         if (won) {
-          const winAmount = (parseFloat(stake) * 1.88).toFixed(2); // Reduced from 1.95x
-          setResult(`🎉 WON! Price ${isPump ? 'PUMPED ⬆️' : 'DUMPED ⬇️'} ${Math.abs(parseFloat(priceChange))}%! +${winAmount} USDC`);
+          const winAmount = (parseFloat(stake) * 1.88).toFixed(2); // 1.88x payout (6% house edge)
+          setResult(`🎉 WON! Price ${outcomeText}! You bet ${prediction.toUpperCase()}. +${winAmount} USDC`);
         } else {
-          setResult(`💥 LOST! Price ${isPump ? 'PUMPED ⬆️' : 'DUMPED ⬇️'} ${Math.abs(parseFloat(priceChange))}%. You bet ${prediction.toUpperCase()}. -${stake} USDC`);
+          setResult(`💥 LOST! Price ${outcomeText}. You bet ${prediction.toUpperCase()}. -${stake} USDC`);
         }
         
         setTimeout(() => {
@@ -341,12 +352,20 @@ export const PumpOrDump: React.FC = () => {
           </div>
         )}
 
-        {/* Price indicator line */}
-        <div className="absolute left-0 right-0 border-t-2 border-dashed border-yellow-400 opacity-50" style={{ top: '50%' }}>
-          <div className="absolute right-4 -top-3 bg-yellow-400 text-black text-xs px-2 py-1 rounded font-bold">
-            ${price.toFixed(0)}
+        {/* ENTRY PRICE LINE (Yellow line where candle started) */}
+        {isPlaying && entryPrice > 0 && (
+          <div className="absolute left-0 right-0 border-t-4 border-yellow-400 z-10" style={{ 
+            top: '50%',
+            boxShadow: '0 0 10px rgba(250, 204, 21, 0.8)'
+          }}>
+            <div className="absolute right-4 -top-4 bg-yellow-400 text-black text-sm px-3 py-1.5 rounded-lg font-bold shadow-lg border-2 border-yellow-300">
+              ENTRY: ${entryPrice.toFixed(0)}
+            </div>
+            <div className="absolute left-4 -top-3 text-yellow-400 text-xs font-bold bg-black px-2 py-1 rounded">
+              ⬆️ PUMP | ⬇️ DUMP
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Volume bars */}
