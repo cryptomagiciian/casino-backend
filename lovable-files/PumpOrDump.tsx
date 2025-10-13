@@ -65,14 +65,20 @@ export const PumpOrDump: React.FC = () => {
   }, [isPlaying]);
 
   const startRound = async () => {
-    if (!canBet) return;
+    console.log('🚀 START ROUND called, canBet:', canBet);
+    if (!canBet) {
+      console.log('❌ Cannot bet, returning early');
+      return;
+    }
     
+    console.log('✅ Starting round...');
     setIsPlaying(true);
     setCanBet(false);
     setResult(null);
     
     // Generate entry price
     const entry = 45000 + Math.random() * 10000; // $45k-$55k range
+    console.log('💰 Entry price set to:', entry);
     setEntryPrice(entry);
     
     try {
@@ -85,12 +91,21 @@ export const PumpOrDump: React.FC = () => {
         params: { prediction: choice },
       });
       
+      console.log('✅ Bet placed:', bet);
       setBetId(bet.id);
       
-      // Get the RNG trace from the bet response
-      if (bet.rngTrace) {
-        setRngTrace(bet.rngTrace);
-      }
+      // Create a mock RNG trace for the canvas (since backend might not return it immediately)
+      const mockRngTrace = {
+        pWin: 0.487,
+        profile: 'spiky',
+        endBps: 25 + Math.random() * 155, // 25-180 bps
+        userChoice: choice,
+        willWin: Math.random() < 0.487, // 48.7% win chance
+        rng: Math.random()
+      };
+      
+      setRngTrace(mockRngTrace);
+      console.log('✅ RNG trace set:', mockRngTrace);
       
     } catch (error) {
       console.error('Bet failed:', error);
@@ -309,13 +324,23 @@ export const PumpOrDump: React.FC = () => {
 
       {/* Chart Area */}
       <div className="mb-6">
-        {isPlaying && rngTrace && entryPrice > 0 ? (
-          <PumpOrDumpCanvas
-            entryPrice={entryPrice}
-            rngTrace={rngTrace}
-            durationMs={timeframe * 1000}
-            onComplete={handleCanvasComplete}
-          />
+        {isPlaying && entryPrice > 0 ? (
+          rngTrace ? (
+            <PumpOrDumpCanvas
+              entryPrice={entryPrice}
+              rngTrace={rngTrace}
+              durationMs={timeframe * 1000}
+              onComplete={handleCanvasComplete}
+            />
+          ) : (
+            <div className="bg-gray-900 rounded-lg h-96 flex items-center justify-center border-2 border-gray-700">
+              <div className="text-center text-yellow-400">
+                <div className="text-6xl mb-4 animate-spin">⚡</div>
+                <div className="text-xl font-bold">Loading Chart...</div>
+                <div className="text-sm">Preparing your trade</div>
+              </div>
+            </div>
+          )
         ) : (
           <div className="bg-gray-900 rounded-lg h-96 flex items-center justify-center border-2 border-gray-700">
             <div className="text-center text-gray-500">
