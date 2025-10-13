@@ -76,18 +76,18 @@ export const PumpOrDump: React.FC = () => {
     setEntryPrice(open); // Set entry price for P&L tracking
     setCurrentPnL(0);
     
-    // Generate fresh historical candles centered around the entry price
-    // This ensures the yellow line appears in the middle of the chart
+    // Generate fresh historical candles CENTERED around the entry price
+    // All candles stay within ±2% of entry to keep chart centered
     const newHistoricalCandles: Candle[] = [];
-    let basePrice = open;
     const newVolume: number[] = [];
     
     for (let i = 0; i < 11; i++) {
-      const candleOpen = basePrice;
-      const change = (Math.random() - 0.5) * 1000; // Smaller changes to stay centered
-      const candleClose = candleOpen + change;
-      const candleHigh = Math.max(candleOpen, candleClose) + Math.random() * 300;
-      const candleLow = Math.min(candleOpen, candleClose) - Math.random() * 300;
+      // Keep all candles within ±2% of entry price
+      const deviation = (Math.random() - 0.5) * 0.04; // -2% to +2%
+      const candleOpen = open * (1 + deviation * Math.random());
+      const candleClose = open * (1 + (Math.random() - 0.5) * 0.03); // -1.5% to +1.5%
+      const candleHigh = Math.max(candleOpen, candleClose) * (1 + Math.random() * 0.01);
+      const candleLow = Math.min(candleOpen, candleClose) * (1 - Math.random() * 0.01);
       
       newHistoricalCandles.push({ 
         open: candleOpen, 
@@ -97,7 +97,6 @@ export const PumpOrDump: React.FC = () => {
         timestamp: Date.now() - (11 - i) * 10000 
       });
       newVolume.push(30 + Math.random() * 70);
-      basePrice = candleClose;
     }
     
     setCandles(newHistoricalCandles);
@@ -414,28 +413,20 @@ export const PumpOrDump: React.FC = () => {
           </div>
         )}
 
-        {/* Entry Price indicator line (YELLOW = STARTING PRICE) */}
-        {entryPrice > 0 && (() => {
-          const allCandles = [...candles, ...(currentCandle ? [currentCandle] : [])];
-          const minPrice = Math.min(...allCandles.map(c => c.low));
-          const maxPrice = Math.max(...allCandles.map(c => c.high));
-          const priceRange = maxPrice - minPrice || 1;
-          const entryPosition = ((entryPrice - minPrice) / priceRange) * 100;
-          
-          return (
-            <div 
-              className="absolute left-0 right-0 border-t-2 border-dashed border-yellow-400 z-10" 
-              style={{ bottom: `${entryPosition}%` }}
-            >
-              <div className="absolute left-4 -top-3 bg-yellow-400 text-black text-xs px-3 py-1 rounded-full font-bold shadow-lg">
-                📍 ENTRY: ${entryPrice.toFixed(0)}
-              </div>
-              <div className="absolute right-4 -top-3 bg-yellow-400 text-black text-xs px-3 py-1 rounded-full font-bold shadow-lg">
-                {isPlaying ? '⏳ CURRENT' : '✅ FINAL'}: ${price.toFixed(0)}
-              </div>
+        {/* Entry Price indicator line (YELLOW = STARTING PRICE - FIXED AT 50%!) */}
+        {entryPrice > 0 && (
+          <div 
+            className="absolute left-0 right-0 border-t-2 border-dashed border-yellow-400 z-10" 
+            style={{ top: '50%' }}
+          >
+            <div className="absolute left-4 -top-3 bg-yellow-400 text-black text-xs px-3 py-1 rounded-full font-bold shadow-lg">
+              📍 ENTRY: ${entryPrice.toFixed(0)}
             </div>
-          );
-        })()}
+            <div className="absolute right-4 -top-3 bg-yellow-400 text-black text-xs px-3 py-1 rounded-full font-bold shadow-lg">
+              {isPlaying ? '⏳ CURRENT' : '✅ FINAL'}: ${price.toFixed(0)}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Volume bars */}
