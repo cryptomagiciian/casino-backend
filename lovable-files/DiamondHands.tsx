@@ -16,12 +16,10 @@ interface DifficultyOption {
 }
 
 const DIFFICULTIES: DifficultyOption[] = [
-  { mines: 1, name: 'Baby Mode', color: 'from-green-600 to-green-500', baseMultiplier: 1.1, description: '96% win rate' },
-  { mines: 3, name: 'Easy', color: 'from-blue-600 to-blue-500', baseMultiplier: 1.2, description: '88% win rate' },
-  { mines: 5, name: 'Medium', color: 'from-yellow-600 to-yellow-500', baseMultiplier: 1.3, description: '80% win rate' },
-  { mines: 8, name: 'Hard', color: 'from-orange-600 to-orange-500', baseMultiplier: 1.5, description: '68% win rate' },
-  { mines: 12, name: 'Extreme', color: 'from-red-600 to-red-500', baseMultiplier: 1.8, description: '52% win rate' },
-  { mines: 18, name: 'Insane', color: 'from-purple-600 to-purple-500', baseMultiplier: 2.5, description: '28% win rate' },
+  { mines: 5, name: 'Easy', color: 'from-green-600 to-green-500', baseMultiplier: 1.2, description: 'Lower Risk' },
+  { mines: 8, name: 'Medium', color: 'from-yellow-600 to-yellow-500', baseMultiplier: 1.4, description: 'Medium Risk' },
+  { mines: 12, name: 'Hard', color: 'from-red-600 to-red-500', baseMultiplier: 1.7, description: 'High Risk' },
+  { mines: 15, name: 'Extreme', color: 'from-purple-600 to-purple-500', baseMultiplier: 2.2, description: 'Very High Risk' },
 ];
 
 export const DiamondHands: React.FC = () => {
@@ -37,9 +35,10 @@ export const DiamondHands: React.FC = () => {
   const { fetchBalances } = useWallet();
 
   const calculateMultiplier = (safePicks: number) => {
-    // Exponential growth based on difficulty
+    // Exponential growth based on difficulty with hard cap
     const base = difficulty.baseMultiplier;
-    return Math.pow(base, safePicks);
+    const mult = Math.pow(base, safePicks);
+    return Math.min(mult, 25.0); // HOUSE EDGE: Cap at 25x max payout
   };
 
   const getPotentialWin = () => {
@@ -87,13 +86,24 @@ export const DiamondHands: React.FC = () => {
   const revealTile = (index: number) => {
     if (!isPlaying || grid[index] !== 'hidden' || result) return;
 
+    // HOUSE EDGE: Weighted mine probability (gets harder each click)
+    const getMineProbability = () => {
+      if (safeCount < 3) return 0.20;      // Easy start (20%)
+      if (safeCount < 6) return 0.40;      // Gets harder (40%)
+      if (safeCount < 10) return 0.65;     // Very hard (65%)
+      return 0.85;                         // Almost impossible (85%)
+    };
+    
+    const mineProb = getMineProbability();
+    const hitMine = Math.random() < mineProb || minePositions.includes(index);
+
     const newGrid = [...grid];
     
-    if (minePositions.includes(index)) {
+    if (hitMine) {
       // Hit a mine!
       newGrid[index] = 'mine';
       setGrid(newGrid);
-      setResult('💥 BOOM! You hit a mine!');
+      setResult(`💣 BOOM! Hit mine after ${safeCount} safe picks. Lost ${stake} USDC!`);
       setIsPlaying(false);
 
       // Reveal all mines

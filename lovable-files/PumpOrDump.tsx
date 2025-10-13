@@ -153,19 +153,45 @@ export const PumpOrDump: React.FC = () => {
   };
 
   const finalizeCandle = async () => {
+    let finalPrice = price;
+    
     if (currentCandle) {
+      finalPrice = currentCandle.close;
       setCandles(prev => [...prev.slice(-11), currentCandle]);
       setVolumeBars(prev => [...prev.slice(-11), 30 + Math.random() * 70]);
     }
     setCurrentCandle(null);
+    setCurrentPnL(0);
     
     if (betId) {
       try {
+        // Determine outcome: PUMP = close > entry, DUMP = close < entry
+        const isPump = finalPrice > entryPrice;
+        const priceChange = ((finalPrice - entryPrice) / entryPrice * 100).toFixed(2);
+        
+        // HOUSE EDGE: 56% house wins (6% bias)
+        const rand = Math.random();
+        const houseBias = 0.06;
+        
+        let won;
+        if (prediction === 'pump') {
+          // Player bet pump: reduce win chance by house bias
+          won = isPump && rand > houseBias;
+        } else {
+          // Player bet dump: reduce win chance by house bias
+          won = !isPump && rand > houseBias;
+        }
+        
         const resolved = await apiService.resolveBet(betId);
         await fetchBalances();
         
-        const won = resolved.resultMultiplier > 0;
-        setResult(won ? `🎉 YOU WON! ${resolved.resultMultiplier}×` : '💥 YOU LOST!');
+        // Show detailed result
+        if (won) {
+          const winAmount = (parseFloat(stake) * 1.88).toFixed(2); // Reduced from 1.95x
+          setResult(`🎉 WON! Price ${isPump ? 'PUMPED ⬆️' : 'DUMPED ⬇️'} ${Math.abs(parseFloat(priceChange))}%! +${winAmount} USDC`);
+        } else {
+          setResult(`💥 LOST! Price ${isPump ? 'PUMPED ⬆️' : 'DUMPED ⬇️'} ${Math.abs(parseFloat(priceChange))}%. You bet ${prediction.toUpperCase()}. -${stake} USDC`);
+        }
         
         setTimeout(() => {
           setIsPlaying(false);
