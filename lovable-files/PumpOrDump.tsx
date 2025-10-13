@@ -184,58 +184,53 @@ export const PumpOrDump: React.FC = () => {
     const maxPrice = Math.max(...allCandles.map(c => c.high));
     const priceRange = maxPrice - minPrice || 1;
     
-    // Calculate positions from bottom
-    const wickBottomPos = ((candle.low - minPrice) / priceRange) * 100;
-    const bodyBottomPos = ((Math.min(candle.open, candle.close) - minPrice) / priceRange) * 100;
-    const bodyTopPos = ((Math.max(candle.open, candle.close) - minPrice) / priceRange) * 100;
-    const wickTopPos = ((candle.high - minPrice) / priceRange) * 100;
+    // Calculate heights in pixels (assuming 224px container height)
+    const chartHeight = 224;
+    const wickLow = ((candle.low - minPrice) / priceRange) * chartHeight;
+    const wickHigh = ((candle.high - minPrice) / priceRange) * chartHeight;
+    const bodyLow = ((Math.min(candle.open, candle.close) - minPrice) / priceRange) * chartHeight;
+    const bodyHigh = ((Math.max(candle.open, candle.close) - minPrice) / priceRange) * chartHeight;
     
-    const bodyHeight = Math.max(bodyTopPos - bodyBottomPos, 1);
+    const wickHeight = wickHigh - wickLow;
+    const bodyHeight = Math.max(bodyHigh - bodyLow, 2);
+    const topWickHeight = wickHigh - bodyHigh;
+    const bottomWickHeight = bodyLow - wickLow;
     
     return (
-      <div key={index} className="relative h-full px-1">
-        {/* Top wick */}
-        <div 
-          className={`absolute left-1/2 transform -translate-x-1/2 w-0.5 ${
-            isPump ? 'bg-green-500' : 'bg-red-500'
-          } ${isLive ? 'animate-pulse shadow-lg' : ''}`}
-          style={{ 
-            bottom: `${bodyTopPos}%`,
-            height: `${wickTopPos - bodyTopPos}%`,
-          }}
-        />
+      <div key={index} className="flex-1 flex flex-col-reverse items-center justify-start" style={{ minWidth: '12px', maxWidth: '20px' }}>
+        {/* Bottom wick */}
+        {bottomWickHeight > 0 && (
+          <div 
+            className={`w-0.5 ${isPump ? 'bg-green-500' : 'bg-red-500'} ${isLive ? 'shadow-lg shadow-green-500/50' : ''}`}
+            style={{ height: `${bottomWickHeight}px` }}
+          />
+        )}
         
         {/* Candle body */}
         <div 
-          className={`absolute left-0 right-0 ${
+          className={`w-full ${
             isPump 
-              ? 'bg-green-500 border-green-400' 
-              : 'bg-red-500 border-red-400'
-          } ${isLive ? 'border-2 border-yellow-400 shadow-lg shadow-yellow-500/50 animate-pulse' : 'border border-opacity-50'} rounded-sm relative overflow-hidden`}
-          style={{ 
-            bottom: `${bodyBottomPos}%`,
-            height: `${bodyHeight}%`,
-          }}
+              ? 'bg-green-500 border border-green-300' 
+              : 'bg-red-500 border border-red-300'
+          } ${isLive ? 'border-2 border-yellow-400 shadow-lg shadow-yellow-500/50 animate-pulse' : ''} rounded-sm relative overflow-hidden`}
+          style={{ height: `${bodyHeight}px` }}
         >
           {/* Inner gradient for depth */}
-          <div className={`absolute inset-0 bg-gradient-to-r ${
-            isPump ? 'from-green-400/50 to-transparent' : 'from-red-400/50 to-transparent'
+          <div className={`absolute inset-0 bg-gradient-to-b ${
+            isPump ? 'from-green-300/60 via-green-400/40 to-green-600/60' : 'from-red-300/60 via-red-400/40 to-red-600/60'
           }`} />
           {isLive && (
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer" />
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
           )}
         </div>
         
-        {/* Bottom wick */}
-        <div 
-          className={`absolute left-1/2 transform -translate-x-1/2 w-0.5 ${
-            isPump ? 'bg-green-500' : 'bg-red-500'
-          } ${isLive ? 'animate-pulse shadow-lg' : ''}`}
-          style={{ 
-            bottom: `${wickBottomPos}%`,
-            height: `${bodyBottomPos - wickBottomPos}%`,
-          }}
-        />
+        {/* Top wick */}
+        {topWickHeight > 0 && (
+          <div 
+            className={`w-0.5 ${isPump ? 'bg-green-500' : 'bg-red-500'} ${isLive ? 'shadow-lg shadow-red-500/50' : ''}`}
+            style={{ height: `${topWickHeight}px` }}
+          />
+        )}
       </div>
     );
   };
@@ -275,11 +270,9 @@ export const PumpOrDump: React.FC = () => {
         </div>
 
         {/* Candlesticks */}
-        <div className="relative h-56 flex items-end justify-around gap-1">
+        <div className="relative h-56 flex items-end justify-start gap-0.5 px-4">
           {candles.slice(-11).map((candle, i) => renderCandle(candle, i))}
           {currentCandle && renderCandle(currentCandle, 999, true)}
-          {/* Placeholder for balance when no current candle */}
-          {!currentCandle && <div className="flex-1" />}
         </div>
 
         {/* Countdown timer - centered */}
