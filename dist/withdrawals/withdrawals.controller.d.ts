@@ -15,15 +15,15 @@ export declare class WithdrawalsController {
         amount: string;
         message: string;
         id: string;
-        createdAt: Date;
-        userId: string;
         currency: string;
-        meta: import("@prisma/client/runtime/library").JsonValue | null;
-        status: import(".prisma/client").$Enums.WithdrawalStatus;
         address: string;
+        status: import(".prisma/client").$Enums.WithdrawalStatus;
         reviewNeeded: boolean;
         txHash: string | null;
+        meta: import("@prisma/client/runtime/library").JsonValue | null;
+        createdAt: Date;
         processedAt: Date | null;
+        userId: string;
     }>;
     getUserWithdrawals(req: {
         user: {

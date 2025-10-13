@@ -80,10 +80,28 @@ let BetsController = class BetsController {
         return this.betsService.previewBet(previewDto);
     }
     async placeBet(req, placeDto) {
-        return this.betsService.placeBet(req.user.sub, placeDto);
+        try {
+            console.log(`🎲 Placing bet for user ${req.user.sub}: game=${placeDto.game}, stake=${placeDto.stake}`);
+            const result = await this.betsService.placeBet(req.user.sub, placeDto);
+            console.log(`✅ Bet placed: ${result.id}`);
+            return result;
+        }
+        catch (error) {
+            console.error(`❌ Bet placement failed:`, error.message, error.stack);
+            throw error;
+        }
     }
     async resolveBet(betId) {
-        return this.betsService.resolveBet(betId);
+        try {
+            console.log(`🎲 Resolving bet: ${betId}`);
+            const result = await this.betsService.resolveBet(betId);
+            console.log(`✅ Bet resolved: ${betId}, outcome: ${result.outcome}, multiplier: ${result.resultMultiplier}`);
+            return result;
+        }
+        catch (error) {
+            console.error(`❌ Bet resolution failed for ${betId}:`, error.message, error.stack);
+            throw error;
+        }
     }
     async cashoutBet(betId, body) {
         return this.betsService.cashoutBet(betId, body?.multiplier);

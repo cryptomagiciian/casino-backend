@@ -98,9 +98,9 @@ export declare const LEDGER_TYPES: {
 export type LedgerType = typeof LEDGER_TYPES[keyof typeof LEDGER_TYPES];
 export declare const DEFAULT_HOUSE_EDGE_BPS = 200;
 export declare const FAUCET_DAILY_LIMITS: {
-    readonly BTC: 100000;
-    readonly ETH: 1000000000000000000;
-    readonly SOL: 1000000000;
-    readonly USDC: 1000000000;
-    readonly USDT: 1000000000;
+    readonly BTC: 1000000;
+    readonly ETH: 10000000000000000000n;
+    readonly SOL: 10000000000;
+    readonly USDC: 100000000000;
+    readonly USDT: 100000000000;
 };

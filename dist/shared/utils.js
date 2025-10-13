@@ -13,6 +13,7 @@ exports.formatCurrency = formatCurrency;
 exports.generateIdempotencyKey = generateIdempotencyKey;
 exports.isDemoMode = isDemoMode;
 exports.isDemoOnly = isDemoOnly;
+const crypto = require("crypto");
 const constants_1 = require("./constants");
 function fromSmallestUnits(amount, currency) {
     const decimals = constants_1.CURRENCY_DECIMALS[currency];
@@ -50,20 +51,10 @@ function generateServerSeed() {
     return result;
 }
 async function sha256(input) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(input);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return crypto.createHash('sha256').update(input).digest('hex');
 }
 async function hmacSha256(key, message) {
-    const encoder = new TextEncoder();
-    const keyData = encoder.encode(key);
-    const messageData = encoder.encode(message);
-    const cryptoKey = await crypto.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-    const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
-    const hashArray = Array.from(new Uint8Array(signature));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return crypto.createHmac('sha256', key).update(message).digest('hex');
 }
 async function generateRng(serverSeed, clientSeed, nonce) {
     const message = `${clientSeed}:${nonce}`;

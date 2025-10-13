@@ -14,12 +14,12 @@ export declare class DepositsController {
         };
     }, depositDto: DepositDto): Promise<{
         id: string;
+        currency: string;
+        amount: bigint;
+        status: import(".prisma/client").$Enums.DepositStatus;
+        meta: import("@prisma/client/runtime/library").JsonValue | null;
         createdAt: Date;
         userId: string;
-        amount: bigint;
-        currency: string;
-        meta: import("@prisma/client/runtime/library").JsonValue | null;
-        status: import(".prisma/client").$Enums.DepositStatus;
         provider: string;
         txRef: string | null;
     }>;

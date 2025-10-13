@@ -12,8 +12,22 @@ async function bootstrap() {
     });
     const configService = app.get(config_1.ConfigService);
     app.use((0, helmet_1.default)());
+    const corsOrigin = configService.get('CORS_ORIGIN', 'http://localhost:3000');
+    const allowedOrigins = corsOrigin.split(',').map(o => o.trim());
     app.enableCors({
-        origin: configService.get('CORS_ORIGIN', 'http://localhost:3000'),
+        origin: (origin, callback) => {
+            if (!origin)
+                return callback(null, true);
+            const isLovable = origin.includes('.lovable.app') || origin.includes('.lovableproject.com');
+            const isAllowed = allowedOrigins.includes(origin) || isLovable;
+            if (isAllowed) {
+                callback(null, true);
+            }
+            else {
+                console.warn(`CORS blocked origin: ${origin}`);
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
         credentials: true,
     });
     app.useGlobalPipes(new common_1.ValidationPipe({

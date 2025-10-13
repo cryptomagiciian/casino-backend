@@ -179,35 +179,62 @@ export const PumpOrDump: React.FC = () => {
 
   const renderCandle = (candle: Candle, index: number, isLive = false) => {
     const isPump = candle.close >= candle.open;
-    const color = isPump ? 'bg-green-500' : 'bg-red-500';
-    const bodyColor = isPump ? 'bg-green-400' : 'bg-red-400';
     const allCandles = [...candles, ...(currentCandle ? [currentCandle] : [])];
     const minPrice = Math.min(...allCandles.map(c => c.low));
     const maxPrice = Math.max(...allCandles.map(c => c.high));
     const priceRange = maxPrice - minPrice || 1;
     
-    const wickBottom = ((candle.low - minPrice) / priceRange) * 100;
-    const bodyBottom = ((Math.min(candle.open, candle.close) - minPrice) / priceRange) * 100;
-    const bodyHeight = (Math.abs(candle.close - candle.open) / priceRange) * 100 || 2;
-    const wickTop = ((candle.high - Math.max(candle.open, candle.close)) / priceRange) * 100;
+    // Calculate positions from bottom
+    const wickBottomPos = ((candle.low - minPrice) / priceRange) * 100;
+    const bodyBottomPos = ((Math.min(candle.open, candle.close) - minPrice) / priceRange) * 100;
+    const bodyTopPos = ((Math.max(candle.open, candle.close) - minPrice) / priceRange) * 100;
+    const wickTopPos = ((candle.high - minPrice) / priceRange) * 100;
+    
+    const bodyHeight = Math.max(bodyTopPos - bodyBottomPos, 1);
     
     return (
-      <div key={index} className="flex flex-col items-center justify-end h-full relative px-1">
+      <div key={index} className="relative h-full px-1">
+        {/* Top wick */}
         <div 
-          className={`w-0.5 ${color} ${isLive ? 'animate-pulse' : ''}`}
-          style={{ height: `${wickTop}%` }}
+          className={`absolute left-1/2 transform -translate-x-1/2 w-0.5 ${
+            isPump ? 'bg-green-500' : 'bg-red-500'
+          } ${isLive ? 'animate-pulse shadow-lg' : ''}`}
+          style={{ 
+            bottom: `${bodyTopPos}%`,
+            height: `${wickTopPos - bodyTopPos}%`,
+          }}
         />
+        
+        {/* Candle body */}
         <div 
-          className={`w-full ${bodyColor} ${isLive ? 'animate-pulse border-2 border-yellow-400 shadow-lg shadow-yellow-500/50' : ''} rounded-sm relative overflow-hidden`}
-          style={{ height: `${Math.max(bodyHeight, 2)}%` }}
+          className={`absolute left-0 right-0 ${
+            isPump 
+              ? 'bg-green-500 border-green-400' 
+              : 'bg-red-500 border-red-400'
+          } ${isLive ? 'border-2 border-yellow-400 shadow-lg shadow-yellow-500/50 animate-pulse' : 'border border-opacity-50'} rounded-sm relative overflow-hidden`}
+          style={{ 
+            bottom: `${bodyBottomPos}%`,
+            height: `${bodyHeight}%`,
+          }}
         >
+          {/* Inner gradient for depth */}
+          <div className={`absolute inset-0 bg-gradient-to-r ${
+            isPump ? 'from-green-400/50 to-transparent' : 'from-red-400/50 to-transparent'
+          }`} />
           {isLive && (
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer" />
           )}
         </div>
+        
+        {/* Bottom wick */}
         <div 
-          className={`w-0.5 ${color} ${isLive ? 'animate-pulse' : ''}`}
-          style={{ height: `${bodyBottom - wickBottom}%` }}
+          className={`absolute left-1/2 transform -translate-x-1/2 w-0.5 ${
+            isPump ? 'bg-green-500' : 'bg-red-500'
+          } ${isLive ? 'animate-pulse shadow-lg' : ''}`}
+          style={{ 
+            bottom: `${wickBottomPos}%`,
+            height: `${bodyBottomPos - wickBottomPos}%`,
+          }}
         />
       </div>
     );
@@ -255,15 +282,17 @@ export const PumpOrDump: React.FC = () => {
           {!currentCandle && <div className="flex-1" />}
         </div>
 
-        {/* Countdown timer */}
+        {/* Countdown timer - centered */}
         {countdown > 0 && countdown <= timeframe && isPlaying && (
-          <div className="absolute top-4 right-4 flex flex-col items-center z-10">
-            <div className={`px-5 py-3 rounded-full text-3xl font-bold shadow-2xl border-4 ${
-              countdown <= 3 ? 'bg-red-500 text-white border-red-300 animate-bounce' : 'bg-yellow-500 text-black border-yellow-300'
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-20 pointer-events-none">
+            <div className={`px-8 py-6 rounded-full text-6xl font-bold shadow-2xl border-4 ${
+              countdown <= 3 ? 'bg-red-500 text-white border-red-300 animate-bounce scale-110' : 'bg-yellow-500 text-black border-yellow-300'
             }`}>
-              {countdown}s
+              {countdown}
             </div>
-            <div className="text-xs text-yellow-400 mt-1 font-bold">Candle closing...</div>
+            <div className="text-sm text-yellow-400 mt-2 font-bold bg-black/70 px-3 py-1 rounded-full">
+              Candle closing...
+            </div>
           </div>
         )}
 

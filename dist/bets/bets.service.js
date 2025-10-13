@@ -59,60 +59,71 @@ let BetsService = class BetsService {
         };
     }
     async resolveBet(betId) {
-        const bet = await this.prisma.bet.findUnique({
-            where: { id: betId },
-        });
-        if (!bet) {
-            throw new common_1.NotFoundException('Bet not found');
-        }
-        if (bet.status !== 'PENDING') {
-            throw new common_1.BadRequestException('Bet already resolved');
-        }
-        const fairnessSeed = await this.prisma.fairnessSeed.findFirst({
-            where: {
-                userId: bet.userId,
-                serverSeedHash: bet.serverSeedHash,
-            },
-        });
-        if (!fairnessSeed) {
-            throw new common_1.NotFoundException('Fairness seed not found');
-        }
-        const rng = await (0, utils_1.generateRng)(fairnessSeed.serverSeed, bet.clientSeed, bet.nonce);
-        const outcome = this.generateGameOutcome(bet.game, rng, bet.params);
-        const stakeFloat = parseFloat((0, utils_1.fromSmallestUnits)(bet.stake, bet.currency));
-        const payout = stakeFloat * outcome.multiplier;
-        const payoutSmallest = (0, utils_1.toSmallestUnits)(payout.toString(), bet.currency);
-        const updatedBet = await this.prisma.bet.update({
-            where: { id: betId },
-            data: {
+        try {
+            const bet = await this.prisma.bet.findUnique({
+                where: { id: betId },
+            });
+            if (!bet) {
+                throw new common_1.NotFoundException('Bet not found');
+            }
+            if (bet.status !== 'PENDING') {
+                throw new common_1.BadRequestException('Bet already resolved');
+            }
+            const fairnessSeed = await this.prisma.fairnessSeed.findFirst({
+                where: {
+                    userId: bet.userId,
+                    serverSeedHash: bet.serverSeedHash,
+                },
+            });
+            if (!fairnessSeed) {
+                console.error(`Fairness seed not found for bet ${betId}, user ${bet.userId}`);
+                throw new common_1.NotFoundException('Fairness seed not found');
+            }
+            const rng = await (0, utils_1.generateRng)(fairnessSeed.serverSeed, bet.clientSeed, bet.nonce);
+            const outcome = this.generateGameOutcome(bet.game, rng, bet.params);
+            if (!outcome || typeof outcome.multiplier === 'undefined') {
+                console.error(`Invalid game outcome for game ${bet.game}:`, outcome);
+                throw new common_1.BadRequestException('Failed to generate game outcome');
+            }
+            const stakeFloat = parseFloat((0, utils_1.fromSmallestUnits)(bet.stake, bet.currency));
+            const payout = stakeFloat * outcome.multiplier;
+            const payoutSmallest = (0, utils_1.toSmallestUnits)(payout.toString(), bet.currency);
+            const updatedBet = await this.prisma.bet.update({
+                where: { id: betId },
+                data: {
+                    outcome: outcome.result,
+                    resultMultiplier: outcome.multiplier,
+                    status: outcome.multiplier > 0 ? 'WON' : 'LOST',
+                    rngTrace: {
+                        serverSeed: fairnessSeed.serverSeed,
+                        clientSeed: bet.clientSeed,
+                        nonce: bet.nonce,
+                        rng,
+                        outcome,
+                    },
+                    resolvedAt: new Date(),
+                },
+            });
+            if (outcome.multiplier > 0) {
+                await this.walletsService.creditWinnings(bet.userId, bet.currency, payout.toString(), betId);
+            }
+            await this.walletsService.releaseFunds(bet.userId, bet.currency, (0, utils_1.fromSmallestUnits)(bet.stake, bet.currency), betId);
+            return {
+                id: bet.id,
+                game: bet.game,
+                currency: bet.currency,
+                stake: (0, utils_1.fromSmallestUnits)(bet.stake, bet.currency),
                 outcome: outcome.result,
                 resultMultiplier: outcome.multiplier,
+                payout: payout.toString(),
                 status: outcome.multiplier > 0 ? 'WON' : 'LOST',
-                rngTrace: {
-                    serverSeed: fairnessSeed.serverSeed,
-                    clientSeed: bet.clientSeed,
-                    nonce: bet.nonce,
-                    rng,
-                    outcome,
-                },
-                resolvedAt: new Date(),
-            },
-        });
-        if (outcome.multiplier > 0) {
-            await this.walletsService.creditWinnings(bet.userId, bet.currency, payout.toString(), betId);
+                rngTrace: updatedBet.rngTrace,
+            };
         }
-        await this.walletsService.releaseFunds(bet.userId, bet.currency, (0, utils_1.fromSmallestUnits)(bet.stake, bet.currency), betId);
-        return {
-            id: bet.id,
-            game: bet.game,
-            currency: bet.currency,
-            stake: (0, utils_1.fromSmallestUnits)(bet.stake, bet.currency),
-            outcome: outcome.result,
-            resultMultiplier: outcome.multiplier,
-            payout: payout.toString(),
-            status: outcome.multiplier > 0 ? 'WON' : 'LOST',
-            rngTrace: updatedBet.rngTrace,
-        };
+        catch (error) {
+            console.error(`Error resolving bet ${betId}:`, error);
+            throw error;
+        }
     }
     async cashoutBet(betId, cashoutMultiplier) {
         const bet = await this.prisma.bet.findUnique({

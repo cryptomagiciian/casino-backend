@@ -7,20 +7,20 @@ export declare class FairnessService {
     rotateSeed(userId: string): Promise<{
         id: string;
         createdAt: Date;
-        serverSeed: string;
+        userId: string | null;
         serverSeedHash: string;
+        serverSeed: string;
         active: boolean;
         revealedAt: Date | null;
-        userId: string | null;
     }>;
     revealSeed(userId: string, seedId: string): Promise<{
         id: string;
         createdAt: Date;
-        serverSeed: string;
+        userId: string | null;
         serverSeedHash: string;
+        serverSeed: string;
         active: boolean;
         revealedAt: Date | null;
-        userId: string | null;
     }>;
     verifyFairness(request: FairnessVerifyRequest): Promise<FairnessVerifyResult>;
     private getNextNonce;

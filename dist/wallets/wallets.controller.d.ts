@@ -34,13 +34,13 @@ export declare class WalletsController {
     }, currency: Currency, limit?: number, offset?: number): Promise<{
         entries: {
             amount: string;
-            currency: string;
             id: string;
+            currency: string;
+            meta: import("@prisma/client/runtime/library").JsonValue | null;
             createdAt: Date;
             accountId: string;
             type: string;
             refId: string | null;
-            meta: import("@prisma/client/runtime/library").JsonValue | null;
         }[];
         total: number;
     }>;

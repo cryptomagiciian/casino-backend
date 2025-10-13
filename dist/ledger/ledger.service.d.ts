@@ -13,34 +13,34 @@ export declare class LedgerService {
     constructor(prisma: PrismaService);
     createEntry(data: LedgerEntryData): Promise<{
         id: string;
-        createdAt: Date;
-        amount: bigint;
         currency: string;
+        amount: bigint;
+        meta: import("@prisma/client/runtime/library").JsonValue | null;
+        createdAt: Date;
+        accountId: string;
         type: string;
         refId: string | null;
-        meta: import("@prisma/client/runtime/library").JsonValue | null;
-        accountId: string;
     }>;
     createTransaction(debitData: LedgerEntryData, creditData: LedgerEntryData): Promise<{
         debit: {
             id: string;
-            createdAt: Date;
-            amount: bigint;
             currency: string;
+            amount: bigint;
+            meta: import("@prisma/client/runtime/library").JsonValue | null;
+            createdAt: Date;
+            accountId: string;
             type: string;
             refId: string | null;
-            meta: import("@prisma/client/runtime/library").JsonValue | null;
-            accountId: string;
         };
         credit: {
             id: string;
-            createdAt: Date;
-            amount: bigint;
             currency: string;
+            amount: bigint;
+            meta: import("@prisma/client/runtime/library").JsonValue | null;
+            createdAt: Date;
+            accountId: string;
             type: string;
             refId: string | null;
-            meta: import("@prisma/client/runtime/library").JsonValue | null;
-            accountId: string;
         };
     }>;
     getAccountBalance(accountId: string): Promise<bigint>;
@@ -49,44 +49,44 @@ export declare class LedgerService {
         entries: {
             amount: string;
             id: string;
-            createdAt: Date;
             currency: string;
+            meta: import("@prisma/client/runtime/library").JsonValue | null;
+            createdAt: Date;
+            accountId: string;
             type: string;
             refId: string | null;
-            meta: import("@prisma/client/runtime/library").JsonValue | null;
-            accountId: string;
         }[];
         total: number;
     }>;
     validateBalance(accountId: string, requiredAmount: string, currency: Currency): Promise<boolean>;
     lockFunds(accountId: string, amount: string, currency: Currency, refId: string): Promise<{
         id: string;
-        createdAt: Date;
-        amount: bigint;
         currency: string;
+        amount: bigint;
+        meta: import("@prisma/client/runtime/library").JsonValue | null;
+        createdAt: Date;
+        accountId: string;
         type: string;
         refId: string | null;
-        meta: import("@prisma/client/runtime/library").JsonValue | null;
-        accountId: string;
     }>;
     releaseFunds(accountId: string, amount: string, currency: Currency, refId: string): Promise<{
         id: string;
-        createdAt: Date;
-        amount: bigint;
         currency: string;
+        amount: bigint;
+        meta: import("@prisma/client/runtime/library").JsonValue | null;
+        createdAt: Date;
+        accountId: string;
         type: string;
         refId: string | null;
-        meta: import("@prisma/client/runtime/library").JsonValue | null;
-        accountId: string;
     }>;
     creditWinnings(accountId: string, amount: string, currency: Currency, refId: string): Promise<{
         id: string;
-        createdAt: Date;
-        amount: bigint;
         currency: string;
+        amount: bigint;
+        meta: import("@prisma/client/runtime/library").JsonValue | null;
+        createdAt: Date;
+        accountId: string;
         type: string;
         refId: string | null;
-        meta: import("@prisma/client/runtime/library").JsonValue | null;
-        accountId: string;
     }>;
 }

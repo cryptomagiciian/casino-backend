@@ -104,15 +104,20 @@ export const BulletBet: React.FC = () => {
             const finalChamber = Math.floor(Math.random() * CHAMBERS);
             setSelectedChamber(finalChamber);
             
-            // Resolve bet
+            // Check if this chamber has a bullet (client-side determination)
+            const landedChamber = chambers[finalChamber];
+            const hitBullet = landedChamber?.isBullet || false;
+            
+            // Resolve bet (for balance update)
             apiService.resolveBet(bet.id)
               .then(async (resolved) => {
-                const won = resolved.resultMultiplier > 0;
+                // Use OUR visual determination, not backend's random result
+                const won = !hitBullet;
                 
-                // Update chamber state
+                // Update chamber state - reveal the selected chamber
                 setChambers(prev => prev.map((chamber, i) => ({
                   ...chamber,
-                  revealed: i === finalChamber || !won,
+                  revealed: i === finalChamber,
                 })));
                 
                 await fetchBalances();

@@ -9,28 +9,28 @@ export declare class WithdrawalsService {
         amount: string;
         message: string;
         id: string;
-        createdAt: Date;
-        userId: string;
         currency: string;
-        meta: import("@prisma/client/runtime/library").JsonValue | null;
-        status: import(".prisma/client").$Enums.WithdrawalStatus;
         address: string;
+        status: import(".prisma/client").$Enums.WithdrawalStatus;
         reviewNeeded: boolean;
         txHash: string | null;
+        meta: import("@prisma/client/runtime/library").JsonValue | null;
+        createdAt: Date;
         processedAt: Date | null;
+        userId: string;
     }>;
     processWithdrawal(withdrawalId: string, action: 'approve' | 'reject', txHash?: string): Promise<{
         id: string;
-        createdAt: Date;
-        userId: string;
-        amount: bigint;
         currency: string;
-        meta: import("@prisma/client/runtime/library").JsonValue | null;
-        status: import(".prisma/client").$Enums.WithdrawalStatus;
+        amount: bigint;
         address: string;
+        status: import(".prisma/client").$Enums.WithdrawalStatus;
         reviewNeeded: boolean;
         txHash: string | null;
+        meta: import("@prisma/client/runtime/library").JsonValue | null;
+        createdAt: Date;
         processedAt: Date | null;
+        userId: string;
     }>;
     getUserWithdrawals(userId: string, limit?: number, offset?: number): Promise<{
         withdrawals: {

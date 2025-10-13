@@ -8,12 +8,12 @@ export declare class WalletsService {
     constructor(prisma: PrismaService, ledgerService: LedgerService);
     getOrCreateAccount(userId: string, currency: Currency): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
         currency: string;
-        locked: bigint;
+        createdAt: Date;
+        userId: string;
+        updatedAt: Date;
         available: bigint;
+        locked: bigint;
     }>;
     getWalletBalances(userId: string): Promise<WalletBalance[]>;
     getBalance(userId: string, currency: Currency): Promise<WalletBalance>;
@@ -35,12 +35,12 @@ export declare class WalletsService {
         entries: {
             amount: string;
             id: string;
-            createdAt: Date;
             currency: string;
+            meta: import("@prisma/client/runtime/library").JsonValue | null;
+            createdAt: Date;
+            accountId: string;
             type: string;
             refId: string | null;
-            meta: import("@prisma/client/runtime/library").JsonValue | null;
-            accountId: string;
         }[];
         total: number;
     }>;

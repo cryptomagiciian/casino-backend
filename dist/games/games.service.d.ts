@@ -74,10 +74,10 @@ export declare class GamesService {
     previewBet(game: Game, currency: string, stake: string, params?: any): Promise<BetPreview>;
     private calculateGameOdds;
     updateGameConfig(game: Game, houseEdgeBps?: number, params?: any): Promise<{
-        params: import("@prisma/client/runtime/library").JsonValue | null;
         id: string;
         updatedAt: Date;
         game: string;
         houseEdgeBps: number;
+        params: import("@prisma/client/runtime/library").JsonValue | null;
     }>;
 }
