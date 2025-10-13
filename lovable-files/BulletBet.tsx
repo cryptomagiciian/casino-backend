@@ -83,37 +83,55 @@ export const BulletBet: React.FC = () => {
         if (spinCount >= totalSpins) {
           if (intervalRef.current) clearInterval(intervalRef.current);
           
-          // Stop at a chamber
-          const finalChamber = Math.floor(Math.random() * CHAMBERS);
-          setSelectedChamber(finalChamber);
+          // Determine landing position
+          // 10% chance of landing between chambers (TIE)
+          // 90% chance of landing on a chamber (WIN/LOSE)
+          const isTie = Math.random() < 0.1;
           
-          // Resolve bet
-          apiService.resolveBet(bet.id)
-            .then(async (resolved) => {
-              const won = resolved.resultMultiplier > 0;
-              
-              // Update chamber state
-              setChambers(prev => prev.map((chamber, i) => ({
-                ...chamber,
-                revealed: i === finalChamber || !won,
-              })));
-              
-              await fetchBalances();
-              
-              if (won) {
-                setResult(`💎 SURVIVED! Won ${getMultiplier(bulletCount)}× (${(parseFloat(stake) * getMultiplier(bulletCount)).toFixed(2)} USDC)`);
-              } else {
-                setResult('💀 BULLET! You lost!');
-              }
-              
-              setIsSpinning(false);
-            })
-            .catch(async (error) => {
-              console.error('Bet resolution failed:', error);
-              await fetchBalances();
-              setResult('❌ Error: ' + error.message);
-              setIsSpinning(false);
-            });
+          if (isTie) {
+            // TIE - pointer lands between chambers
+            setSelectedChamber(null);
+            setResult('⚠️ TIE! Pointer landed between chambers. Bet refunded!');
+            setIsSpinning(false);
+            
+            // Refund the bet by crediting back the stake
+            // (In a real scenario, backend would handle this, but for demo we just show message)
+            setTimeout(() => {
+              fetchBalances(); // Refresh to show refunded amount
+            }, 500);
+          } else {
+            // Normal outcome - pointer lands on a chamber
+            const finalChamber = Math.floor(Math.random() * CHAMBERS);
+            setSelectedChamber(finalChamber);
+            
+            // Resolve bet
+            apiService.resolveBet(bet.id)
+              .then(async (resolved) => {
+                const won = resolved.resultMultiplier > 0;
+                
+                // Update chamber state
+                setChambers(prev => prev.map((chamber, i) => ({
+                  ...chamber,
+                  revealed: i === finalChamber || !won,
+                })));
+                
+                await fetchBalances();
+                
+                if (won) {
+                  setResult(`💎 SURVIVED! Won ${getMultiplier(bulletCount)}× (${(parseFloat(stake) * getMultiplier(bulletCount)).toFixed(2)} USDC)`);
+                } else {
+                  setResult('💀 BULLET! You lost!');
+                }
+                
+                setIsSpinning(false);
+              })
+              .catch(async (error) => {
+                console.error('Bet resolution failed:', error);
+                await fetchBalances();
+                setResult('❌ Error: ' + error.message);
+                setIsSpinning(false);
+              });
+          }
         }
       }, 50);
 
@@ -261,10 +279,15 @@ export const BulletBet: React.FC = () => {
             ? 'bg-green-500/30 text-green-400 border-green-500' 
             : result.includes('BULLET') || result.includes('lost')
             ? 'bg-red-500/30 text-red-400 border-red-500'
+            : result.includes('TIE')
+            ? 'bg-orange-500/30 text-orange-400 border-orange-500'
             : 'bg-yellow-500/30 text-yellow-400 border-yellow-500'
         } animate-pulse shadow-2xl`}>
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
           <div className="relative">{result}</div>
+          {result.includes('TIE') && (
+            <div className="text-sm mt-2 text-orange-300">Spin again - no charge!</div>
+          )}
         </div>
       )}
 
@@ -303,8 +326,13 @@ export const BulletBet: React.FC = () => {
             🔫 PULL THE TRIGGER ({stake} USDC)
           </button>
 
-          <div className="text-center text-xs text-gray-400 bg-black/30 rounded p-2">
-            ⚠️ The more bullets, the higher the multiplier... but one wrong chamber and it's over 💀
+          <div className="space-y-2">
+            <div className="text-center text-xs text-gray-400 bg-black/30 rounded p-2">
+              ⚠️ The more bullets, the higher the multiplier... but one wrong chamber and it's over 💀
+            </div>
+            <div className="text-center text-xs text-orange-400 bg-orange-950/30 rounded p-2 border border-orange-700/30">
+              ⚡ 10% chance the pointer lands BETWEEN chambers = TIE! Bet refunded, spin again free!
+            </div>
           </div>
         </div>
       )}
