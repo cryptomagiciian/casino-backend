@@ -134,6 +134,7 @@ export class BetsService {
             nonce: bet.nonce,
             rng,
             outcome,
+            ...(outcome.rngTrace || {}), // Include pump_or_dump specific trace data
           },
           resolvedAt: new Date(),
         },
@@ -310,13 +311,58 @@ export class BetsService {
   }
 
   /**
+   * Generate Pump or Dump outcome with configurable house edge
+   */
+  private generatePumpOrDumpOutcome(rng: number, params?: any) {
+    // Configurable house edge (2-3.5%)
+    const PAYOUT_MULTIPLIER = 1.95; // Default payout
+    const HOUSE_EDGE = 0.0256; // 2.56% house edge
+    
+    // Calculate win probability: pWin = (1 / payout) * (1 - houseEdge)
+    const pWin = (1 / PAYOUT_MULTIPLIER) * (1 - HOUSE_EDGE); // ≈ 0.487
+    
+    const userChoice = params?.choice || params?.prediction || 'pump';
+    const userPickedPump = userChoice.toLowerCase() === 'pump';
+    
+    // Determine if user wins
+    const willWin = rng < pWin;
+    
+    // Outcome: if user wins, they get their choice; if they lose, they get the opposite
+    const outcome = willWin ? userChoice : (userPickedPump ? 'dump' : 'pump');
+    
+    // Generate volatility profile and end magnitude for path simulation
+    const profileSeed = rng * 1000000; // Use rng to seed profile generation
+    const profiles = ['spiky', 'meanRevert', 'trendThenSnap', 'chopThenRip'];
+    const profile = profiles[Math.floor(profileSeed % profiles.length)];
+    
+    // End magnitude: 25-180 basis points (0.25% - 1.8%)
+    const endBps = 25 + (profileSeed % 155); // 25-180 bps
+    
+    return {
+      result: willWin ? 'win' : 'lose',
+      multiplier: willWin ? PAYOUT_MULTIPLIER : 0,
+      outcome: outcome,
+      rngTrace: {
+        pWin,
+        profile,
+        endBps,
+        userChoice,
+        willWin,
+        rng
+      }
+    };
+  }
+
+  /**
    * Generate game outcome based on RNG
    */
   private generateGameOutcome(game: Game, rng: number, params?: any) {
     // This is a simplified version - the full implementation would be in the fairness service
     switch (game) {
-      case 'candle_flip':
       case 'pump_or_dump':
+        return this.generatePumpOrDumpOutcome(rng, params);
+      
+      case 'candle_flip':
       case 'bull_vs_bear_battle':
         // HOUSE EDGE: 44% win chance × 1.88× payout = ~17% house edge
         const winChance = 0.44;
