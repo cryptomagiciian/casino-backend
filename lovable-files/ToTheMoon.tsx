@@ -19,15 +19,15 @@ export const ToTheMoon: React.FC = () => {
   const exhaustCountRef = useRef(0);
   const startTimeRef = useRef<number>(0);
 
-  // HOUSE EDGE: Generate crash point with AGGRESSIVE early crash prevention
+  // HOUSE EDGE: Generate crash point with balanced early crash prevention
   const generateCrashPoint = (): number => {
     const rand = Math.random();
     
-    // ANTI-EXPLOIT: 60% crash BEFORE 2x (prevent doubling strategy)
-    // 35% crash at 1.0-1.5x (instant loss - can't even cash out)
-    if (rand < 0.35) return 1.0 + Math.random() * 0.5;
-    // 25% crash at 1.5-2.0x (crashes right at doubling point)
-    if (rand < 0.60) return 1.5 + Math.random() * 0.49; // Cap at 1.99x
+    // ANTI-EXPLOIT: 50% crash BEFORE 2x (prevent doubling strategy)
+    // 30% crash at 1.0-1.5x (instant loss - can't even cash out)
+    if (rand < 0.30) return 1.0 + Math.random() * 0.5;
+    // 20% crash at 1.5-2.0x (crashes right at doubling point)
+    if (rand < 0.50) return 1.5 + Math.random() * 0.49; // Cap at 1.99x
     
     // 20% crash at 2.0-2.5x (barely past double)
     if (rand < 0.80) return 2.0 + Math.random() * 0.5;
