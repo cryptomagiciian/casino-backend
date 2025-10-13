@@ -297,6 +297,16 @@ export const PumpOrDump: React.FC = () => {
         
         console.log('📢 Setting result:', resultMessage);
         
+        // CRITICAL: Clear intervals IMMEDIATELY to prevent them from firing again!
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+        if (countdownRef.current) {
+          clearInterval(countdownRef.current);
+          countdownRef.current = null;
+        }
+        
         // FORCE result to display - use multiple methods
         setResult(resultMessage);
         setIsPlaying(false); // Stop playing immediately so result shows
