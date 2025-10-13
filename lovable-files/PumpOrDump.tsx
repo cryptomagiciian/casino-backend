@@ -40,6 +40,7 @@ export const PumpOrDump: React.FC = () => {
   const betIdRef = useRef<string | null>(null); // ✅ Ref to always read latest betId!
   const entryPriceRef = useRef<number>(0); // ✅ Ref to always read latest entryPrice!
   const predictionRef = useRef<'pump' | 'dump'>('pump'); // ✅ Ref to always read latest prediction!
+  const isFinalizingRef = useRef<boolean>(false); // ✅ Prevent updates during finalization!
 
   useEffect(() => {
     const initialCandles: Candle[] = [];
@@ -87,6 +88,7 @@ export const PumpOrDump: React.FC = () => {
       cleanupTimeoutRef.current = null;
     }
     
+    isFinalizingRef.current = false; // ✅ Reset finalizing flag for new round
     setIsPlaying(true);
     setCanBet(false); // Disable betting immediately
     setCountdown(timeframe);
@@ -191,9 +193,9 @@ export const PumpOrDump: React.FC = () => {
         const newPrice = Math.max(prev + volatility + trend + wick, open * 0.5); // Don't go below 50% of open
         
         // Close current candle and start new one every N ticks
-        if (tickCount % ticksPerCandle === 0) {
+        if (tickCount % ticksPerCandle === 0 && !isFinalizingRef.current) {
           setCurrentCandle(candle => {
-            if (!candle) return null;
+            if (!candle || isFinalizingRef.current) return candle; // Don't update if finalizing!
             
             // Close this candle and add to history
             const closedCandle = {
@@ -203,8 +205,14 @@ export const PumpOrDump: React.FC = () => {
               low: Math.min(candle.low, newPrice),
             };
             
-            setCandles(prev => [...prev.slice(-10), closedCandle]); // Keep last 11 (10 + new one)
-            setVolumeBars(prev => [...prev.slice(-10), 30 + Math.random() * 70]);
+            setCandles(prev => {
+              if (isFinalizingRef.current) return prev; // Don't update if finalizing!
+              return [...prev.slice(-10), closedCandle]; // Keep last 11 (10 + new one)
+            });
+            setVolumeBars(prev => {
+              if (isFinalizingRef.current) return prev; // Don't update if finalizing!
+              return [...prev.slice(-10), 30 + Math.random() * 70];
+            });
             
             // Start NEW candle
             return {
@@ -215,10 +223,10 @@ export const PumpOrDump: React.FC = () => {
               timestamp: Date.now(),
             };
           });
-        } else {
+        } else if (!isFinalizingRef.current) {
           // Update current candle
           setCurrentCandle(candle => {
-            if (!candle) return null;
+            if (!candle || isFinalizingRef.current) return candle; // Don't update if finalizing!
             return {
               ...candle,
               close: newPrice,
@@ -264,6 +272,9 @@ export const PumpOrDump: React.FC = () => {
     console.log('🔥 FINALIZE CANDLE CALLED');
     console.log('🔥 currentCandle at start:', currentCandle);
     console.log('🔥 price at start:', price);
+    
+    // CRITICAL: Set finalizing flag to prevent any more candle updates!
+    isFinalizingRef.current = true;
     
     let finalPrice = price;
     let finalCandle = currentCandle;
@@ -435,6 +446,7 @@ export const PumpOrDump: React.FC = () => {
       clearTimeout(cleanupTimeoutRef.current);
       cleanupTimeoutRef.current = null;
     }
+    isFinalizingRef.current = false; // ✅ Reset finalizing flag
     setIsPlaying(false);
     setCanBet(true);
     setResult(null);
