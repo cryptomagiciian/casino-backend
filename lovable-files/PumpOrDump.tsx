@@ -61,12 +61,11 @@ export const PumpOrDump: React.FC = () => {
     };
   }, []);
 
-  const startRound = () => {
+  const startRound = async () => {
     setIsPlaying(true);
-    setCanBet(true);
+    setCanBet(false); // Disable betting immediately
     setCountdown(timeframe);
     setResult(null);
-    setBetId(null);
     
     const lastPrice = candles.length > 0 ? candles[candles.length - 1].close : 50000;
     const open = lastPrice;
@@ -80,6 +79,24 @@ export const PumpOrDump: React.FC = () => {
       timestamp: Date.now(),
     };
     setCurrentCandle(newCandle);
+
+    // Automatically place bet when round starts
+    try {
+      const bet = await apiService.placeBet({
+        game: 'pump_or_dump',
+        currency: 'USDC',
+        stake,
+        clientSeed: Math.random().toString(36),
+        params: { prediction },
+      });
+      
+      setBetId(bet.id);
+    } catch (error) {
+      console.error('Bet failed:', error);
+      setResult('❌ Bet failed: ' + (error as Error).message);
+      setIsPlaying(false);
+      return;
+    }
 
     const updateSpeed = TIME_OPTIONS.find(t => t.value === timeframe)?.speed || 150;
     
@@ -111,7 +128,6 @@ export const PumpOrDump: React.FC = () => {
           finalizeCandle();
           return 0;
         }
-        if (prev === 3) setCanBet(false);
         return prev - 1;
       });
     }, 1000);
@@ -150,25 +166,6 @@ export const PumpOrDump: React.FC = () => {
     }
   };
 
-  const placeBet = async () => {
-    if (!canBet || betId) return;
-    
-    try {
-      const bet = await apiService.placeBet({
-        game: 'pump_or_dump',
-        currency: 'USDC',
-        stake,
-        clientSeed: Math.random().toString(36),
-        params: { prediction },
-      });
-      
-      setBetId(bet.id);
-    } catch (error) {
-      console.error('Bet failed:', error);
-      setResult('❌ Bet failed: ' + (error as Error).message);
-      setIsPlaying(false);
-    }
-  };
 
   const resetGame = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -252,8 +249,10 @@ export const PumpOrDump: React.FC = () => {
 
         {/* Candlesticks */}
         <div className="relative h-56 flex items-end justify-around gap-1">
-          {candles.slice(-12).map((candle, i) => renderCandle(candle, i))}
+          {candles.slice(-11).map((candle, i) => renderCandle(candle, i))}
           {currentCandle && renderCandle(currentCandle, 999, true)}
+          {/* Placeholder for balance when no current candle */}
+          {!currentCandle && <div className="flex-1" />}
         </div>
 
         {/* Countdown timer */}
@@ -285,8 +284,8 @@ export const PumpOrDump: React.FC = () => {
 
       {/* Volume bars */}
       <div className="flex gap-1 mb-4 h-12 items-end bg-gray-900 rounded p-2">
-        {volumeBars.slice(-12).map((vol, i) => {
-          const candle = candles.slice(-12)[i];
+        {volumeBars.slice(-11).map((vol, i) => {
+          const candle = candles.slice(-11)[i];
           const isGreen = candle && candle.close >= candle.open;
           return (
             <div 
@@ -299,6 +298,7 @@ export const PumpOrDump: React.FC = () => {
         {currentCandle && (
           <div className="flex-1 bg-yellow-500/40 rounded-t animate-pulse" style={{ height: '85%' }} />
         )}
+        {!currentCandle && <div className="flex-1" />}
       </div>
 
       {/* Result Display */}
@@ -394,18 +394,9 @@ export const PumpOrDump: React.FC = () => {
             onClick={startRound}
             className="w-full py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 hover:from-purple-500 hover:via-pink-500 hover:to-red-500 text-white rounded-xl font-bold text-xl transition-all transform hover:scale-105 shadow-lg shadow-purple-500/50"
           >
-            🚀 START {timeframe}s ROUND
+            🚀 START {timeframe}s ROUND & BET {prediction.toUpperCase()} ({stake} USDC)
           </button>
         </div>
-      )}
-
-      {isPlaying && canBet && !betId && (
-        <button
-          onClick={placeBet}
-          className="w-full py-4 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 text-white rounded-xl font-bold text-xl transition-all transform hover:scale-105 shadow-lg shadow-yellow-500/50 animate-pulse border-4 border-yellow-300"
-        >
-          💰 PLACE BET: {prediction.toUpperCase()} ({stake} USDC)
-        </button>
       )}
 
       {isPlaying && betId && !result && (

@@ -163,8 +163,8 @@ export const ToTheMoon: React.FC = () => {
         ))}
 
         {/* Nebula effects */}
-        <div className="absolute inset-0 bg-gradient-radial from-purple-600/10 via-transparent to-transparent opacity-30 animate-pulse" />
-        <div className="absolute inset-0 bg-gradient-radial from-blue-600/10 via-transparent to-transparent opacity-20" style={{ animationDelay: '1s' }} />
+        <div className="absolute inset-0 opacity-30 animate-pulse" style={{ background: 'radial-gradient(circle, rgba(147, 51, 234, 0.1) 0%, transparent 50%, transparent 100%)' }} />
+        <div className="absolute inset-0 opacity-20" style={{ background: 'radial-gradient(circle, rgba(37, 99, 235, 0.1) 0%, transparent 50%, transparent 100%)', animationDelay: '1s' }} />
 
         {/* Moon with glow */}
         <div className="absolute top-8 right-8 animate-pulse">
