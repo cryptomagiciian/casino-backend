@@ -2,9 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { apiService } from '../services/api';
 import { useWallet } from '../hooks/useWallet';
 
-const GRID_SIZE = 5;
-const TOTAL_TILES = GRID_SIZE * GRID_SIZE;
-
 type TileState = 'hidden' | 'safe' | 'mine';
 
 interface DifficultyOption {
@@ -13,15 +10,16 @@ interface DifficultyOption {
   color: string;
   baseMultiplier: number;
   description: string;
+  gridSize: number; // ANTI-EXPLOIT: Smaller grids for fewer mines
 }
 
 const DIFFICULTIES: DifficultyOption[] = [
-  { mines: 1, name: 'Super Easy', color: 'from-blue-600 to-blue-500', baseMultiplier: 1.08, description: 'Very Low Risk - Low Rewards' },
-  { mines: 5, name: 'Easy', color: 'from-green-600 to-green-500', baseMultiplier: 1.15, description: 'Lower Risk' },
-  { mines: 8, name: 'Medium', color: 'from-yellow-600 to-yellow-500', baseMultiplier: 1.25, description: 'Medium Risk' },
-  { mines: 12, name: 'Hard', color: 'from-orange-600 to-orange-500', baseMultiplier: 1.4, description: 'High Risk' },
-  { mines: 15, name: 'Extreme', color: 'from-red-600 to-red-500', baseMultiplier: 1.6, description: 'Very High Risk' },
-  { mines: 18, name: 'Insane', color: 'from-purple-600 to-purple-500', baseMultiplier: 1.9, description: 'Extreme Risk - Max Rewards' },
+  { mines: 1, name: 'Super Easy', color: 'from-blue-600 to-blue-500', baseMultiplier: 1.12, description: 'Very Low Risk - Low Rewards', gridSize: 3 }, // 3×3 = 9 tiles (11% mine density)
+  { mines: 3, name: 'Easy', color: 'from-green-600 to-green-500', baseMultiplier: 1.18, description: 'Lower Risk', gridSize: 4 }, // 4×4 = 16 tiles (19% mine density)
+  { mines: 8, name: 'Medium', color: 'from-yellow-600 to-yellow-500', baseMultiplier: 1.28, description: 'Medium Risk', gridSize: 5 }, // 5×5 = 25 tiles (32% mine density)
+  { mines: 12, name: 'Hard', color: 'from-orange-600 to-orange-500', baseMultiplier: 1.45, description: 'High Risk', gridSize: 5 }, // 5×5 = 25 tiles (48% mine density)
+  { mines: 15, name: 'Extreme', color: 'from-red-600 to-red-500', baseMultiplier: 1.7, description: 'Very High Risk', gridSize: 5 }, // 5×5 = 25 tiles (60% mine density)
+  { mines: 18, name: 'Insane', color: 'from-purple-600 to-purple-500', baseMultiplier: 2.0, description: 'Extreme Risk - Max Rewards', gridSize: 5 }, // 5×5 = 25 tiles (72% mine density)
 ];
 
 export const DiamondHands: React.FC = () => {
@@ -29,26 +27,35 @@ export const DiamondHands: React.FC = () => {
   const [difficulty, setDifficulty] = useState<DifficultyOption>(DIFFICULTIES[0]); // Default: Super Easy
   const [isPlaying, setIsPlaying] = useState(false);
   const [betId, setBetId] = useState<string | null>(null);
-  const [grid, setGrid] = useState<TileState[]>(Array(TOTAL_TILES).fill('hidden'));
+  const [grid, setGrid] = useState<TileState[]>(Array(difficulty.gridSize * difficulty.gridSize).fill('hidden'));
   const [minePositions, setMinePositions] = useState<number[]>([]);
   const [safeCount, setSafeCount] = useState(0);
   const [multiplier, setMultiplier] = useState(1.0);
   const [result, setResult] = useState<string | null>(null);
   const { fetchBalances } = useWallet();
+  
+  const TOTAL_TILES = difficulty.gridSize * difficulty.gridSize;
+
+  // Reset grid when difficulty changes
+  useEffect(() => {
+    if (!isPlaying) {
+      setGrid(Array(TOTAL_TILES).fill('hidden'));
+    }
+  }, [difficulty, TOTAL_TILES, isPlaying]);
 
   const calculateMultiplier = (safePicks: number) => {
     // Exponential growth based on difficulty with scaled max cap
     const base = difficulty.baseMultiplier;
     const mult = Math.pow(base, safePicks);
     
-    // HOUSE EDGE: Max payout scales with risk level
+    // HOUSE EDGE: Max payout scales with risk level AND grid size
     const maxPayouts: { [key: number]: number } = {
-      1: 5,     // Super Easy: max 5x (very low)
-      5: 10,    // Easy: max 10x
-      8: 20,    // Medium: max 20x
-      12: 40,   // Hard: max 40x
-      15: 75,   // Extreme: max 75x
-      18: 150,  // Insane: max 150x (highest risk, highest reward)
+      1: 3,     // Super Easy (3×3): max 3x (VERY low - anti-exploit)
+      3: 8,     // Easy (4×4): max 8x
+      8: 20,    // Medium (5×5): max 20x
+      12: 40,   // Hard (5×5): max 40x
+      15: 75,   // Extreme (5×5): max 75x
+      18: 150,  // Insane (5×5): max 150x (highest risk, highest reward)
     };
     
     const maxPayout = maxPayouts[difficulty.mines] || 25;
@@ -222,7 +229,7 @@ export const DiamondHands: React.FC = () => {
         {/* Glowing effect */}
         <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-purple-500/5 pointer-events-none" />
         
-        <div className="grid grid-cols-5 gap-1 relative">
+        <div className={`grid gap-1 relative`} style={{ gridTemplateColumns: `repeat(${difficulty.gridSize}, minmax(0, 1fr))` }}>
           {grid.map((tile, index) => (
             <button
               key={index}
