@@ -134,7 +134,7 @@ export class BetsService {
             nonce: bet.nonce,
             rng,
             outcome,
-            ...(outcome.rngTrace || {}), // Include pump_or_dump specific trace data
+            ...((outcome as any).rngTrace || {}), // Include pump_or_dump specific trace data
           },
           resolvedAt: new Date(),
         },
