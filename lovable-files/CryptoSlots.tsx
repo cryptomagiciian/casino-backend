@@ -5,25 +5,80 @@ import { useWallet } from '../hooks/useWallet';
 interface SlotSymbol {
   id: string;
   name: string;
-  emoji: string;
+  logo: string; // SVG logo element
   color: string;
 }
 
 const CRYPTO_SYMBOLS: SlotSymbol[] = [
-  { id: 'btc', name: 'Bitcoin', emoji: '₿', color: 'text-orange-400' },
-  { id: 'eth', name: 'Ethereum', emoji: '◈', color: 'text-blue-400' },
-  { id: 'sol', name: 'Solana', emoji: '◎', color: 'text-purple-400' },
-  { id: 'bnb', name: 'BNB', emoji: '◉', color: 'text-yellow-400' },
-  { id: 'doge', name: 'Dogecoin', emoji: 'Ð', color: 'text-yellow-300' },
-  { id: 'pepe', name: 'Pepe', emoji: '🐸', color: 'text-green-400' },
-  { id: 'bonk', name: 'Bonk', emoji: '🦴', color: 'text-orange-300' },
-  { id: 'wif', name: 'WIF', emoji: '🐕', color: 'text-pink-400' },
+  { 
+    id: 'btc', 
+    name: 'Bitcoin', 
+    logo: '₿',
+    color: 'from-orange-500 to-orange-600'
+  },
+  { 
+    id: 'eth', 
+    name: 'Ethereum', 
+    logo: '◈',
+    color: 'from-blue-500 to-blue-600'
+  },
+  { 
+    id: 'sol', 
+    name: 'Solana', 
+    logo: '◎',
+    color: 'from-purple-500 to-purple-600'
+  },
+  { 
+    id: 'bnb', 
+    name: 'BNB', 
+    logo: '◉',
+    color: 'from-yellow-500 to-yellow-600'
+  },
+  { 
+    id: 'doge', 
+    name: 'Dogecoin', 
+    logo: 'Ð',
+    color: 'from-yellow-400 to-yellow-500'
+  },
+  { 
+    id: 'pepe', 
+    name: 'Pepe', 
+    logo: '🐸',
+    color: 'from-green-500 to-green-600'
+  },
+  { 
+    id: 'bonk', 
+    name: 'Bonk', 
+    logo: '🦴',
+    color: 'from-orange-400 to-orange-500'
+  },
+  { 
+    id: 'wif', 
+    name: 'WIF', 
+    logo: '🐕',
+    color: 'from-pink-500 to-pink-600'
+  },
 ];
 
 const SPECIAL_SYMBOLS: SlotSymbol[] = [
-  { id: 'pump', name: 'Pump', emoji: '📈', color: 'text-green-500' },
-  { id: 'dump', name: 'Dump', emoji: '📉', color: 'text-red-500' },
-  { id: 'rug', name: 'Rug Pull', emoji: '💥', color: 'text-red-600' },
+  { 
+    id: 'pump', 
+    name: 'Pump', 
+    logo: '📈',
+    color: 'from-green-400 to-green-500'
+  },
+  { 
+    id: 'dump', 
+    name: 'Dump', 
+    logo: '📉',
+    color: 'from-red-400 to-red-500'
+  },
+  { 
+    id: 'rug', 
+    name: 'Rug Pull', 
+    logo: '💥',
+    color: 'from-red-600 to-red-700'
+  },
 ];
 
 const ALL_SYMBOLS = [...CRYPTO_SYMBOLS, ...SPECIAL_SYMBOLS];
@@ -33,14 +88,14 @@ export function CryptoSlots() {
   const [stake, setStake] = useState('1.00');
   const [isSpinning, setIsSpinning] = useState(false);
   const [result, setResult] = useState<string | null>(null);
-  const [reels, setReels] = useState<SlotSymbol[][]>([
-    [ALL_SYMBOLS[0], ALL_SYMBOLS[1], ALL_SYMBOLS[2], ALL_SYMBOLS[3], ALL_SYMBOLS[4]],
-    [ALL_SYMBOLS[1], ALL_SYMBOLS[2], ALL_SYMBOLS[3], ALL_SYMBOLS[4], ALL_SYMBOLS[5]],
-    [ALL_SYMBOLS[2], ALL_SYMBOLS[3], ALL_SYMBOLS[4], ALL_SYMBOLS[5], ALL_SYMBOLS[6]],
+  const [grid, setGrid] = useState<SlotSymbol[][]>([
+    [ALL_SYMBOLS[0], ALL_SYMBOLS[1], ALL_SYMBOLS[2]],
+    [ALL_SYMBOLS[3], ALL_SYMBOLS[4], ALL_SYMBOLS[5]],
+    [ALL_SYMBOLS[6], ALL_SYMBOLS[7], ALL_SYMBOLS[0]],
   ]);
-  const [reelPositions, setReelPositions] = useState([0, 0, 0]);
-  const [finalSymbols, setFinalSymbols] = useState<SlotSymbol[]>([ALL_SYMBOLS[0], ALL_SYMBOLS[1], ALL_SYMBOLS[2]]);
+  const [finalGrid, setFinalGrid] = useState<SlotSymbol[][]>([]);
   const [showWinEffect, setShowWinEffect] = useState(false);
+  const [spinOffsets, setSpinOffsets] = useState<number[][]>([[0, 0, 0], [0, 0, 0], [0, 0, 0]]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -61,30 +116,61 @@ export function CryptoSlots() {
     }
   };
 
-  const generateReelStrip = (length = 50): SlotSymbol[] => {
-    return Array.from({ length }, () => getRandomSymbol());
-  };
+  const calculatePayout = (resultGrid: SlotSymbol[][]): { multiplier: number; message: string } => {
+    // Flatten grid for easier checking
+    const flat = resultGrid.flat();
 
-  const calculatePayout = (symbols: SlotSymbol[]): { multiplier: number; message: string } => {
     // Check for Rug Pull
-    if (symbols.some(s => s.id === 'rug')) {
+    if (flat.some(s => s.id === 'rug')) {
       return { multiplier: 0, message: '💥 RUG PULL! You got rugged!' };
     }
 
-    // Check for 3 Green Candles
-    if (symbols.every(s => s.id === 'pump')) {
-      return { multiplier: 5, message: '📈📈📈 TRIPLE PUMP! JACKPOT 5×!' };
+    // Check all rows
+    for (let row of resultGrid) {
+      // 3 Green Candles
+      if (row.every(s => s.id === 'pump')) {
+        return { multiplier: 5, message: '📈📈📈 TRIPLE PUMP! JACKPOT 5×!' };
+      }
+      // 3 same coins
+      if (row[0].id === row[1].id && row[1].id === row[2].id && CRYPTO_SYMBOLS.some(c => c.id === row[0].id)) {
+        return { multiplier: 3, message: `${row[0].logo}${row[0].logo}${row[0].logo} TRIPLE ${row[0].name.toUpperCase()}! 3× WIN!` };
+      }
     }
 
-    // Check for 3 same coins
-    if (symbols[0].id === symbols[1].id && symbols[1].id === symbols[2].id) {
-      return { multiplier: 3, message: `${symbols[0].emoji}${symbols[0].emoji}${symbols[0].emoji} TRIPLE ${symbols[0].name.toUpperCase()}! 3× WIN!` };
+    // Check all columns
+    for (let col = 0; col < 3; col++) {
+      const column = [resultGrid[0][col], resultGrid[1][col], resultGrid[2][col]];
+      // 3 Green Candles
+      if (column.every(s => s.id === 'pump')) {
+        return { multiplier: 5, message: '📈📈📈 TRIPLE PUMP! JACKPOT 5×!' };
+      }
+      // 3 same coins
+      if (column[0].id === column[1].id && column[1].id === column[2].id && CRYPTO_SYMBOLS.some(c => c.id === column[0].id)) {
+        return { multiplier: 3, message: `${column[0].logo}${column[0].logo}${column[0].logo} TRIPLE ${column[0].name.toUpperCase()}! 3× WIN!` };
+      }
     }
 
-    // Check for any 2 matching
-    const counts = new Map<string, number>();
-    symbols.forEach(s => counts.set(s.id, (counts.get(s.id) || 0) + 1));
-    if (Array.from(counts.values()).some(c => c >= 2)) {
+    // Check diagonals
+    const diag1 = [resultGrid[0][0], resultGrid[1][1], resultGrid[2][2]];
+    const diag2 = [resultGrid[0][2], resultGrid[1][1], resultGrid[2][0]];
+
+    for (let diag of [diag1, diag2]) {
+      if (diag.every(s => s.id === 'pump')) {
+        return { multiplier: 5, message: '📈📈📈 TRIPLE PUMP! JACKPOT 5×!' };
+      }
+      if (diag[0].id === diag[1].id && diag[1].id === diag[2].id && CRYPTO_SYMBOLS.some(c => c.id === diag[0].id)) {
+        return { multiplier: 3, message: `${diag[0].logo}${diag[0].logo}${diag[0].logo} TRIPLE ${diag[0].name.toUpperCase()}! 3× WIN!` };
+      }
+    }
+
+    // Check for any 2 matching in a line
+    const countMatches = (arr: SlotSymbol[]) => {
+      const counts = new Map<string, number>();
+      arr.forEach(s => counts.set(s.id, (counts.get(s.id) || 0) + 1));
+      return Array.from(counts.values()).some(c => c >= 2);
+    };
+
+    if (countMatches(flat)) {
       return { multiplier: 1.5, message: '🎰 DOUBLE MATCH! 1.5× WIN!' };
     }
 
@@ -108,78 +194,60 @@ export function CryptoSlots() {
         params: {},
       });
 
-      // Generate final outcome
-      const outcome: SlotSymbol[] = [
-        getRandomSymbol(),
-        getRandomSymbol(),
-        getRandomSymbol(),
+      // Generate random outcome grid
+      const outcome: SlotSymbol[][] = [
+        [getRandomSymbol(), getRandomSymbol(), getRandomSymbol()],
+        [getRandomSymbol(), getRandomSymbol(), getRandomSymbol()],
+        [getRandomSymbol(), getRandomSymbol(), getRandomSymbol()],
       ];
 
-      // Generate reel strips for animation
-      const reel1Strip = generateReelStrip(50);
-      const reel2Strip = generateReelStrip(50);
-      const reel3Strip = generateReelStrip(50);
+      setFinalGrid(outcome);
 
-      // Place outcome at the end
-      reel1Strip[reel1Strip.length - 3] = outcome[0];
-      reel2Strip[reel2Strip.length - 3] = outcome[1];
-      reel3Strip[reel3Strip.length - 3] = outcome[2];
+      // Animate spinning for each cell
+      const spinDuration = 2000; // 2 seconds
+      let elapsed = 0;
 
-      setReels([reel1Strip, reel2Strip, reel3Strip]);
+      intervalRef.current = setInterval(() => {
+        elapsed += 50;
 
-      // Spin each reel with easing
-      const spinReel = (reelIndex: number, duration: number) => {
-        return new Promise<void>((resolve) => {
-          const startTime = Date.now();
-          const targetPosition = reel1Strip.length - 3;
+        // Update grid with random symbols while spinning
+        setGrid([
+          [getRandomSymbol(), getRandomSymbol(), getRandomSymbol()],
+          [getRandomSymbol(), getRandomSymbol(), getRandomSymbol()],
+          [getRandomSymbol(), getRandomSymbol(), getRandomSymbol()],
+        ]);
 
-          const animate = () => {
-            const elapsed = Date.now() - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            
-            // Ease out cubic
-            const easeProgress = 1 - Math.pow(1 - progress, 3);
-            const position = Math.floor(easeProgress * targetPosition);
+        if (elapsed >= spinDuration) {
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          
+          // Set final grid
+          setGrid(outcome);
 
-            setReelPositions(prev => {
-              const newPos = [...prev];
-              newPos[reelIndex] = position;
-              return newPos;
+          // Calculate result
+          const { multiplier, message } = calculatePayout(outcome);
+
+          // Resolve bet
+          apiService.resolveBet(bet.id)
+            .then(async () => {
+              await fetchBalances();
+              setResult(message);
+              
+              if (multiplier > 0) {
+                setShowWinEffect(true);
+                setTimeout(() => setShowWinEffect(false), 3000);
+              }
+
+              setIsSpinning(false);
+            })
+            .catch(async (error) => {
+              console.error('Bet resolution failed:', error);
+              await fetchBalances();
+              setResult('❌ Spin failed: ' + error.message);
+              setIsSpinning(false);
             });
+        }
+      }, 50);
 
-            if (progress < 1) {
-              requestAnimationFrame(animate);
-            } else {
-              resolve();
-            }
-          };
-
-          animate();
-        });
-      };
-
-      // Stagger reel stops
-      await spinReel(0, 1500);
-      await spinReel(1, 2000);
-      await spinReel(2, 2500);
-
-      setFinalSymbols(outcome);
-
-      // Calculate result
-      const { multiplier, message } = calculatePayout(outcome);
-
-      // Resolve bet
-      await apiService.resolveBet(bet.id);
-      await fetchBalances();
-
-      setResult(message);
-      
-      if (multiplier > 0) {
-        setShowWinEffect(true);
-        setTimeout(() => setShowWinEffect(false), 3000);
-      }
-
-      setIsSpinning(false);
     } catch (error) {
       console.error('Spin failed:', error);
       setResult('❌ Spin failed: ' + (error as Error).message);
@@ -190,14 +258,7 @@ export function CryptoSlots() {
   const reset = () => {
     setResult(null);
     setShowWinEffect(false);
-    setReelPositions([0, 0, 0]);
   };
-
-  const renderSymbol = (symbol: SlotSymbol) => (
-    <div className={`text-6xl ${symbol.color} filter drop-shadow-lg`}>
-      {symbol.emoji}
-    </div>
-  );
 
   return (
     <div className="bg-gradient-to-br from-[#040B14] via-[#0A1628] to-[#0F2233] rounded-lg p-8 border-2 border-cyan-500/30 shadow-2xl relative overflow-hidden">
@@ -228,7 +289,7 @@ export function CryptoSlots() {
             <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400">
               🎰 CRYPTO SLOTS
             </h2>
-            <p className="text-gray-400 text-sm mt-1">Spin the Market • Premium Edition</p>
+            <p className="text-gray-400 text-sm mt-1">Spin the Market • 3x3 Premium Edition</p>
           </div>
           <div className="text-right">
             <div className="text-sm text-gray-400">Balance</div>
@@ -238,61 +299,36 @@ export function CryptoSlots() {
           </div>
         </div>
 
-        {/* Mini crypto ticker */}
-        <div className="bg-black/40 rounded-lg p-3 mb-6 border border-cyan-500/20 overflow-hidden">
-          <div className="flex items-center gap-4 animate-marquee whitespace-nowrap">
-            {CRYPTO_SYMBOLS.map((sym, i) => (
-              <span key={i} className={`${sym.color} font-mono text-sm`}>
-                {sym.emoji} {sym.name} ${(10000 + Math.random() * 50000).toFixed(2)}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* Slot Machine */}
+        {/* 3x3 Slot Grid */}
         <div className="bg-gradient-to-b from-gray-900 to-black rounded-2xl p-8 mb-6 border-4 border-cyan-500/50 shadow-2xl shadow-cyan-500/20 relative">
           <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-transparent to-cyan-600/10 rounded-2xl pointer-events-none" />
           
-          <div className="flex justify-center gap-4 mb-6">
-            {/* Reels */}
-            {[0, 1, 2].map((reelIdx) => (
-              <div
-                key={reelIdx}
-                className="bg-gradient-to-b from-gray-800 to-gray-900 rounded-xl border-4 border-cyan-500/50 shadow-inner overflow-hidden relative w-32 h-40"
-                style={{
-                  boxShadow: '0 0 30px rgba(6, 182, 212, 0.4), inset 0 0 20px rgba(0,0,0,0.8)',
-                }}
-              >
-                {/* Neon glow effect */}
-                <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/20 to-transparent pointer-events-none z-10" />
-                
+          <div className="grid grid-cols-3 gap-3">
+            {grid.map((row, rowIdx) => (
+              row.map((symbol, colIdx) => (
                 <div
-                  className={`flex flex-col items-center justify-start transition-transform ${
-                    isSpinning ? 'duration-0' : 'duration-500 ease-out'
+                  key={`${rowIdx}-${colIdx}`}
+                  className={`bg-gradient-to-br ${symbol.color} rounded-xl border-4 border-cyan-500/50 shadow-inner overflow-hidden relative aspect-square flex items-center justify-center transition-all ${
+                    isSpinning ? 'animate-pulse' : ''
                   }`}
                   style={{
-                    transform: `translateY(-${reelPositions[reelIdx] * 80}px)`,
+                    boxShadow: '0 0 30px rgba(6, 182, 212, 0.4), inset 0 0 20px rgba(0,0,0,0.8)',
                   }}
                 >
-                  {reels[reelIdx]?.map((symbol, idx) => (
-                    <div
-                      key={idx}
-                      className="h-20 w-full flex items-center justify-center border-b border-gray-700/30"
-                    >
-                      {renderSymbol(symbol)}
-                    </div>
-                  ))}
+                  {/* Neon glow effect */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
+                  
+                  <div className="text-7xl filter drop-shadow-2xl">
+                    {symbol.logo}
+                  </div>
                 </div>
-                
-                {/* Center line indicator */}
-                <div className="absolute top-1/2 left-0 right-0 h-1 bg-yellow-400/50 transform -translate-y-1/2 z-20 pointer-events-none" />
-              </div>
+              ))
             ))}
           </div>
 
-          {/* Payout lines indicator */}
-          <div className="text-center text-xs text-cyan-400 mb-2">
-            💎 3 Pumps = 5× | 🪙 3 Same = 3× | 🎲 Double = 1.5× | 💥 Rug = LOSS
+          {/* Win lines indicator */}
+          <div className="text-center text-xs text-cyan-400 mt-4">
+            💎 Row/Column/Diagonal • 3 Pumps = 5× | 3 Same = 3× | 2 Match = 1.5× | Rug = LOSS
           </div>
         </div>
 
@@ -349,7 +385,7 @@ export function CryptoSlots() {
               🎰 SPINNING THE MARKET...
             </div>
             <div className="text-gray-400 text-sm">
-              Watch the reels carefully...
+              Watch the 3x3 grid carefully...
             </div>
           </div>
         )}
@@ -357,4 +393,3 @@ export function CryptoSlots() {
     </div>
   );
 }
-
