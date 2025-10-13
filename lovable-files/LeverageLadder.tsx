@@ -40,6 +40,12 @@ export const LeverageLadder: React.FC = () => {
       if (element) {
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
+    } else {
+      // Scroll to level 1 (bottom) when not playing
+      const element = document.getElementById(`level-1`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'auto', block: 'end' });
+      }
     }
   }, [currentLevel]);
 
@@ -229,24 +235,6 @@ export const LeverageLadder: React.FC = () => {
           })}
         </div>
       </div>
-      
-      {/* Probability Hints */}
-      {!isPlaying && !result && (
-        <div className="bg-red-900/30 rounded-lg p-3 mb-4 border border-red-600 text-xs">
-          <div className="text-center mb-2">
-            <span className="text-red-400 font-bold text-sm">⚠️ EXTREME DIFFICULTY ⚠️</span>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>💀 <span className="text-red-400">85%</span> bust at 1-10</div>
-            <div>📊 <span className="text-orange-400">10%</span> bust at 11-20</div>
-            <div>🎯 <span className="text-yellow-400">3%</span> bust at 21-35</div>
-            <div>💎 <span className="text-green-400">1.5%</span> bust at 36-50</div>
-            <div>👑 <span className="text-purple-400">0.4%</span> bust at 51-75</div>
-            <div>✨ <span className="text-pink-400">0.01%</span> reach 90+!</div>
-          </div>
-          <p className="text-red-300 mt-2 text-center font-bold">House wins 95%! Cash out ASAP! 🏃</p>
-        </div>
-      )}
 
       {/* Result Display */}
       {result && (

@@ -208,13 +208,13 @@ export const DiamondHands: React.FC = () => {
         {/* Glowing effect */}
         <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-purple-500/5 pointer-events-none" />
         
-        <div className="grid grid-cols-5 gap-2 relative">
+        <div className="grid grid-cols-5 gap-1.5 relative">
           {grid.map((tile, index) => (
             <button
               key={index}
               onClick={() => revealTile(index)}
               disabled={!isPlaying || tile !== 'hidden' || !!result}
-              className={`aspect-square rounded-lg font-bold text-3xl transition-all transform hover:scale-110 disabled:scale-100 shadow-lg relative overflow-hidden ${
+              className={`aspect-square rounded-lg font-bold text-2xl transition-all transform hover:scale-105 disabled:scale-100 shadow-lg relative overflow-hidden ${
                 tile === 'hidden' 
                   ? 'bg-gradient-to-br from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 cursor-pointer border-2 border-gray-600 hover:border-cyan-500' 
                   : tile === 'safe' 
