@@ -189,15 +189,27 @@ export const PumpOrDumpCanvas: React.FC<PumpOrDumpCanvasProps> = ({
       ctx.stroke();
     }
     
-    // Draw entry line
-    ctx.strokeStyle = '#ffd700';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([5, 5]);
-    ctx.beginPath();
-    ctx.moveTo(0, height / 2);
-    ctx.lineTo(width, height / 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
+     // Draw current price line (yellow line that follows current price)
+     const currentPriceY = height / 2 - (currentPrice - entryPrice) / priceRange * height;
+     ctx.strokeStyle = '#ffd700';
+     ctx.lineWidth = 2;
+     ctx.setLineDash([5, 5]);
+     ctx.beginPath();
+     ctx.moveTo(0, currentPriceY);
+     ctx.lineTo(width, currentPriceY);
+     ctx.stroke();
+     ctx.setLineDash([]);
+     
+     // Draw entry price reference line (static, at entry price level)
+     const entryPriceY = height / 2; // Entry price is always at center
+     ctx.strokeStyle = '#666666';
+     ctx.lineWidth = 1;
+     ctx.setLineDash([2, 2]);
+     ctx.beginPath();
+     ctx.moveTo(0, entryPriceY);
+     ctx.lineTo(width, entryPriceY);
+     ctx.stroke();
+     ctx.setLineDash([]);
     
     // Draw candles with smooth animation
     const candleWidth = Math.max(8, width / 25);
@@ -242,16 +254,22 @@ export const PumpOrDumpCanvas: React.FC<PumpOrDumpCanvasProps> = ({
     ctx.stroke();
     ctx.shadowBlur = 0;
     
-    // Draw price labels with better styling
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 14px monospace';
-    ctx.fillText(`ENTRY: $${entryPrice.toFixed(0)}`, 10, 20);
-    ctx.fillText(`CURRENT: $${currentPrice.toFixed(0)}`, 10, 40);
-    
-    if (isComplete) {
-      ctx.fillStyle = '#ffd700';
-      ctx.fillText(`FINAL: $${currentPrice.toFixed(0)}`, 10, 60);
-    }
+     // Draw price labels with better styling
+     ctx.fillStyle = '#ffffff';
+     ctx.font = 'bold 14px monospace';
+     ctx.fillText(`ENTRY: $${entryPrice.toFixed(0)}`, 10, 20);
+     ctx.fillText(`CURRENT: $${currentPrice.toFixed(0)}`, 10, 40);
+     
+     // Draw multiplier
+     const multiplier = (currentPrice / entryPrice).toFixed(2);
+     ctx.fillStyle = currentPrice >= entryPrice ? '#00ff88' : '#ff4444';
+     ctx.fillText(`${multiplier}x`, 10, 60);
+     
+     if (isComplete) {
+       ctx.fillStyle = '#ffd700';
+       ctx.font = 'bold 16px monospace';
+       ctx.fillText(`FINAL: $${currentPrice.toFixed(0)}`, 10, 80);
+     }
   }, [entryPrice, currentPrice, candles, isComplete]);
 
   // Generate price path on mount
