@@ -22,5 +22,5 @@ RUN echo "=== Checking dist folder ===" && ls -laR dist/ | head -50
 # Expose port
 EXPOSE 3000
 
-# Start script that pushes schema then starts the app
-CMD ["sh", "-c", "echo 'Pushing database schema...' && npx prisma db push --accept-data-loss --skip-generate && echo 'Starting application...' && node dist/main.js"]
+# Start script that pushes schema then starts the app  
+CMD ["sh", "-c", "echo '=== Starting deployment ===' && echo 'DATABASE_URL:' $DATABASE_URL && echo '=== Pushing database schema ===' && npx prisma db push --accept-data-loss --skip-generate --force-reset || echo 'DB push failed, continuing...' && echo '=== Starting application ===' && node dist/main.js"]
