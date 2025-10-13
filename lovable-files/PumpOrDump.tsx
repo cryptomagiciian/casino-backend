@@ -290,8 +290,18 @@ export const PumpOrDump: React.FC = () => {
             high: Math.max(finalCandle.high, adjustedFinalPrice),
             low: Math.min(finalCandle.low, adjustedFinalPrice),
           };
-          setCandles(prev => [...prev.slice(-11), updatedCandle]);
+          console.log('📊 Setting adjusted candle and price:', {
+            updatedCandle,
+            adjustedFinalPrice,
+            finalCandle
+          });
+          setCandles(prev => {
+            const newCandles = [...prev.slice(-11), updatedCandle];
+            console.log('📊 New candles array:', newCandles);
+            return newCandles;
+          });
           setPrice(adjustedFinalPrice);
+          console.log('📊 Price set to:', adjustedFinalPrice);
           setVolumeBars(prev => [...prev.slice(-11), 30 + Math.random() * 70]);
         }
         
@@ -468,7 +478,7 @@ export const PumpOrDump: React.FC = () => {
         {/* Candlesticks */}
         <div className="relative h-56 flex items-end justify-start gap-0.5 px-4">
           {candles.slice(-11).map((candle, i) => renderCandle(candle, i))}
-          {currentCandle && renderCandle(currentCandle, 999, true)}
+          {isPlaying && currentCandle && renderCandle(currentCandle, 999, true)}
         </div>
 
         {/* Countdown timer - centered */}
