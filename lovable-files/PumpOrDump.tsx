@@ -158,21 +158,75 @@ export const PumpOrDump: React.FC = () => {
 
     const updateSpeed = TIME_OPTIONS.find(t => t.value === timeframe)?.speed || 150;
     
+    // HIGH VOLATILITY CRYPTO MEMECOIN CHART SIMULATION
+    let tickCount = 0;
+    const ticksPerCandle = 5; // New candle every 5 ticks
+    let rugpullTriggered = false;
+    let pumpTriggered = false;
+    
     intervalRef.current = setInterval(() => {
       setPrice(prev => {
-        const volatility = (Math.random() - 0.5) * 800;
-        const trend = (Math.random() - 0.5) * 300;
-        const newPrice = prev + volatility + trend;
+        tickCount++;
         
-        setCurrentCandle(candle => {
-          if (!candle) return null;
-          return {
-            ...candle,
-            close: newPrice,
-            high: Math.max(candle.high, newPrice),
-            low: Math.min(candle.low, newPrice),
-          };
-        });
+        // 🚨 RUGPULL EVENT (5% chance per round)
+        if (!rugpullTriggered && Math.random() < 0.05) {
+          rugpullTriggered = true;
+          const rugAmount = prev * (0.15 + Math.random() * 0.25); // Drop 15-40%
+          console.log('🚨 RUGPULL! Price crashed -' + (rugAmount / prev * 100).toFixed(1) + '%');
+          return prev - rugAmount;
+        }
+        
+        // 🚀 PUMP EVENT (8% chance per round)
+        if (!pumpTriggered && Math.random() < 0.08) {
+          pumpTriggered = true;
+          const pumpAmount = prev * (0.10 + Math.random() * 0.20); // Pump 10-30%
+          console.log('🚀 MOON PUMP! Price surged +' + (pumpAmount / prev * 100).toFixed(1) + '%');
+          return prev + pumpAmount;
+        }
+        
+        // Normal high volatility movement (memecoin style)
+        const volatility = (Math.random() - 0.5) * prev * 0.03; // ±3% swings
+        const trend = (Math.random() - 0.5) * prev * 0.015; // ±1.5% trend
+        const wick = Math.random() < 0.3 ? (Math.random() - 0.5) * prev * 0.05 : 0; // 30% chance of big wick
+        const newPrice = Math.max(prev + volatility + trend + wick, open * 0.5); // Don't go below 50% of open
+        
+        // Close current candle and start new one every N ticks
+        if (tickCount % ticksPerCandle === 0) {
+          setCurrentCandle(candle => {
+            if (!candle) return null;
+            
+            // Close this candle and add to history
+            const closedCandle = {
+              ...candle,
+              close: newPrice,
+              high: Math.max(candle.high, newPrice),
+              low: Math.min(candle.low, newPrice),
+            };
+            
+            setCandles(prev => [...prev.slice(-10), closedCandle]); // Keep last 11 (10 + new one)
+            setVolumeBars(prev => [...prev.slice(-10), 30 + Math.random() * 70]);
+            
+            // Start NEW candle
+            return {
+              open: newPrice,
+              close: newPrice,
+              high: newPrice,
+              low: newPrice,
+              timestamp: Date.now(),
+            };
+          });
+        } else {
+          // Update current candle
+          setCurrentCandle(candle => {
+            if (!candle) return null;
+            return {
+              ...candle,
+              close: newPrice,
+              high: Math.max(candle.high, newPrice),
+              low: Math.min(candle.low, newPrice),
+            };
+          });
+        }
         
         // Calculate P&L based on prediction
         const priceChange = newPrice - open;
@@ -180,11 +234,11 @@ export const PumpOrDump: React.FC = () => {
         
         let estimatedPnL = 0;
         if (prediction === 'pump' && priceChange > 0) {
-          estimatedPnL = parseFloat(stake) * 0.95 * (pnlPercent / 2); // Theoretical profit
+          estimatedPnL = parseFloat(stake) * 0.95 * (pnlPercent / 2);
         } else if (prediction === 'dump' && priceChange < 0) {
           estimatedPnL = parseFloat(stake) * 0.95 * (Math.abs(pnlPercent) / 2);
         } else {
-          estimatedPnL = -parseFloat(stake) * (Math.abs(pnlPercent) / 10); // Theoretical loss
+          estimatedPnL = -parseFloat(stake) * (Math.abs(pnlPercent) / 10);
         }
         
         setCurrentPnL(estimatedPnL);
