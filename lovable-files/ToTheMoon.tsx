@@ -12,9 +12,28 @@ export const ToTheMoon: React.FC = () => {
   const [rocketPosition, setRocketPosition] = useState(0);
   const [stars, setStars] = useState<{x: number, y: number, size: number, speed: number}[]>([]);
   const [exhaust, setExhaust] = useState<{id: number, y: number, opacity: number}[]>([]);
+  const [crashPoint, setCrashPoint] = useState<number>(2.0);
   const { fetchBalances } = useWallet();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const exhaustCountRef = useRef(0);
+
+  // HOUSE EDGE: Generate crash point with 85% house advantage
+  const generateCrashPoint = (): number => {
+    const rand = Math.random();
+    
+    // 45% crash at 1.0-1.5x (instant/very early loss)
+    if (rand < 0.45) return 1.0 + Math.random() * 0.5;
+    // 25% crash at 1.5-2.0x (early loss)
+    if (rand < 0.70) return 1.5 + Math.random() * 0.5;
+    // 15% crash at 2.0-3.0x (medium)
+    if (rand < 0.85) return 2.0 + Math.random() * 1.0;
+    // 8% crash at 3.0-5.0x (decent win)
+    if (rand < 0.93) return 3.0 + Math.random() * 2.0;
+    // 5% crash at 5.0-10x (lucky win)
+    if (rand < 0.98) return 5.0 + Math.random() * 5.0;
+    // 2% crash at 10x+ (jackpot)
+    return 10.0 + Math.random() * 40.0;
+  };
 
   useEffect(() => {
     const newStars = Array.from({ length: 100 }, () => ({
@@ -48,6 +67,10 @@ export const ToTheMoon: React.FC = () => {
         params: {},
       });
       
+      // Generate crash point (house edge)
+      const targetCrash = generateCrashPoint();
+      setCrashPoint(targetCrash);
+      
       setBetId(bet.id);
       setIsRunning(true);
       setCrashed(false);
@@ -56,10 +79,10 @@ export const ToTheMoon: React.FC = () => {
       setRocketPosition(0);
       setExhaust([]);
       
-      // Faster multiplier growth (50ms instead of 100ms, +0.02 instead of +0.01)
+      // Faster multiplier growth (50ms, +0.02)
       intervalRef.current = setInterval(() => {
         setMultiplier(prev => {
-          const newMultiplier = prev + 0.02; // Faster growth
+          const newMultiplier = prev + 0.02;
           const newPosition = Math.min((newMultiplier - 1) * 10, 90);
           setRocketPosition(newPosition);
           
@@ -72,15 +95,16 @@ export const ToTheMoon: React.FC = () => {
           }
           exhaustCountRef.current++;
           
-          if (newMultiplier > 1.5 && Math.random() < 0.01) {
+          // Check if reached crash point
+          if (newMultiplier >= targetCrash && !cashedOut) {
             if (intervalRef.current) {
               clearInterval(intervalRef.current);
               intervalRef.current = null;
             }
             setCrashed(true);
             setIsRunning(false);
-            resolveBet(bet.id, newMultiplier);
-            return newMultiplier;
+            resolveBet(bet.id, targetCrash);
+            return targetCrash;
           }
           return newMultiplier;
         });
