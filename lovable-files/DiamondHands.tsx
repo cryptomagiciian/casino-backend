@@ -100,20 +100,10 @@ export const DiamondHands: React.FC = () => {
   const revealTile = (index: number) => {
     if (!isPlaying || grid[index] !== 'hidden' || result) return;
 
-    // HOUSE EDGE: Weighted mine probability (gets harder each click)
-    const getMineProbability = () => {
-      if (safeCount < 3) return 0.20;      // Easy start (20%)
-      if (safeCount < 6) return 0.40;      // Gets harder (40%)
-      if (safeCount < 10) return 0.65;     // Very hard (65%)
-      return 0.85;                         // Almost impossible (85%)
-    };
-    
-    const mineProb = getMineProbability();
-    const hitMine = Math.random() < mineProb || minePositions.includes(index);
-
     const newGrid = [...grid];
     
-    if (hitMine) {
+    // Check if this tile has an actual mine
+    if (minePositions.includes(index)) {
       // Hit a mine!
       newGrid[index] = 'mine';
       setGrid(newGrid);
