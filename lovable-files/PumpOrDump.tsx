@@ -275,16 +275,21 @@ export const PumpOrDump: React.FC = () => {
           : `💥 LOST! Price ${isPump ? 'PUMPED ⬆️' : 'DUMPED ⬇️'} ${Math.abs(parseFloat(priceChange))}%. You bet ${prediction.toUpperCase()}. -${stake} USDC`;
         
         console.log('📢 Setting result:', resultMessage);
-        setResult(resultMessage);
         
-        // Force a re-render to ensure result displays
+        // FORCE result to display - use multiple methods
+        setResult(resultMessage);
+        setIsPlaying(false); // Stop playing immediately so result shows
+        setCanBet(false); // Keep betting disabled
+        
+        // Log confirmation
         setTimeout(() => {
           console.log('✅ Result should be visible now:', resultMessage);
+          console.log('✅ isPlaying set to false, result set to:', resultMessage);
         }, 100);
         
+        // Re-enable betting after 3 seconds
         setTimeout(() => {
-          console.log('⏰ 3 seconds passed, resetting game state');
-          setIsPlaying(false);
+          console.log('⏰ 3 seconds passed, enabling betting');
           setCanBet(true);
         }, 3000);
       } catch (error) {
