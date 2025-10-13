@@ -1,3 +1,4 @@
+import * as crypto from 'crypto';
 import { CURRENCY_DECIMALS, Currency } from './constants';
 
 /**
@@ -61,32 +62,14 @@ export function generateServerSeed(): string {
  * Calculate SHA256 hash
  */
 export async function sha256(input: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(input);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return crypto.createHash('sha256').update(input).digest('hex');
 }
 
 /**
  * Calculate HMAC-SHA256
  */
 export async function hmacSha256(key: string, message: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const keyData = encoder.encode(key);
-  const messageData = encoder.encode(message);
-  
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw',
-    keyData,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-  
-  const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
-  const hashArray = Array.from(new Uint8Array(signature));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return crypto.createHmac('sha256', key).update(message).digest('hex');
 }
 
 /**
