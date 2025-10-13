@@ -230,6 +230,17 @@ export const PumpOrDump: React.FC = () => {
     
     if (currentBetId) {
       console.log('✅ BetId exists, resolving bet...');
+      
+      // CRITICAL: Clear intervals IMMEDIATELY to prevent them from updating price!
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current);
+        countdownRef.current = null;
+      }
+      
       try {
         // Get the ACTUAL result from backend FIRST (backend uses provably fair RNG)
         const resolved = await apiService.resolveBet(currentBetId);
@@ -306,16 +317,6 @@ export const PumpOrDump: React.FC = () => {
           : `💥 LOST! Price ${isPump ? 'PUMPED ⬆️' : 'DUMPED ⬇️'} ${Math.abs(parseFloat(priceChange))}%. You bet ${currentPrediction.toUpperCase()}. -${stake} USDC`;
         
         console.log('📢 Setting result:', resultMessage);
-        
-        // CRITICAL: Clear intervals IMMEDIATELY to prevent them from firing again!
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
-        if (countdownRef.current) {
-          clearInterval(countdownRef.current);
-          countdownRef.current = null;
-        }
         
         // FORCE result to display - use multiple methods
         setResult(resultMessage);
