@@ -180,17 +180,25 @@ export const PumpOrDump: React.FC = () => {
   };
 
   const finalizeCandle = async () => {
+    console.log('🔥 FINALIZE CANDLE CALLED');
+    
     let finalPrice = price;
     let finalCandle = currentCandle;
     
     if (currentCandle) {
       finalPrice = currentCandle.close;
+      console.log('📊 Current candle close price:', finalPrice);
     }
     
     // DON'T set currentCandle to null yet - we need it for adjustment!
     setCurrentPnL(0);
     
+    console.log('🎲 Bet ID:', betId);
+    console.log('🎯 Entry Price:', entryPrice);
+    console.log('📈 Prediction:', prediction);
+    
     if (betId) {
+      console.log('✅ BetId exists, resolving bet...');
       try {
         // Get the ACTUAL result from backend FIRST (backend uses provably fair RNG)
         const resolved = await apiService.resolveBet(betId);
@@ -269,7 +277,13 @@ export const PumpOrDump: React.FC = () => {
         console.log('📢 Setting result:', resultMessage);
         setResult(resultMessage);
         
+        // Force a re-render to ensure result displays
         setTimeout(() => {
+          console.log('✅ Result should be visible now:', resultMessage);
+        }, 100);
+        
+        setTimeout(() => {
+          console.log('⏰ 3 seconds passed, resetting game state');
           setIsPlaying(false);
           setCanBet(true);
         }, 3000);
@@ -455,8 +469,9 @@ export const PumpOrDump: React.FC = () => {
         {!currentCandle && <div className="flex-1" />}
       </div>
 
-      {/* Result Display */}
-      {result && (
+      {/* Game Status - Result or Waiting */}
+      {result ? (
+        /* Result Display - Shows WIN/LOSS */
         <div className={`text-center text-3xl font-bold mb-4 p-6 rounded-xl border-4 relative overflow-hidden ${
           result.includes('WON') 
             ? 'bg-green-500/30 text-green-400 border-green-500' 
@@ -467,9 +482,19 @@ export const PumpOrDump: React.FC = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
           <div className="relative">{result}</div>
         </div>
-      )}
+      ) : (isPlaying && betId && (
+        /* Waiting Message - Shows while round is active */
+        <div className="text-center space-y-2 bg-gray-800/50 rounded-lg p-4 border-2 border-purple-600 mb-4">
+          <div className="text-yellow-400 font-bold text-2xl animate-pulse">
+            ⏳ Waiting for candle close...
+          </div>
+          <div className="text-sm text-gray-400">
+            Bet locked • Result in {countdown}s
+          </div>
+        </div>
+      ))}
 
-      {!isPlaying && (
+      {!isPlaying && !result && (
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -550,17 +575,6 @@ export const PumpOrDump: React.FC = () => {
           >
             🚀 START {timeframe}s ROUND & BET {prediction.toUpperCase()} ({stake} USDC)
           </button>
-        </div>
-      )}
-
-      {isPlaying && betId && !result && (
-        <div className="text-center space-y-2 bg-gray-800/50 rounded-lg p-4 border-2 border-purple-600">
-          <div className="text-yellow-400 font-bold text-2xl animate-pulse">
-            ⏳ Waiting for candle close...
-          </div>
-          <div className="text-sm text-gray-400">
-            Bet locked • Result in {countdown}s
-          </div>
         </div>
       )}
 
