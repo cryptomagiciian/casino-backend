@@ -208,6 +208,8 @@ export const PumpOrDump: React.FC = () => {
 
   const finalizeCandle = async () => {
     console.log('🔥 FINALIZE CANDLE CALLED');
+    console.log('🔥 currentCandle at start:', currentCandle);
+    console.log('🔥 price at start:', price);
     
     let finalPrice = price;
     let finalCandle = currentCandle;
@@ -215,6 +217,8 @@ export const PumpOrDump: React.FC = () => {
     if (currentCandle) {
       finalPrice = currentCandle.close;
       console.log('📊 Current candle close price:', finalPrice);
+    } else {
+      console.log('⚠️ WARNING: currentCandle is NULL! Using price state instead.');
     }
     
     // DON'T set currentCandle to null yet - we need it for adjustment!
@@ -303,6 +307,9 @@ export const PumpOrDump: React.FC = () => {
           setPrice(adjustedFinalPrice);
           console.log('📊 Price set to:', adjustedFinalPrice);
           setVolumeBars(prev => [...prev.slice(-11), 30 + Math.random() * 70]);
+        } else {
+          console.log('⚠️ WARNING: finalCandle is NULL! Force setting price anyway.');
+          setPrice(adjustedFinalPrice);
         }
         
         // NOW set currentCandle to null after adjustment
