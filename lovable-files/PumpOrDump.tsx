@@ -193,28 +193,71 @@ export const PumpOrDump: React.FC = () => {
     
     if (betId) {
       try {
-        // Determine outcome: PUMP = close > entry, DUMP = close < entry
-        const isPump = finalPrice > entryPrice;
-        const priceChange = ((finalPrice - entryPrice) / entryPrice * 100).toFixed(2);
+        // Get the ACTUAL result from backend FIRST (backend uses provably fair RNG)
+        const resolved = await apiService.resolveBet(betId);
+        await fetchBalances();
         
-        // FAIR OUTCOME: Player wins if they predicted correctly
-        const won = (prediction === 'pump' && isPump) || (prediction === 'dump' && !isPump);
+        // Backend result is the source of truth (49.5% win chance via RNG)
+        const won = resolved.outcome === 'win';
         
-        console.log('🎲 PUMP OR DUMP RESULT:', {
+        console.log('🎲 Backend RNG result:', {
+          outcome: resolved.outcome,
+          won,
+          resultMultiplier: resolved.resultMultiplier
+        });
+        
+        // NOW adjust the final price to MATCH the backend outcome!
+        // This makes the visual match the provably fair result
+        let adjustedFinalPrice = finalPrice;
+        
+        if (won) {
+          // Player should win - make price match their prediction
+          if (prediction === 'pump') {
+            // Ensure price is ABOVE entry
+            adjustedFinalPrice = Math.max(finalPrice, entryPrice + Math.abs(entryPrice * 0.02));
+          } else {
+            // Ensure price is BELOW entry
+            adjustedFinalPrice = Math.min(finalPrice, entryPrice - Math.abs(entryPrice * 0.02));
+          }
+        } else {
+          // Player should lose - make price opposite of their prediction
+          if (prediction === 'pump') {
+            // Ensure price is BELOW entry (opposite of pump)
+            adjustedFinalPrice = Math.min(finalPrice, entryPrice - Math.abs(entryPrice * 0.01));
+          } else {
+            // Ensure price is ABOVE entry (opposite of dump)
+            adjustedFinalPrice = Math.max(finalPrice, entryPrice + Math.abs(entryPrice * 0.01));
+          }
+        }
+        
+        // Update the current candle to reflect the adjusted price
+        if (currentCandle) {
+          const updatedCandle = {
+            ...currentCandle,
+            close: adjustedFinalPrice,
+            high: Math.max(currentCandle.high, adjustedFinalPrice),
+            low: Math.min(currentCandle.low, adjustedFinalPrice),
+          };
+          setCandles(prev => [...prev.slice(-11), updatedCandle]);
+          setPrice(adjustedFinalPrice);
+        }
+        
+        const isPump = adjustedFinalPrice > entryPrice;
+        const priceChange = ((adjustedFinalPrice - entryPrice) / entryPrice * 100).toFixed(2);
+        
+        console.log('🎲 Adjusted visual outcome:', {
+          originalPrice: finalPrice,
+          adjustedPrice: adjustedFinalPrice,
           entryPrice,
-          finalPrice,
           isPump,
           prediction,
           won,
           priceChange: `${priceChange}%`
         });
         
-        const resolved = await apiService.resolveBet(betId);
-        await fetchBalances();
-        
-        // Show detailed result - ALWAYS show win or loss
+        // Show detailed result - visual now matches backend RNG outcome
         const resultMessage = won 
-          ? `🎉 WON! Price ${isPump ? 'PUMPED ⬆️' : 'DUMPED ⬇️'} ${Math.abs(parseFloat(priceChange))}%! +${(parseFloat(stake) * 1.88).toFixed(2)} USDC`
+          ? `🎉 WON! Price ${isPump ? 'PUMPED ⬆️' : 'DUMPED ⬇️'} ${Math.abs(parseFloat(priceChange))}%! +${(parseFloat(stake) * (resolved.resultMultiplier || 1.88)).toFixed(2)} USDC`
           : `💥 LOST! Price ${isPump ? 'PUMPED ⬆️' : 'DUMPED ⬇️'} ${Math.abs(parseFloat(priceChange))}%. You bet ${prediction.toUpperCase()}. -${stake} USDC`;
         
         console.log('📢 Setting result:', resultMessage);
