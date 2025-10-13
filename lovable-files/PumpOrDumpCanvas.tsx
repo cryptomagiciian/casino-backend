@@ -36,6 +36,8 @@ export const PumpOrDumpCanvas: React.FC<PumpOrDumpCanvasProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
   const startTimeRef = useRef<number>();
+  const pricePathRef = useRef<number[]>([]);
+  const lastCandleTimeRef = useRef<number>(0);
   const [currentPrice, setCurrentPrice] = useState(entryPrice);
   const [candles, setCandles] = useState<Candle[]>([]);
   const [isComplete, setIsComplete] = useState(false);
@@ -129,22 +131,27 @@ export const PumpOrDumpCanvas: React.FC<PumpOrDumpCanvasProps> = ({
       return;
     }
     
-    // Update price based on generated path
-    const pathIndex = Math.floor(progress * (durationMs / (1000/60)));
-    if (pathIndex < pricePath.length) {
-      setCurrentPrice(pricePath[pathIndex]);
+    // Update price based on generated path (60fps)
+    const pathIndex = Math.floor(progress * pricePathRef.current.length);
+    if (pathIndex < pricePathRef.current.length) {
+      const newPrice = pricePathRef.current[pathIndex];
+      setCurrentPrice(newPrice);
       
       // Create new candle every 120ms (5fps for candles)
-      if (pathIndex % 7 === 0) {
+      if (elapsed - lastCandleTimeRef.current >= 120) {
+        const candleStartIndex = Math.max(0, pathIndex - 7);
+        const candleEndIndex = pathIndex;
+        
         const newCandle: Candle = {
-          open: pathIndex > 0 ? pricePath[pathIndex - 7] : entryPrice,
-          close: pricePath[pathIndex],
-          high: Math.max(...pricePath.slice(Math.max(0, pathIndex - 7), pathIndex + 1)),
-          low: Math.min(...pricePath.slice(Math.max(0, pathIndex - 7), pathIndex + 1)),
-          timestamp: Date.now()
+          open: candleStartIndex > 0 ? pricePathRef.current[candleStartIndex] : entryPrice,
+          close: newPrice,
+          high: Math.max(...pricePathRef.current.slice(candleStartIndex, candleEndIndex + 1)),
+          low: Math.min(...pricePathRef.current.slice(candleStartIndex, candleEndIndex + 1)),
+          timestamp: timestamp
         };
         
         setCandles(prev => [...prev.slice(-20), newCandle]); // Keep last 20 candles
+        lastCandleTimeRef.current = elapsed;
         
         // Play tick sound for new candle
         sfx.tick();
@@ -155,7 +162,7 @@ export const PumpOrDumpCanvas: React.FC<PumpOrDumpCanvasProps> = ({
     renderFrame(progress);
     
     animationRef.current = requestAnimationFrame(animate);
-  }, [currentPrice, candles, isComplete, onComplete, pricePath]);
+  }, [entryPrice, durationMs, isComplete, onComplete]);
 
   // Render frame
   const renderFrame = useCallback((progress: number) => {
@@ -192,7 +199,7 @@ export const PumpOrDumpCanvas: React.FC<PumpOrDumpCanvasProps> = ({
     ctx.stroke();
     ctx.setLineDash([]);
     
-    // Draw candles
+    // Draw candles with smooth animation
     const candleWidth = Math.max(8, width / 25);
     const priceRange = entryPrice * 0.1; // 10% range
     
@@ -200,12 +207,16 @@ export const PumpOrDumpCanvas: React.FC<PumpOrDumpCanvasProps> = ({
       const x = (index * candleWidth) + (width - candles.length * candleWidth);
       const isGreen = candle.close >= candle.open;
       
-      // Candle body
+      // Candle body with glow effect
       const bodyHeight = Math.abs(candle.close - candle.open) / priceRange * height;
       const bodyY = height / 2 - (candle.close - entryPrice) / priceRange * height;
       
+      // Glow effect
+      ctx.shadowColor = isGreen ? '#00ff88' : '#ff4444';
+      ctx.shadowBlur = 10;
       ctx.fillStyle = isGreen ? '#00ff88' : '#ff4444';
       ctx.fillRect(x, bodyY, candleWidth * 0.8, bodyHeight);
+      ctx.shadowBlur = 0;
       
       // Candle wick
       const wickTop = height / 2 - (candle.high - entryPrice) / priceRange * height;
@@ -219,46 +230,44 @@ export const PumpOrDumpCanvas: React.FC<PumpOrDumpCanvasProps> = ({
       ctx.stroke();
     });
     
-    // Draw current price line
+    // Draw current price line with glow
     const currentY = height / 2 - (currentPrice - entryPrice) / priceRange * height;
+    ctx.shadowColor = '#00ffff';
+    ctx.shadowBlur = 8;
     ctx.strokeStyle = '#00ffff';
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(width - 100, currentY);
     ctx.lineTo(width, currentY);
     ctx.stroke();
+    ctx.shadowBlur = 0;
     
-    // Draw price labels
+    // Draw price labels with better styling
     ctx.fillStyle = '#ffffff';
-    ctx.font = '14px monospace';
+    ctx.font = 'bold 14px monospace';
     ctx.fillText(`ENTRY: $${entryPrice.toFixed(0)}`, 10, 20);
     ctx.fillText(`CURRENT: $${currentPrice.toFixed(0)}`, 10, 40);
     
     if (isComplete) {
+      ctx.fillStyle = '#ffd700';
       ctx.fillText(`FINAL: $${currentPrice.toFixed(0)}`, 10, 60);
     }
   }, [entryPrice, currentPrice, candles, isComplete]);
 
   // Generate price path on mount
-  const [pricePath, setPricePath] = useState<number[]>([]);
-  
   useEffect(() => {
     const path = generatePricePath(rngTrace);
-    setPricePath(path);
-  }, [generatePricePath, rngTrace]);
-
-  // Start animation
-  useEffect(() => {
-    if (pricePath.length > 0) {
-      animationRef.current = requestAnimationFrame(animate);
-    }
+    pricePathRef.current = path;
+    
+    // Start animation immediately after path generation
+    animationRef.current = requestAnimationFrame(animate);
     
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [pricePath, animate]);
+  }, [generatePricePath, rngTrace, animate]);
 
   return (
     <div className="relative">
@@ -274,7 +283,9 @@ export const PumpOrDumpCanvas: React.FC<PumpOrDumpCanvasProps> = ({
       <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-700 rounded-b-lg overflow-hidden">
         <div 
           className="h-full bg-gradient-to-r from-purple-500 to-teal-500 transition-all duration-100"
-          style={{ width: `${(Date.now() - (startTimeRef.current || Date.now())) / durationMs * 100}%` }}
+          style={{ 
+            width: `${startTimeRef.current ? Math.min((Date.now() - startTimeRef.current) / durationMs * 100, 100) : 0}%` 
+          }}
         />
       </div>
     </div>
