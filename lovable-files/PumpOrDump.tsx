@@ -245,22 +245,22 @@ export const PumpOrDump: React.FC = () => {
         let adjustedFinalPrice = finalPrice;
         
         if (won) {
-          // Player should win - make price match their prediction
+          // Player should win - FORCE price to match their prediction
           if (prediction === 'pump') {
-            // Ensure price is ABOVE entry
-            adjustedFinalPrice = Math.max(finalPrice, entryPrice + Math.abs(entryPrice * 0.02));
+            // FORCE price to be ABOVE entry by exactly 2%
+            adjustedFinalPrice = entryPrice * 1.02;
           } else {
-            // Ensure price is BELOW entry
-            adjustedFinalPrice = Math.min(finalPrice, entryPrice - Math.abs(entryPrice * 0.02));
+            // FORCE price to be BELOW entry by exactly 2%
+            adjustedFinalPrice = entryPrice * 0.98;
           }
         } else {
-          // Player should lose - make price opposite of their prediction
+          // Player should lose - FORCE price opposite of their prediction
           if (prediction === 'pump') {
-            // Ensure price is BELOW entry (opposite of pump)
-            adjustedFinalPrice = Math.min(finalPrice, entryPrice - Math.abs(entryPrice * 0.01));
+            // FORCE price to be BELOW entry by exactly 1.5% (opposite of pump)
+            adjustedFinalPrice = entryPrice * 0.985;
           } else {
-            // Ensure price is ABOVE entry (opposite of dump)
-            adjustedFinalPrice = Math.max(finalPrice, entryPrice + Math.abs(entryPrice * 0.01));
+            // FORCE price to be ABOVE entry by exactly 1.5% (opposite of dump)
+            adjustedFinalPrice = entryPrice * 1.015;
           }
         }
         
