@@ -38,6 +38,8 @@ export const PumpOrDump: React.FC = () => {
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
   const cleanupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const betIdRef = useRef<string | null>(null); // ✅ Ref to always read latest betId!
+  const entryPriceRef = useRef<number>(0); // ✅ Ref to always read latest entryPrice!
+  const predictionRef = useRef<'pump' | 'dump'>('pump'); // ✅ Ref to always read latest prediction!
 
   useEffect(() => {
     const initialCandles: Candle[] = [];
@@ -95,6 +97,8 @@ export const PumpOrDump: React.FC = () => {
     const open = lastPrice;
     setPrice(open);
     setEntryPrice(open); // Set entry price for P&L tracking
+    entryPriceRef.current = open; // ✅ Also update ref!
+    predictionRef.current = prediction; // ✅ Also update ref!
     setCurrentPnL(0);
     
     // Generate fresh historical candles CENTERED around the entry price
@@ -217,9 +221,12 @@ export const PumpOrDump: React.FC = () => {
     setCurrentPnL(0);
     
     const currentBetId = betIdRef.current; // ✅ Read from ref to get LATEST value!
+    const currentEntryPrice = entryPriceRef.current; // ✅ Read from ref to get LATEST value!
+    const currentPrediction = predictionRef.current; // ✅ Read from ref to get LATEST value!
+    
     console.log('🎲 Bet ID:', currentBetId);
-    console.log('🎯 Entry Price:', entryPrice);
-    console.log('📈 Prediction:', prediction);
+    console.log('🎯 Entry Price:', currentEntryPrice);
+    console.log('📈 Prediction:', currentPrediction);
     
     if (currentBetId) {
       console.log('✅ BetId exists, resolving bet...');
@@ -235,9 +242,9 @@ export const PumpOrDump: React.FC = () => {
           outcome: resolved.outcome,
           won,
           resultMultiplier: resolved.resultMultiplier,
-          prediction,
+          prediction: currentPrediction,
           originalPrice: finalPrice,
-          entryPrice
+          entryPrice: currentEntryPrice
         });
         
         // NOW adjust the final price to MATCH the backend outcome!
@@ -246,21 +253,21 @@ export const PumpOrDump: React.FC = () => {
         
         if (won) {
           // Player should win - FORCE price to match their prediction
-          if (prediction === 'pump') {
+          if (currentPrediction === 'pump') {
             // FORCE price to be ABOVE entry by exactly 2%
-            adjustedFinalPrice = entryPrice * 1.02;
+            adjustedFinalPrice = currentEntryPrice * 1.02;
           } else {
             // FORCE price to be BELOW entry by exactly 2%
-            adjustedFinalPrice = entryPrice * 0.98;
+            adjustedFinalPrice = currentEntryPrice * 0.98;
           }
         } else {
           // Player should lose - FORCE price opposite of their prediction
-          if (prediction === 'pump') {
+          if (currentPrediction === 'pump') {
             // FORCE price to be BELOW entry by exactly 1.5% (opposite of pump)
-            adjustedFinalPrice = entryPrice * 0.985;
+            adjustedFinalPrice = currentEntryPrice * 0.985;
           } else {
             // FORCE price to be ABOVE entry by exactly 1.5% (opposite of dump)
-            adjustedFinalPrice = entryPrice * 1.015;
+            adjustedFinalPrice = currentEntryPrice * 1.015;
           }
         }
         
@@ -280,15 +287,15 @@ export const PumpOrDump: React.FC = () => {
         // NOW set currentCandle to null after adjustment
         setCurrentCandle(null);
         
-        const isPump = adjustedFinalPrice > entryPrice;
-        const priceChange = ((adjustedFinalPrice - entryPrice) / entryPrice * 100).toFixed(2);
+        const isPump = adjustedFinalPrice > currentEntryPrice;
+        const priceChange = ((adjustedFinalPrice - currentEntryPrice) / currentEntryPrice * 100).toFixed(2);
         
         console.log('🎲 Adjusted visual outcome:', {
           originalPrice: finalPrice,
           adjustedPrice: adjustedFinalPrice,
-          entryPrice,
+          entryPrice: currentEntryPrice,
           isPump,
-          prediction,
+          prediction: currentPrediction,
           won,
           priceChange: `${priceChange}%`
         });
@@ -296,7 +303,7 @@ export const PumpOrDump: React.FC = () => {
         // Show detailed result - visual now matches backend RNG outcome
         const resultMessage = won 
           ? `🎉 WON! Price ${isPump ? 'PUMPED ⬆️' : 'DUMPED ⬇️'} ${Math.abs(parseFloat(priceChange))}%! +${(parseFloat(stake) * (resolved.resultMultiplier || 1.88)).toFixed(2)} USDC`
-          : `💥 LOST! Price ${isPump ? 'PUMPED ⬆️' : 'DUMPED ⬇️'} ${Math.abs(parseFloat(priceChange))}%. You bet ${prediction.toUpperCase()}. -${stake} USDC`;
+          : `💥 LOST! Price ${isPump ? 'PUMPED ⬆️' : 'DUMPED ⬇️'} ${Math.abs(parseFloat(priceChange))}%. You bet ${currentPrediction.toUpperCase()}. -${stake} USDC`;
         
         console.log('📢 Setting result:', resultMessage);
         
