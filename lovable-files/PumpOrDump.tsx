@@ -69,11 +69,39 @@ export const PumpOrDump: React.FC = () => {
     setCountdown(timeframe);
     setResult(null);
     
+    // Get the last candle's close price or default to 50000
     const lastPrice = candles.length > 0 ? candles[candles.length - 1].close : 50000;
     const open = lastPrice;
     setPrice(open);
     setEntryPrice(open); // Set entry price for P&L tracking
     setCurrentPnL(0);
+    
+    // Generate fresh historical candles centered around the entry price
+    // This ensures the yellow line appears in the middle of the chart
+    const newHistoricalCandles: Candle[] = [];
+    let basePrice = open;
+    const newVolume: number[] = [];
+    
+    for (let i = 0; i < 11; i++) {
+      const candleOpen = basePrice;
+      const change = (Math.random() - 0.5) * 1000; // Smaller changes to stay centered
+      const candleClose = candleOpen + change;
+      const candleHigh = Math.max(candleOpen, candleClose) + Math.random() * 300;
+      const candleLow = Math.min(candleOpen, candleClose) - Math.random() * 300;
+      
+      newHistoricalCandles.push({ 
+        open: candleOpen, 
+        close: candleClose, 
+        high: candleHigh, 
+        low: candleLow, 
+        timestamp: Date.now() - (11 - i) * 10000 
+      });
+      newVolume.push(30 + Math.random() * 70);
+      basePrice = candleClose;
+    }
+    
+    setCandles(newHistoricalCandles);
+    setVolumeBars(newVolume);
     
     const newCandle: Candle = {
       open,
