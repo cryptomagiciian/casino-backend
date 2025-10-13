@@ -6,8 +6,8 @@ export const WalletBalance: React.FC = () => {
 
   const handleFaucet = async () => {
     try {
-      await faucet('USDC', '100.00');
-      alert('Successfully received 100 USDC from faucet!');
+      await faucet('USDC', '1000.00');
+      alert('Successfully received 1000 USDC from faucet! 💰');
     } catch (error) {
       alert('Faucet failed: ' + (error as Error).message);
     }
@@ -42,7 +42,7 @@ export const WalletBalance: React.FC = () => {
           onClick={handleFaucet}
           className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-bold transition-colors"
         >
-          🚰 Get Demo Funds (100 USDC)
+          🚰 Get Demo Funds (1000 USDC)
         </button>
       </div>
     </div>
