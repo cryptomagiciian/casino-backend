@@ -13,26 +13,32 @@ export const ToTheMoon: React.FC = () => {
   const [stars, setStars] = useState<{x: number, y: number, size: number, speed: number}[]>([]);
   const [exhaust, setExhaust] = useState<{id: number, y: number, opacity: number}[]>([]);
   const [crashPoint, setCrashPoint] = useState<number>(2.0);
+  const [canCashout, setCanCashout] = useState(false);
   const { fetchBalances } = useWallet();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const exhaustCountRef = useRef(0);
+  const startTimeRef = useRef<number>(0);
 
-  // HOUSE EDGE: Generate crash point with 85% house advantage
+  // HOUSE EDGE: Generate crash point with AGGRESSIVE early crash prevention
   const generateCrashPoint = (): number => {
     const rand = Math.random();
     
-    // 45% crash at 1.0-1.5x (instant/very early loss)
-    if (rand < 0.45) return 1.0 + Math.random() * 0.5;
-    // 25% crash at 1.5-2.0x (early loss)
-    if (rand < 0.70) return 1.5 + Math.random() * 0.5;
-    // 15% crash at 2.0-3.0x (medium)
-    if (rand < 0.85) return 2.0 + Math.random() * 1.0;
-    // 8% crash at 3.0-5.0x (decent win)
-    if (rand < 0.93) return 3.0 + Math.random() * 2.0;
-    // 5% crash at 5.0-10x (lucky win)
-    if (rand < 0.98) return 5.0 + Math.random() * 5.0;
-    // 2% crash at 10x+ (jackpot)
-    return 10.0 + Math.random() * 40.0;
+    // ANTI-EXPLOIT: 60% crash BEFORE 2x (prevent doubling strategy)
+    // 35% crash at 1.0-1.5x (instant loss - can't even cash out)
+    if (rand < 0.35) return 1.0 + Math.random() * 0.5;
+    // 25% crash at 1.5-2.0x (crashes right at doubling point)
+    if (rand < 0.60) return 1.5 + Math.random() * 0.49; // Cap at 1.99x
+    
+    // 20% crash at 2.0-2.5x (barely past double)
+    if (rand < 0.80) return 2.0 + Math.random() * 0.5;
+    // 10% crash at 2.5-4.0x (medium win)
+    if (rand < 0.90) return 2.5 + Math.random() * 1.5;
+    // 6% crash at 4.0-7.0x (decent win)
+    if (rand < 0.96) return 4.0 + Math.random() * 3.0;
+    // 3% crash at 7.0-15x (lucky win)
+    if (rand < 0.99) return 7.0 + Math.random() * 8.0;
+    // 1% crash at 15x+ (jackpot - keeps them playing)
+    return 15.0 + Math.random() * 35.0;
   };
 
   useEffect(() => {
@@ -78,8 +84,13 @@ export const ToTheMoon: React.FC = () => {
       setMultiplier(1.0);
       setRocketPosition(0);
       setExhaust([]);
+      setCanCashout(false);
+      startTimeRef.current = Date.now();
       
-      // Faster multiplier growth (50ms, +0.02)
+      // Enable cashout after 1 second minimum (anti-exploit)
+      setTimeout(() => setCanCashout(true), 1000);
+      
+      // FASTER multiplier growth (30ms instead of 50ms, harder to time)
       intervalRef.current = setInterval(() => {
         setMultiplier(prev => {
           const newMultiplier = prev + 0.02;
@@ -108,7 +119,7 @@ export const ToTheMoon: React.FC = () => {
           }
           return newMultiplier;
         });
-      }, 50); // Faster update rate
+      }, 30); // MUCH faster - harder to time cashouts
       
     } catch (error) {
       console.error('Failed to start game:', error);
@@ -117,11 +128,24 @@ export const ToTheMoon: React.FC = () => {
   };
 
   const cashout = async () => {
+    // ANTI-EXPLOIT: Prevent instant cashouts and small wins
+    if (!canCashout) {
+      console.log('Cashout blocked: Must wait 1 second minimum');
+      return;
+    }
+    
+    // Minimum 1.2x cashout (prevents tiny profit spam)
+    if (multiplier < 1.2) {
+      console.log('Cashout blocked: Minimum 1.2x required');
+      return;
+    }
+    
     if (betId && intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
       setIsRunning(false);
       setCashedOut(true);
+      setCanCashout(false);
       
       try {
         await apiService.cashoutBet(betId, multiplier);
@@ -415,9 +439,14 @@ export const ToTheMoon: React.FC = () => {
       {isRunning && !crashed && !cashedOut && (
         <button
           onClick={cashout}
-          className="w-full py-4 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 text-white rounded-lg font-bold text-xl transition-all transform hover:scale-105 shadow-lg shadow-yellow-500/50 animate-pulse"
+          disabled={!canCashout || multiplier < 1.2}
+          className={`w-full py-4 rounded-lg font-bold text-xl transition-all transform shadow-lg ${
+            canCashout && multiplier >= 1.2
+              ? 'bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 text-white hover:scale-105 shadow-yellow-500/50 animate-pulse cursor-pointer'
+              : 'bg-gray-700 text-gray-400 cursor-not-allowed opacity-50'
+          }`}
         >
-          💰 CASH OUT NOW! (${(parseFloat(stake) * multiplier).toFixed(2)})
+          {!canCashout ? '⏳ WAIT...' : multiplier < 1.2 ? '❌ MIN 1.2×' : `💰 CASH OUT NOW! ($${(parseFloat(stake) * multiplier).toFixed(2)})`}
         </button>
       )}
 
