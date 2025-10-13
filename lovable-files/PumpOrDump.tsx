@@ -346,6 +346,11 @@ export const PumpOrDump: React.FC = () => {
     console.log('🔄 RESET GAME called');
     if (intervalRef.current) clearInterval(intervalRef.current);
     if (countdownRef.current) clearInterval(countdownRef.current);
+    if (cleanupTimeoutRef.current) {
+      console.log('⚠️ Clearing cleanup timeout in resetGame');
+      clearTimeout(cleanupTimeoutRef.current);
+      cleanupTimeoutRef.current = null;
+    }
     setIsPlaying(false);
     setCanBet(true);
     setResult(null);
