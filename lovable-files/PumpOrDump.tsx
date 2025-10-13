@@ -287,10 +287,11 @@ export const PumpOrDump: React.FC = () => {
           console.log('✅ isPlaying set to false, result set to:', resultMessage);
         }, 100);
         
-        // Re-enable betting after 3 seconds
+        // Re-enable betting after 3 seconds AND clear betId
         setTimeout(() => {
-          console.log('⏰ 3 seconds passed, enabling betting');
+          console.log('⏰ 3 seconds passed, enabling betting and clearing betId');
           setCanBet(true);
+          setBetId(null); // Clear betId AFTER result has been displayed
         }, 3000);
       } catch (error) {
         console.error('Bet resolution failed:', error);
@@ -298,7 +299,6 @@ export const PumpOrDump: React.FC = () => {
         setResult('❌ Error: ' + (error as Error).message);
         setIsPlaying(false);
         setCanBet(true);
-      } finally {
         setBetId(null);
       }
     } else {
