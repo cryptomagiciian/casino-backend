@@ -1,21 +1,50 @@
 import { Controller, Get, Post, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiProperty } from '@nestjs/swagger';
+import { IsString, IsOptional, IsIn } from 'class-validator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { BetsService } from './bets.service';
 import { BetPreview, BetPlaceRequest } from '../shared/types';
 
 export class BetPreviewDto {
+  @ApiProperty({ description: 'Game to play', example: 'candle-flip' })
+  @IsString()
   game: string;
+
+  @ApiProperty({ description: 'Currency to bet with', example: 'USDC' })
+  @IsString()
+  @IsIn(['BTC', 'ETH', 'SOL', 'USDC', 'USDT'])
   currency: string;
+
+  @ApiProperty({ description: 'Bet amount', example: '100' })
+  @IsString()
   stake: string;
+
+  @ApiProperty({ description: 'Game-specific parameters', required: false })
+  @IsOptional()
   params?: any;
 }
 
 export class BetPlaceDto {
+  @ApiProperty({ description: 'Game to play', example: 'candle-flip' })
+  @IsString()
   game: string;
+
+  @ApiProperty({ description: 'Currency to bet with', example: 'USDC' })
+  @IsString()
+  @IsIn(['BTC', 'ETH', 'SOL', 'USDC', 'USDT'])
   currency: string;
+
+  @ApiProperty({ description: 'Bet amount', example: '100' })
+  @IsString()
   stake: string;
+
+  @ApiProperty({ description: 'Client seed for provably fair', required: false })
+  @IsOptional()
+  @IsString()
   clientSeed?: string;
+
+  @ApiProperty({ description: 'Game-specific parameters', required: false })
+  @IsOptional()
   params?: any;
 }
 
