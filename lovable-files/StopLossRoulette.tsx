@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { apiService } from '../services/api';
 import { useWallet } from '../hooks/useWallet';
 
+const CRYPTO_SYMBOLS = ['₿', 'Ξ', '◎', '💎', '🪙', '💰', '💸', '📈', '📉', '🚀', '🌙', '⚡'];
+
 export const StopLossRoulette: React.FC = () => {
   const [stake, setStake] = useState('10.00');
   const [riskLevel, setRiskLevel] = useState(5); // 1-10, tighter = higher payout
@@ -41,7 +43,7 @@ export const StopLossRoulette: React.FC = () => {
       let spinCount = 0;
       intervalRef.current = setInterval(() => {
         spinCount++;
-        setRotation(prev => (prev + 30) % 360);
+        setRotation(prev => prev + 30);
 
         if (spinCount >= 40) { // Stop after ~2 seconds
           if (intervalRef.current) clearInterval(intervalRef.current);
@@ -73,7 +75,7 @@ export const StopLossRoulette: React.FC = () => {
 
     } catch (error) {
       console.error('Spin failed:', error);
-      alert('Spin failed: ' + (error as Error).message);
+      setResult('❌ Spin failed: ' + (error as Error).message);
       setIsSpinning(false);
     }
   };
@@ -87,72 +89,112 @@ export const StopLossRoulette: React.FC = () => {
 
   return (
     <div className="bg-gradient-to-br from-orange-900 via-red-900 to-black rounded-lg p-6 border-2 border-orange-500 shadow-2xl">
-      <h2 className="text-3xl font-bold text-orange-400 mb-2">⚡ STOP LOSS ROULETTE</h2>
-      <p className="text-gray-300 mb-4">Set your risk, spin the wheel!</p>
-
-      {/* Roulette Wheel */}
-      <div className="flex justify-center mb-6">
-        <div className="relative">
-          {/* Wheel */}
-          <div 
-            className="w-64 h-64 rounded-full border-8 border-orange-500 bg-gradient-to-br from-gray-900 via-orange-900 to-red-900 flex items-center justify-center transition-transform duration-100 shadow-2xl"
-            style={{ transform: `rotate(${rotation}deg)` }}
-          >
-            {/* Candle Icons on Wheel */}
-            {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
-              <div
-                key={i}
-                className="absolute text-4xl"
-                style={{
-                  transform: `rotate(${angle}deg) translateY(-90px)`,
-                }}
-              >
-                {i % 2 === 0 ? '🕯️' : '⚡'}
-              </div>
-            ))}
-            
-            {/* Center */}
-            <div className="text-6xl animate-pulse">
-              {isSpinning ? '💫' : '🎯'}
-            </div>
-          </div>
-
-          {/* Pointer */}
-          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-4 text-4xl">
-            ⬇️
-          </div>
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-400">
+            ⚡ STOP LOSS ROULETTE
+          </h2>
+          <p className="text-gray-300 text-sm">Higher risk = Higher rewards • Crypto wheel</p>
+        </div>
+        <div className="text-right">
+          <div className="text-sm text-gray-400">Multiplier</div>
+          <div className="text-2xl font-bold text-yellow-400">{getMultiplier(riskLevel)}×</div>
         </div>
       </div>
 
-      {/* Risk Slider */}
-      {!isSpinning && !result && (
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Risk Level: <span className="text-orange-400 text-xl font-bold">{riskLevel}</span>
-            <span className="text-gray-500 text-sm ml-2">
-              (Payout: {getMultiplier(riskLevel)}×)
-            </span>
-          </label>
-          <input
-            type="range"
-            min="1"
-            max="10"
-            value={riskLevel}
-            onChange={(e) => setRiskLevel(Number(e.target.value))}
-            className="w-full h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-orange-500"
-          />
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
-            <span>Safe (1.5×)</span>
-            <span>Risky (3.0×)</span>
+      {/* Crypto Roulette Wheel */}
+      <div className="relative bg-black rounded-lg p-6 mb-4 border-2 border-orange-700 h-80 flex items-center justify-center overflow-hidden">
+        {/* Pointer/Arrow */}
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
+          <div className="w-0 h-0 border-l-[20px] border-l-transparent border-t-[30px] border-t-yellow-400 border-r-[20px] border-r-transparent drop-shadow-lg" />
+        </div>
+
+        {/* Wheel */}
+        <div className="relative w-72 h-72">
+          <div 
+            className="absolute inset-0 rounded-full border-8 border-yellow-500 shadow-2xl transition-transform"
+            style={{ 
+              transform: `rotate(${rotation}deg)`,
+              transitionDuration: isSpinning ? '50ms' : '500ms',
+            }}
+          >
+            {/* Wheel segments */}
+            {CRYPTO_SYMBOLS.map((symbol, index) => {
+              const angle = (360 / CRYPTO_SYMBOLS.length) * index;
+              const isRed = index % 2 === 0;
+              
+              return (
+                <div
+                  key={index}
+                  className="absolute w-full h-full"
+                  style={{
+                    transform: `rotate(${angle}deg)`,
+                  }}
+                >
+                  <div className={`absolute top-0 left-1/2 transform -translate-x-1/2 w-24 h-36 origin-bottom ${
+                    isRed ? 'bg-gradient-to-t from-red-600 to-red-500' : 'bg-gradient-to-t from-green-600 to-green-500'
+                  } flex items-start justify-center pt-2`}
+                    style={{
+                      clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)',
+                    }}
+                  >
+                    <span className="text-3xl font-bold text-white drop-shadow-lg">
+                      {symbol}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Center hub */}
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 border-4 border-yellow-300 flex items-center justify-center shadow-2xl">
+              <div className="text-2xl font-bold text-black">
+                {isSpinning ? '⚡' : '₿'}
+              </div>
+            </div>
           </div>
         </div>
-      )}
+
+        {/* Spinning effect overlay */}
+        {isSpinning && (
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-500/20 to-transparent animate-pulse pointer-events-none" />
+        )}
+      </div>
+
+      {/* Risk Level Slider */}
+      <div className="mb-4">
+        <div className="flex justify-between text-sm text-gray-300 mb-2">
+          <span>Risk Level: {riskLevel}/10</span>
+          <span className="text-yellow-400 font-bold">{getMultiplier(riskLevel)}× Payout</span>
+        </div>
+        <input
+          type="range"
+          min="1"
+          max="10"
+          value={riskLevel}
+          onChange={(e) => setRiskLevel(parseInt(e.target.value))}
+          disabled={isSpinning}
+          className="w-full h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+          style={{
+            background: `linear-gradient(to right, #10b981 0%, #f59e0b ${riskLevel * 10}%, #374151 ${riskLevel * 10}%, #374151 100%)`,
+          }}
+        />
+        <div className="flex justify-between text-xs text-gray-400 mt-1">
+          <span>🟢 Low Risk</span>
+          <span>🟡 Medium</span>
+          <span>🔴 High Risk</span>
+        </div>
+      </div>
 
       {/* Result Display */}
       {result && (
-        <div className={`text-center text-3xl font-bold mb-4 animate-bounce ${
-          result.includes('won') || result.includes('SAFE') ? 'text-green-400' : 'text-red-400'
-        }`}>
+        <div className={`text-center text-2xl font-bold mb-4 p-4 rounded-lg border-2 ${
+          result.includes('SAFE') || result.includes('won')
+            ? 'bg-green-500/20 text-green-400 border-green-500' 
+            : result.includes('HIT') || result.includes('lost')
+            ? 'bg-red-500/20 text-red-400 border-red-500'
+            : 'bg-yellow-500/20 text-yellow-400 border-yellow-500'
+        } animate-pulse`}>
           {result}
         </div>
       )}
@@ -169,29 +211,35 @@ export const StopLossRoulette: React.FC = () => {
               onChange={(e) => setStake(e.target.value)}
               step="0.01"
               min="0.01"
-              className="w-full px-3 py-2 bg-gray-700 border border-orange-600 rounded text-white focus:ring-2 focus:ring-orange-500"
+              className="w-full px-4 py-3 bg-gray-800 border-2 border-orange-600 rounded-lg text-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 font-mono text-lg"
             />
           </div>
 
           <button
             onClick={spin}
-            className="w-full py-4 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white rounded-lg font-bold text-xl transition-all transform hover:scale-105 shadow-lg"
+            className="w-full py-4 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white rounded-lg font-bold text-xl transition-all transform hover:scale-105 shadow-lg shadow-orange-500/50"
           >
-            🎰 SPIN THE WHEEL
+            🎰 SPIN THE WHEEL ({stake} USDC)
           </button>
+
+          <div className="bg-gray-800/50 rounded-lg p-3 border border-orange-600/30">
+            <p className="text-sm text-gray-300 text-center">
+              Higher risk = Tighter stop loss = Bigger multiplier!
+            </p>
+          </div>
         </div>
       )}
 
       {isSpinning && (
-        <div className="text-center text-orange-400 font-bold text-xl animate-pulse">
-          🌀 Spinning... Will you hit stop loss?
+        <div className="text-center text-yellow-400 font-bold text-xl animate-pulse">
+          🎲 Spinning... Will your stop loss hit?
         </div>
       )}
 
       {result && (
         <button
           onClick={resetGame}
-          className="w-full mt-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-colors"
+          className="w-full mt-4 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg font-bold transition-all"
         >
           🔄 Spin Again
         </button>
@@ -199,4 +247,3 @@ export const StopLossRoulette: React.FC = () => {
     </div>
   );
 };
-
