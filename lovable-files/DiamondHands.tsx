@@ -14,12 +14,12 @@ interface DifficultyOption {
 }
 
 const DIFFICULTIES: DifficultyOption[] = [
-  { mines: 1, name: 'Super Easy', color: 'from-blue-600 to-blue-500', baseMultiplier: 1.12, description: 'Very Low Risk - Low Rewards', gridSize: 3 }, // 3×3 = 9 tiles (11% mine density)
-  { mines: 3, name: 'Easy', color: 'from-green-600 to-green-500', baseMultiplier: 1.18, description: 'Lower Risk', gridSize: 4 }, // 4×4 = 16 tiles (19% mine density)
-  { mines: 8, name: 'Medium', color: 'from-yellow-600 to-yellow-500', baseMultiplier: 1.28, description: 'Medium Risk', gridSize: 5 }, // 5×5 = 25 tiles (32% mine density)
-  { mines: 12, name: 'Hard', color: 'from-orange-600 to-orange-500', baseMultiplier: 1.45, description: 'High Risk', gridSize: 5 }, // 5×5 = 25 tiles (48% mine density)
-  { mines: 15, name: 'Extreme', color: 'from-red-600 to-red-500', baseMultiplier: 1.7, description: 'Very High Risk', gridSize: 5 }, // 5×5 = 25 tiles (60% mine density)
-  { mines: 18, name: 'Insane', color: 'from-purple-600 to-purple-500', baseMultiplier: 2.0, description: 'Extreme Risk - Max Rewards', gridSize: 5 }, // 5×5 = 25 tiles (72% mine density)
+  { mines: 2, name: 'Super Easy', color: 'from-blue-600 to-blue-500', baseMultiplier: 1.15, description: 'Very Low Risk - Low Rewards', gridSize: 3 }, // 3×3 = 9 tiles (22% mine density) - 2 mines instead of 1!
+  { mines: 5, name: 'Easy', color: 'from-green-600 to-green-500', baseMultiplier: 1.22, description: 'Lower Risk', gridSize: 4 }, // 4×4 = 16 tiles (31% mine density) - 5 mines instead of 3!
+  { mines: 10, name: 'Medium', color: 'from-yellow-600 to-yellow-500', baseMultiplier: 1.35, description: 'Medium Risk', gridSize: 5 }, // 5×5 = 25 tiles (40% mine density)
+  { mines: 13, name: 'Hard', color: 'from-orange-600 to-orange-500', baseMultiplier: 1.55, description: 'High Risk', gridSize: 5 }, // 5×5 = 25 tiles (52% mine density)
+  { mines: 16, name: 'Extreme', color: 'from-red-600 to-red-500', baseMultiplier: 1.8, description: 'Very High Risk', gridSize: 5 }, // 5×5 = 25 tiles (64% mine density)
+  { mines: 19, name: 'Insane', color: 'from-purple-600 to-purple-500', baseMultiplier: 2.2, description: 'Extreme Risk - Max Rewards', gridSize: 5 }, // 5×5 = 25 tiles (76% mine density)
 ];
 
 export const DiamondHands: React.FC = () => {
@@ -50,12 +50,12 @@ export const DiamondHands: React.FC = () => {
     
     // HOUSE EDGE: Max payout scales with risk level AND grid size
     const maxPayouts: { [key: number]: number } = {
-      1: 3,     // Super Easy (3×3): max 3x (VERY low - anti-exploit)
-      3: 8,     // Easy (4×4): max 8x
-      8: 20,    // Medium (5×5): max 20x
-      12: 40,   // Hard (5×5): max 40x
-      15: 75,   // Extreme (5×5): max 75x
-      18: 150,  // Insane (5×5): max 150x (highest risk, highest reward)
+      2: 2.5,   // Super Easy (3×3, 2 mines): max 2.5x - hard to get perfect game!
+      5: 6,     // Easy (4×4, 5 mines): max 6x - only 11 safe tiles
+      10: 18,   // Medium (5×5, 10 mines): max 18x - half the grid is mines!
+      13: 35,   // Hard (5×5, 13 mines): max 35x
+      16: 70,   // Extreme (5×5, 16 mines): max 70x
+      19: 140,  // Insane (5×5, 19 mines): max 140x - only 6 safe tiles!
     };
     
     const maxPayout = maxPayouts[difficulty.mines] || 25;
