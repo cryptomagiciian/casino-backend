@@ -31,6 +31,8 @@ export const PumpOrDump: React.FC = () => {
   const [result, setResult] = useState<string | null>(null);
   const [betId, setBetId] = useState<string | null>(null);
   const [volumeBars, setVolumeBars] = useState<number[]>([]);
+  const [entryPrice, setEntryPrice] = useState<number>(0);
+  const [currentPnL, setCurrentPnL] = useState<number>(0);
   const { fetchBalances } = useWallet();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
@@ -70,6 +72,8 @@ export const PumpOrDump: React.FC = () => {
     const lastPrice = candles.length > 0 ? candles[candles.length - 1].close : 50000;
     const open = lastPrice;
     setPrice(open);
+    setEntryPrice(open); // Set entry price for P&L tracking
+    setCurrentPnL(0);
     
     const newCandle: Candle = {
       open,
@@ -115,6 +119,21 @@ export const PumpOrDump: React.FC = () => {
             low: Math.min(candle.low, newPrice),
           };
         });
+        
+        // Calculate P&L based on prediction
+        const priceChange = newPrice - open;
+        const pnlPercent = (priceChange / open) * 100;
+        
+        let estimatedPnL = 0;
+        if (prediction === 'pump' && priceChange > 0) {
+          estimatedPnL = parseFloat(stake) * 0.95 * (pnlPercent / 2); // Theoretical profit
+        } else if (prediction === 'dump' && priceChange < 0) {
+          estimatedPnL = parseFloat(stake) * 0.95 * (Math.abs(pnlPercent) / 2);
+        } else {
+          estimatedPnL = -parseFloat(stake) * (Math.abs(pnlPercent) / 10); // Theoretical loss
+        }
+        
+        setCurrentPnL(estimatedPnL);
         
         return newPrice;
       });

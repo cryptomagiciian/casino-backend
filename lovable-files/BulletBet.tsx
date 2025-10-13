@@ -62,7 +62,23 @@ export const BulletBet: React.FC = () => {
       setIsSpinning(true);
       setResult(null);
       setSelectedChamber(null);
-      initializeChambers();
+      
+      // Initialize chambers FIRST before any logic
+      const bulletPositions = new Set<number>();
+      while (bulletPositions.size < bulletCount) {
+        bulletPositions.add(Math.floor(Math.random() * CHAMBERS));
+      }
+      
+      const newChambers: Chamber[] = [];
+      for (let i = 0; i < CHAMBERS; i++) {
+        newChambers.push({
+          icon: CRYPTO_ICONS[i],
+          isBullet: bulletPositions.has(i),
+          revealed: false,
+        });
+      }
+      
+      setChambers(newChambers);
 
       const bet = await apiService.placeBet({
         game: 'stop_loss_roulette',
@@ -94,34 +110,30 @@ export const BulletBet: React.FC = () => {
             setResult('⚠️ TIE! Pointer landed between chambers. Bet refunded!');
             setIsSpinning(false);
             
-            // Refund the bet by crediting back the stake
-            // (In a real scenario, backend would handle this, but for demo we just show message)
             setTimeout(() => {
-              fetchBalances(); // Refresh to show refunded amount
+              fetchBalances();
             }, 500);
           } else {
             // Normal outcome - pointer lands on a chamber
             const finalChamber = Math.floor(Math.random() * CHAMBERS);
             
             // Rotate cylinder so the selected chamber aligns with top pointer
-            // Each chamber is 60° apart (360° / 6 chambers)
             const targetRotation = finalChamber * 60;
             setRotation(targetRotation);
             setSelectedChamber(finalChamber);
             
-            // Wait for rotation animation to complete
+            // Wait for rotation animation
             setTimeout(() => {
-              // Check if this chamber has a bullet (client-side determination)
-              const landedChamber = chambers[finalChamber];
-              const hitBullet = landedChamber?.isBullet || false;
+              // Check if THIS chamber has a bullet
+              const hitBullet = newChambers[finalChamber].isBullet;
               
-              // Resolve bet (for balance update)
+              // Resolve bet
               apiService.resolveBet(bet.id)
                 .then(async (resolved) => {
-                  // Use OUR visual determination, not backend's random result
+                  // Use client-side determination
                   const won = !hitBullet;
                   
-                  // Update chamber state - reveal the selected chamber
+                  // Reveal the selected chamber
                   setChambers(prev => prev.map((chamber, i) => ({
                     ...chamber,
                     revealed: i === finalChamber,
@@ -143,7 +155,7 @@ export const BulletBet: React.FC = () => {
                   setResult('❌ Error: ' + error.message);
                   setIsSpinning(false);
                 });
-            }, 500); // Wait for rotation animation
+            }, 500);
           }
         }
       }, 50);
