@@ -36,6 +36,7 @@ export const PumpOrDump: React.FC = () => {
   const { fetchBalances } = useWallet();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
+  const cleanupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const initialCandles: Candle[] = [];
@@ -66,7 +67,7 @@ export const PumpOrDump: React.FC = () => {
   const startRound = async () => {
     console.log('🚀 START ROUND called');
     
-    // CRITICAL: Clear any existing intervals from previous rounds!
+    // CRITICAL: Clear any existing intervals AND timeouts from previous rounds!
     if (intervalRef.current) {
       console.log('⚠️ Clearing old price interval');
       clearInterval(intervalRef.current);
@@ -76,6 +77,11 @@ export const PumpOrDump: React.FC = () => {
       console.log('⚠️ Clearing old countdown interval');
       clearInterval(countdownRef.current);
       countdownRef.current = null;
+    }
+    if (cleanupTimeoutRef.current) {
+      console.log('⚠️ Clearing old cleanup timeout (prevents betId from being cleared!)');
+      clearTimeout(cleanupTimeoutRef.current);
+      cleanupTimeoutRef.current = null;
     }
     
     setIsPlaying(true);
@@ -303,10 +309,11 @@ export const PumpOrDump: React.FC = () => {
         }, 100);
         
         // Re-enable betting after 3 seconds AND clear betId
-        setTimeout(() => {
+        cleanupTimeoutRef.current = setTimeout(() => {
           console.log('⏰ 3 seconds passed, enabling betting and clearing betId');
           setCanBet(true);
           setBetId(null); // Clear betId AFTER result has been displayed
+          cleanupTimeoutRef.current = null;
         }, 3000);
       } catch (error) {
         console.error('Bet resolution failed:', error);
