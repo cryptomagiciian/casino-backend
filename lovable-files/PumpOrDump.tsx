@@ -10,9 +10,18 @@ interface Candle {
   timestamp: number;
 }
 
+const TIME_OPTIONS = [
+  { value: 5, label: '5s', speed: 80 },
+  { value: 10, label: '10s', speed: 150 },
+  { value: 15, label: '15s', speed: 225 },
+  { value: 30, label: '30s', speed: 450 },
+  { value: 60, label: '1min', speed: 900 },
+];
+
 export const PumpOrDump: React.FC = () => {
   const [stake, setStake] = useState('10.00');
   const [prediction, setPrediction] = useState<'pump' | 'dump'>('pump');
+  const [timeframe, setTimeframe] = useState(10);
   const [countdown, setCountdown] = useState(10);
   const [isPlaying, setIsPlaying] = useState(false);
   const [canBet, setCanBet] = useState(true);
@@ -21,24 +30,29 @@ export const PumpOrDump: React.FC = () => {
   const [currentCandle, setCurrentCandle] = useState<Candle | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [betId, setBetId] = useState<string | null>(null);
+  const [volumeBars, setVolumeBars] = useState<number[]>([]);
   const { fetchBalances } = useWallet();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Initialize with some candles
     const initialCandles: Candle[] = [];
     let basePrice = 50000;
-    for (let i = 0; i < 8; i++) {
+    const initialVolume: number[] = [];
+    
+    for (let i = 0; i < 12; i++) {
       const open = basePrice;
       const change = (Math.random() - 0.5) * 2000;
       const close = open + change;
       const high = Math.max(open, close) + Math.random() * 500;
       const low = Math.min(open, close) - Math.random() * 500;
-      initialCandles.push({ open, close, high, low, timestamp: Date.now() - (8 - i) * 10000 });
+      initialCandles.push({ open, close, high, low, timestamp: Date.now() - (12 - i) * 10000 });
+      initialVolume.push(30 + Math.random() * 70);
       basePrice = close;
     }
+    
     setCandles(initialCandles);
+    setVolumeBars(initialVolume);
     setPrice(basePrice);
 
     return () => {
@@ -50,7 +64,7 @@ export const PumpOrDump: React.FC = () => {
   const startRound = () => {
     setIsPlaying(true);
     setCanBet(true);
-    setCountdown(10);
+    setCountdown(timeframe);
     setResult(null);
     setBetId(null);
     
@@ -67,11 +81,13 @@ export const PumpOrDump: React.FC = () => {
     };
     setCurrentCandle(newCandle);
 
-    // Animate current candle volatility
+    const updateSpeed = TIME_OPTIONS.find(t => t.value === timeframe)?.speed || 150;
+    
     intervalRef.current = setInterval(() => {
       setPrice(prev => {
-        const change = (Math.random() - 0.5) * 800;
-        const newPrice = prev + change;
+        const volatility = (Math.random() - 0.5) * 800;
+        const trend = (Math.random() - 0.5) * 300;
+        const newPrice = prev + volatility + trend;
         
         setCurrentCandle(candle => {
           if (!candle) return null;
@@ -85,9 +101,8 @@ export const PumpOrDump: React.FC = () => {
         
         return newPrice;
       });
-    }, 150);
+    }, updateSpeed);
 
-    // Countdown timer
     countdownRef.current = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
@@ -96,7 +111,7 @@ export const PumpOrDump: React.FC = () => {
           finalizeCandle();
           return 0;
         }
-        if (prev === 3) setCanBet(false); // Lock bets at 3 seconds
+        if (prev === 3) setCanBet(false);
         return prev - 1;
       });
     }, 1000);
@@ -104,20 +119,19 @@ export const PumpOrDump: React.FC = () => {
 
   const finalizeCandle = async () => {
     if (currentCandle) {
-      setCandles(prev => [...prev.slice(-7), currentCandle]);
+      setCandles(prev => [...prev.slice(-11), currentCandle]);
+      setVolumeBars(prev => [...prev.slice(-11), 30 + Math.random() * 70]);
     }
     setCurrentCandle(null);
     
-    // Resolve bet if placed
     if (betId) {
       try {
         const resolved = await apiService.resolveBet(betId);
         await fetchBalances();
         
         const won = resolved.resultMultiplier > 0;
-        setResult(won ? '🎉 YOU WON!' : '💥 YOU LOST!');
+        setResult(won ? `🎉 YOU WON! ${resolved.resultMultiplier}×` : '💥 YOU LOST!');
         
-        // Auto restart after 3 seconds
         setTimeout(() => {
           setIsPlaying(false);
         }, 3000);
@@ -130,7 +144,6 @@ export const PumpOrDump: React.FC = () => {
         setBetId(null);
       }
     } else {
-      // No bet placed, just reset
       setTimeout(() => {
         setIsPlaying(false);
       }, 2000);
@@ -167,13 +180,13 @@ export const PumpOrDump: React.FC = () => {
     setBetId(null);
   };
 
-  // Render a single candlestick
   const renderCandle = (candle: Candle, index: number, isLive = false) => {
     const isPump = candle.close >= candle.open;
     const color = isPump ? 'bg-green-500' : 'bg-red-500';
     const bodyColor = isPump ? 'bg-green-400' : 'bg-red-400';
-    const minPrice = Math.min(...candles.map(c => c.low), currentCandle?.low ?? Infinity);
-    const maxPrice = Math.max(...candles.map(c => c.high), currentCandle?.high ?? 0);
+    const allCandles = [...candles, ...(currentCandle ? [currentCandle] : [])];
+    const minPrice = Math.min(...allCandles.map(c => c.low));
+    const maxPrice = Math.max(...allCandles.map(c => c.high));
     const priceRange = maxPrice - minPrice || 1;
     
     const wickBottom = ((candle.low - minPrice) / priceRange) * 100;
@@ -183,17 +196,18 @@ export const PumpOrDump: React.FC = () => {
     
     return (
       <div key={index} className="flex flex-col items-center justify-end h-full relative px-1">
-        {/* Top wick */}
         <div 
           className={`w-0.5 ${color} ${isLive ? 'animate-pulse' : ''}`}
           style={{ height: `${wickTop}%` }}
         />
-        {/* Body */}
         <div 
-          className={`w-full ${bodyColor} ${isLive ? 'animate-pulse border-2 border-yellow-400' : ''} rounded-sm`}
+          className={`w-full ${bodyColor} ${isLive ? 'animate-pulse border-2 border-yellow-400 shadow-lg shadow-yellow-500/50' : ''} rounded-sm relative overflow-hidden`}
           style={{ height: `${Math.max(bodyHeight, 2)}%` }}
-        />
-        {/* Bottom wick */}
+        >
+          {isLive && (
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
+          )}
+        </div>
         <div 
           className={`w-0.5 ${color} ${isLive ? 'animate-pulse' : ''}`}
           style={{ height: `${bodyBottom - wickBottom}%` }}
@@ -206,14 +220,14 @@ export const PumpOrDump: React.FC = () => {
     <div className="bg-gradient-to-br from-gray-900 via-purple-900 to-black rounded-lg p-6 border-2 border-purple-500 shadow-2xl">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-red-400">
+          <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-yellow-400 to-red-400">
             📊 PUMP OR DUMP
           </h2>
-          <p className="text-gray-300 text-sm">Real-time candle prediction • 1.95× payout</p>
+          <p className="text-gray-300 text-sm">Pocket Option style • Real-time trading • 1.95× payout</p>
         </div>
         <div className="text-right">
           <div className="text-sm text-gray-400">Current Price</div>
-          <div className={`text-2xl font-mono font-bold ${
+          <div className={`text-2xl font-mono font-bold transition-colors ${
             price > 52000 ? 'text-green-400' : price < 48000 ? 'text-red-400' : 'text-yellow-400'
           }`}>
             ${price.toFixed(0)}
@@ -223,68 +237,107 @@ export const PumpOrDump: React.FC = () => {
 
       {/* Enhanced Candlestick Chart */}
       <div className="bg-black rounded-lg p-4 mb-4 border-2 border-purple-700 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-purple-900/20 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-purple-900/20 via-transparent to-green-900/10 pointer-events-none" />
         
-        {/* Grid lines */}
+        {/* Grid lines with labels */}
         <div className="absolute inset-0 flex flex-col justify-between p-4">
           {[0, 1, 2, 3, 4].map(i => (
-            <div key={i} className="border-t border-gray-800/50" />
+            <div key={i} className="relative border-t border-gray-800/50">
+              <span className="absolute -left-2 -top-2 text-xs text-gray-600">
+                ${(52000 - i * 1000).toFixed(0)}
+              </span>
+            </div>
           ))}
         </div>
 
         {/* Candlesticks */}
-        <div className="relative h-48 flex items-end justify-around gap-1">
-          {candles.slice(-8).map((candle, i) => renderCandle(candle, i))}
+        <div className="relative h-56 flex items-end justify-around gap-1">
+          {candles.slice(-12).map((candle, i) => renderCandle(candle, i))}
           {currentCandle && renderCandle(currentCandle, 999, true)}
         </div>
 
         {/* Countdown timer */}
-        {countdown > 0 && countdown <= 10 && isPlaying && (
-          <div className="absolute top-4 right-4 flex flex-col items-center">
-            <div className="bg-yellow-500 text-black px-4 py-2 rounded-full text-2xl font-bold animate-bounce shadow-lg">
+        {countdown > 0 && countdown <= timeframe && isPlaying && (
+          <div className="absolute top-4 right-4 flex flex-col items-center z-10">
+            <div className={`px-5 py-3 rounded-full text-3xl font-bold shadow-2xl border-4 ${
+              countdown <= 3 ? 'bg-red-500 text-white border-red-300 animate-bounce' : 'bg-yellow-500 text-black border-yellow-300'
+            }`}>
               {countdown}s
             </div>
-            <div className="text-xs text-yellow-400 mt-1">Candle closing...</div>
+            <div className="text-xs text-yellow-400 mt-1 font-bold">Candle closing...</div>
           </div>
         )}
 
         {/* Bet indicator */}
-        {betId && (
-          <div className="absolute top-4 left-4 bg-purple-600 text-white px-3 py-1 rounded-full text-sm font-bold animate-pulse">
-            🎲 Bet Placed: {prediction.toUpperCase()}
+        {betId && !result && (
+          <div className="absolute top-4 left-4 bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-bold animate-pulse border-2 border-purple-300 shadow-lg z-10">
+            🎲 {prediction.toUpperCase()} • {stake} USDC
           </div>
         )}
+
+        {/* Price indicator line */}
+        <div className="absolute left-0 right-0 border-t-2 border-dashed border-yellow-400 opacity-50" style={{ top: '50%' }}>
+          <div className="absolute right-4 -top-3 bg-yellow-400 text-black text-xs px-2 py-1 rounded font-bold">
+            ${price.toFixed(0)}
+          </div>
+        </div>
       </div>
 
-      {/* Volume bars (decorative) */}
-      <div className="flex gap-1 mb-4 h-8 items-end">
-        {candles.slice(-8).map((candle, i) => (
-          <div 
-            key={i} 
-            className={`flex-1 ${candle.close >= candle.open ? 'bg-green-600/30' : 'bg-red-600/30'} rounded-t`}
-            style={{ height: `${30 + Math.random() * 70}%` }}
-          />
-        ))}
+      {/* Volume bars */}
+      <div className="flex gap-1 mb-4 h-12 items-end bg-gray-900 rounded p-2">
+        {volumeBars.slice(-12).map((vol, i) => {
+          const candle = candles.slice(-12)[i];
+          const isGreen = candle && candle.close >= candle.open;
+          return (
+            <div 
+              key={i} 
+              className={`flex-1 ${isGreen ? 'bg-green-600/40' : 'bg-red-600/40'} rounded-t transition-all`}
+              style={{ height: `${vol}%` }}
+            />
+          );
+        })}
         {currentCandle && (
-          <div className="flex-1 bg-yellow-500/30 rounded-t animate-pulse" style={{ height: '80%' }} />
+          <div className="flex-1 bg-yellow-500/40 rounded-t animate-pulse" style={{ height: '85%' }} />
         )}
       </div>
 
       {/* Result Display */}
       {result && (
-        <div className={`text-center text-3xl font-bold mb-4 p-4 rounded-lg ${
+        <div className={`text-center text-3xl font-bold mb-4 p-6 rounded-xl border-4 relative overflow-hidden ${
           result.includes('WON') 
-            ? 'bg-green-500/20 text-green-400 border-2 border-green-500' 
+            ? 'bg-green-500/30 text-green-400 border-green-500' 
             : result.includes('LOST')
-            ? 'bg-red-500/20 text-red-400 border-2 border-red-500'
-            : 'bg-yellow-500/20 text-yellow-400 border-2 border-yellow-500'
-        } animate-pulse`}>
-          {result}
+            ? 'bg-red-500/30 text-red-400 border-red-500'
+            : 'bg-yellow-500/30 text-yellow-400 border-yellow-500'
+        } animate-pulse shadow-2xl`}>
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
+          <div className="relative">{result}</div>
         </div>
       )}
 
       {!isPlaying && (
         <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Timeframe:
+            </label>
+            <div className="grid grid-cols-5 gap-2">
+              {TIME_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setTimeframe(option.value)}
+                  className={`py-3 rounded-lg font-bold text-sm transition-all transform hover:scale-105 ${
+                    timeframe === option.value
+                      ? 'bg-gradient-to-br from-purple-600 to-pink-600 text-white shadow-lg border-2 border-purple-300'
+                      : 'bg-gray-800 text-gray-400 border-2 border-gray-700 hover:border-purple-600'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Stake (USDC):
@@ -295,7 +348,7 @@ export const PumpOrDump: React.FC = () => {
               onChange={(e) => setStake(e.target.value)}
               step="0.01"
               min="0.01"
-              className="w-full px-4 py-3 bg-gray-800 border-2 border-purple-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono"
+              className="w-full px-4 py-3 bg-gray-800 border-2 border-purple-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono text-lg"
             />
           </div>
 
@@ -305,33 +358,33 @@ export const PumpOrDump: React.FC = () => {
             </label>
             <div className="grid grid-cols-2 gap-4">
               <button
-                className={`py-6 rounded-lg font-bold text-xl transition-all transform hover:scale-105 relative overflow-hidden ${
+                className={`py-6 rounded-xl font-bold text-xl transition-all transform hover:scale-105 relative overflow-hidden ${
                   prediction === 'pump'
-                    ? 'bg-gradient-to-br from-green-600 to-green-500 text-white shadow-lg shadow-green-500/50 border-2 border-green-400'
+                    ? 'bg-gradient-to-br from-green-600 to-green-500 text-white shadow-lg shadow-green-500/50 border-4 border-green-400'
                     : 'bg-gray-800 text-gray-500 border-2 border-gray-700 hover:border-green-600'
                 }`}
                 onClick={() => setPrediction('pump')}
               >
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                 <div className="relative">
-                  <div className="text-4xl mb-1">📈</div>
+                  <div className="text-5xl mb-2">📈</div>
                   <div>PUMP</div>
-                  <div className="text-xs text-green-200 mt-1">Price goes up</div>
+                  <div className="text-xs text-green-200 mt-1">Price goes UP</div>
                 </div>
               </button>
               <button
-                className={`py-6 rounded-lg font-bold text-xl transition-all transform hover:scale-105 relative overflow-hidden ${
+                className={`py-6 rounded-xl font-bold text-xl transition-all transform hover:scale-105 relative overflow-hidden ${
                   prediction === 'dump'
-                    ? 'bg-gradient-to-br from-red-600 to-red-500 text-white shadow-lg shadow-red-500/50 border-2 border-red-400'
+                    ? 'bg-gradient-to-br from-red-600 to-red-500 text-white shadow-lg shadow-red-500/50 border-4 border-red-400'
                     : 'bg-gray-800 text-gray-500 border-2 border-gray-700 hover:border-red-600'
                 }`}
                 onClick={() => setPrediction('dump')}
               >
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                 <div className="relative">
-                  <div className="text-4xl mb-1">📉</div>
+                  <div className="text-5xl mb-2">📉</div>
                   <div>DUMP</div>
-                  <div className="text-xs text-red-200 mt-1">Price goes down</div>
+                  <div className="text-xs text-red-200 mt-1">Price goes DOWN</div>
                 </div>
               </button>
             </div>
@@ -339,9 +392,9 @@ export const PumpOrDump: React.FC = () => {
 
           <button
             onClick={startRound}
-            className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white rounded-lg font-bold text-xl transition-all transform hover:scale-105 shadow-lg shadow-purple-500/50"
+            className="w-full py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 hover:from-purple-500 hover:via-pink-500 hover:to-red-500 text-white rounded-xl font-bold text-xl transition-all transform hover:scale-105 shadow-lg shadow-purple-500/50"
           >
-            🚀 START NEW ROUND
+            🚀 START {timeframe}s ROUND
           </button>
         </div>
       )}
@@ -349,26 +402,20 @@ export const PumpOrDump: React.FC = () => {
       {isPlaying && canBet && !betId && (
         <button
           onClick={placeBet}
-          className="w-full py-4 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black rounded-lg font-bold text-xl transition-all transform hover:scale-105 shadow-lg shadow-yellow-500/50 animate-pulse"
+          className="w-full py-4 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 text-white rounded-xl font-bold text-xl transition-all transform hover:scale-105 shadow-lg shadow-yellow-500/50 animate-pulse border-4 border-yellow-300"
         >
           💰 PLACE BET: {prediction.toUpperCase()} ({stake} USDC)
         </button>
       )}
 
       {isPlaying && betId && !result && (
-        <div className="text-center space-y-2">
-          <div className="text-yellow-400 font-bold text-xl animate-pulse">
-            ⏳ Waiting for candle to close...
+        <div className="text-center space-y-2 bg-gray-800/50 rounded-lg p-4 border-2 border-purple-600">
+          <div className="text-yellow-400 font-bold text-2xl animate-pulse">
+            ⏳ Waiting for candle close...
           </div>
           <div className="text-sm text-gray-400">
-            Betting locked • Result coming in {countdown}s
+            Bet locked • Result in {countdown}s
           </div>
-        </div>
-      )}
-
-      {isPlaying && !canBet && !betId && !result && (
-        <div className="text-center text-gray-400 font-medium">
-          ⚠️ Betting window closed for this round
         </div>
       )}
 
@@ -377,7 +424,7 @@ export const PumpOrDump: React.FC = () => {
           onClick={resetGame}
           className="w-full mt-4 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg font-bold transition-all"
         >
-          🔄 Play Another Round
+          🔄 Trade Again
         </button>
       )}
     </div>
