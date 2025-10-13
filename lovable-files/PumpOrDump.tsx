@@ -181,13 +181,13 @@ export const PumpOrDump: React.FC = () => {
 
   const finalizeCandle = async () => {
     let finalPrice = price;
+    let finalCandle = currentCandle;
     
     if (currentCandle) {
       finalPrice = currentCandle.close;
-      setCandles(prev => [...prev.slice(-11), currentCandle]);
-      setVolumeBars(prev => [...prev.slice(-11), 30 + Math.random() * 70]);
     }
-    setCurrentCandle(null);
+    
+    // DON'T set currentCandle to null yet - we need it for adjustment!
     setCurrentPnL(0);
     
     if (betId) {
@@ -196,13 +196,16 @@ export const PumpOrDump: React.FC = () => {
         const resolved = await apiService.resolveBet(betId);
         await fetchBalances();
         
-        // Backend result is the source of truth (49.5% win chance via RNG)
+        // Backend result is the source of truth (44% win chance via RNG)
         const won = resolved.outcome === 'win';
         
         console.log('🎲 Backend RNG result:', {
           outcome: resolved.outcome,
           won,
-          resultMultiplier: resolved.resultMultiplier
+          resultMultiplier: resolved.resultMultiplier,
+          prediction,
+          originalPrice: finalPrice,
+          entryPrice
         });
         
         // NOW adjust the final price to MATCH the backend outcome!
@@ -229,17 +232,21 @@ export const PumpOrDump: React.FC = () => {
           }
         }
         
-        // Update the current candle to reflect the adjusted price
-        if (currentCandle) {
+        // Update the candle to reflect the adjusted price
+        if (finalCandle) {
           const updatedCandle = {
-            ...currentCandle,
+            ...finalCandle,
             close: adjustedFinalPrice,
-            high: Math.max(currentCandle.high, adjustedFinalPrice),
-            low: Math.min(currentCandle.low, adjustedFinalPrice),
+            high: Math.max(finalCandle.high, adjustedFinalPrice),
+            low: Math.min(finalCandle.low, adjustedFinalPrice),
           };
           setCandles(prev => [...prev.slice(-11), updatedCandle]);
           setPrice(adjustedFinalPrice);
+          setVolumeBars(prev => [...prev.slice(-11), 30 + Math.random() * 70]);
         }
+        
+        // NOW set currentCandle to null after adjustment
+        setCurrentCandle(null);
         
         const isPump = adjustedFinalPrice > entryPrice;
         const priceChange = ((adjustedFinalPrice - entryPrice) / entryPrice * 100).toFixed(2);
