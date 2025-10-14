@@ -1,0 +1,12 @@
+{
+  "name": "casino-frontend",
+  "version": "1.0.0",
+  "description": "Professional trading terminal frontend",
+  "dependencies": {
+    "lightweight-charts": "^4.1.3"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0"
+  }
+}

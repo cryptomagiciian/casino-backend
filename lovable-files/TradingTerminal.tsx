@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from './api';
-import { TradingChart } from './TradingChart';
+import { AdvancedTradingChart } from './AdvancedTradingChart';
 
 interface FuturesSymbol {
   id: string;
@@ -202,14 +202,14 @@ export const TradingTerminal: React.FC = () => {
           </div>
         )}
 
-        {/* Trading Chart */}
+        {/* Advanced Trading Chart */}
         {selectedSymbol && (
           <div className="mb-6">
-            <TradingChart 
+            <AdvancedTradingChart 
               symbolId={selectedSymbol}
               showCommittedMark={true}
               showBaseline={true}
-              height={400}
+              height={500}
             />
           </div>
         )}
