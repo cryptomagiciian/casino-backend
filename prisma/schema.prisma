@@ -239,8 +239,8 @@ model FuturesSymbol {
 
 model FuturesPosition {
   id            String   @id @default(cuid())
-  userId        String   @index
-  symbolId      String   @index
+  userId        String
+  symbolId      String
   side          String   // LONG|SHORT
   qty           Decimal  // base units
   entryPrice    Decimal
@@ -259,12 +259,15 @@ model FuturesPosition {
   symbol FuturesSymbol @relation(fields: [symbolId], references: [id])
   txs    FuturesTx[]
 
+  @@index([userId])
+  @@index([symbolId])
+  @@index([status])
   @@map("futures_positions")
 }
 
 model FuturesTx {
   id         String   @id @default(cuid())
-  userId     String   @index
+  userId     String
   positionId String?
   symbolId   String
   type       String   // OPEN_FEE|CLOSE_FEE|IMPACT_FEE|BORROW|FUNDING|PNL|LIQUIDATION
@@ -278,5 +281,9 @@ model FuturesTx {
   position FuturesPosition? @relation(fields: [positionId], references: [id])
   symbol   FuturesSymbol  @relation(fields: [symbolId], references: [id])
 
+  @@index([userId])
+  @@index([positionId])
+  @@index([symbolId])
+  @@index([type])
   @@map("futures_txs")
 }
