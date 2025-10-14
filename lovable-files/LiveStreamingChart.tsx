@@ -198,12 +198,32 @@ export const LiveStreamingChart: React.FC<LiveStreamingChartProps> = ({
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, rect.width, rect.height);
 
-    // Calculate price range
-    const prices = candlesticks.flatMap(c => [c.high, c.low]);
+    // Calculate price range with validation
+    const validCandlesticks = candlesticks.filter(c => 
+      c && 
+      typeof c.high === 'number' && isFinite(c.high) &&
+      typeof c.low === 'number' && isFinite(c.low) &&
+      typeof c.open === 'number' && isFinite(c.open) &&
+      typeof c.close === 'number' && isFinite(c.close) &&
+      c.high > 0 && c.low > 0 && c.open > 0 && c.close > 0
+    );
+
+    if (validCandlesticks.length === 0) {
+      console.warn('⚠️ No valid candlesticks to render');
+      return;
+    }
+
+    const prices = validCandlesticks.flatMap(c => [c.high, c.low]);
     const minPrice = Math.min(...prices);
     const maxPrice = Math.max(...prices);
     const priceRange = maxPrice - minPrice;
     const padding = priceRange * 0.05;
+
+    // Ensure we have valid price range
+    if (!isFinite(minPrice) || !isFinite(maxPrice) || priceRange <= 0) {
+      console.warn('⚠️ Invalid price range:', { minPrice, maxPrice, priceRange });
+      return;
+    }
 
     // Chart dimensions
     const chartWidth = rect.width - 80;
@@ -270,12 +290,12 @@ export const LiveStreamingChart: React.FC<LiveStreamingChartProps> = ({
     }
 
     // Draw candlesticks with modern styling
-    const candleWidth = Math.max(3, chartWidth / candlesticks.length - 2);
+    const candleWidth = Math.max(3, chartWidth / validCandlesticks.length - 2);
     
-    candlesticks.forEach((candle, index) => {
-      const x = chartX + (chartWidth / candlesticks.length) * index;
+    validCandlesticks.forEach((candle, index) => {
+      const x = chartX + (chartWidth / validCandlesticks.length) * index;
       const isGreen = candle.close > candle.open; // Green for upward movement (close > open)
-      const isLastCandle = index === candlesticks.length - 1;
+      const isLastCandle = index === validCandlesticks.length - 1;
       
       // Calculate Y positions
       const highY = chartY + chartHeight - ((candle.high - minPrice + padding) / (priceRange + padding * 2)) * chartHeight;
@@ -364,25 +384,28 @@ export const LiveStreamingChart: React.FC<LiveStreamingChartProps> = ({
     }
 
     // Draw volume bars
-    const maxVolume = Math.max(...candlesticks.map(c => c.volume));
-    const volumeHeight = 40;
-    const volumeY = rect.height - volumeHeight;
-    
-    candlesticks.forEach((candle, index) => {
-      const x = chartX + (chartWidth / candlesticks.length) * index;
-      const barHeight = (candle.volume / maxVolume) * volumeHeight;
-      const isGreen = candle.close > candle.open; // Green for upward movement (close > open)
-      const isLastCandle = index === candlesticks.length - 1;
+    const validVolumes = validCandlesticks.map(c => c.volume).filter(v => typeof v === 'number' && isFinite(v) && v > 0);
+    if (validVolumes.length > 0) {
+      const maxVolume = Math.max(...validVolumes);
+      const volumeHeight = 40;
+      const volumeY = rect.height - volumeHeight;
       
-      ctx.fillStyle = isGreen ? `${colors.bullish}40` : `${colors.bearish}40`;
-      ctx.fillRect(x - candleWidth / 2, volumeY + volumeHeight - barHeight, candleWidth, barHeight);
+      validCandlesticks.forEach((candle, index) => {
+        const x = chartX + (chartWidth / validCandlesticks.length) * index;
+        const barHeight = (candle.volume / maxVolume) * volumeHeight;
+        const isGreen = candle.close > candle.open; // Green for upward movement (close > open)
+        const isLastCandle = index === validCandlesticks.length - 1;
       
-      // Highlight current candle volume
-      if (isLastCandle) {
-        ctx.fillStyle = isGreen ? `${colors.bullish}60` : `${colors.bearish}60`;
+        ctx.fillStyle = isGreen ? `${colors.bullish}40` : `${colors.bearish}40`;
         ctx.fillRect(x - candleWidth / 2, volumeY + volumeHeight - barHeight, candleWidth, barHeight);
-      }
-    });
+        
+        // Highlight current candle volume
+        if (isLastCandle) {
+          ctx.fillStyle = isGreen ? `${colors.bullish}60` : `${colors.bearish}60`;
+          ctx.fillRect(x - candleWidth / 2, volumeY + volumeHeight - barHeight, candleWidth, barHeight);
+        }
+      });
+    }
 
   }, [candlesticks, currentPrice, showIndicators, hoveredCandle]);
 

@@ -139,25 +139,51 @@ export class WebSocketCandlestickService {
       
       // Handle array format: [timestamp, volume, close, high, low, open]
       if (Array.isArray(candle) && candle.length >= 6) {
-        candlestick = {
-          timestamp: parseInt(candle[0]) * 1000, // Convert to milliseconds
-          volume: parseFloat(candle[1]),
-          close: parseFloat(candle[2]),
-          high: parseFloat(candle[3]),
-          low: parseFloat(candle[4]),
-          open: parseFloat(candle[5])
-        };
+        const timestamp = parseInt(candle[0]) * 1000;
+        const volume = parseFloat(candle[1]);
+        const close = parseFloat(candle[2]);
+        const high = parseFloat(candle[3]);
+        const low = parseFloat(candle[4]);
+        const open = parseFloat(candle[5]);
+        
+        // Validate all values are finite numbers
+        if (isFinite(timestamp) && isFinite(volume) && isFinite(close) && isFinite(high) && isFinite(low) && isFinite(open) &&
+            timestamp > 0 && volume >= 0 && close > 0 && high > 0 && low > 0 && open > 0) {
+          candlestick = {
+            timestamp,
+            volume,
+            close,
+            high,
+            low,
+            open
+          };
+        } else {
+          console.warn('⚠️ Invalid candlestick values:', { timestamp, volume, close, high, low, open });
+        }
       }
       // Handle object format: {t: timestamp, v: volume, c: close, h: high, l: low, o: open}
       else if (typeof candle === 'object' && candle.t && candle.v && candle.c && candle.h && candle.l && candle.o) {
-        candlestick = {
-          timestamp: parseInt(candle.t) * 1000, // Convert to milliseconds
-          volume: parseFloat(candle.v),
-          close: parseFloat(candle.c),
-          high: parseFloat(candle.h),
-          low: parseFloat(candle.l),
-          open: parseFloat(candle.o)
-        };
+        const timestamp = parseInt(candle.t) * 1000;
+        const volume = parseFloat(candle.v);
+        const close = parseFloat(candle.c);
+        const high = parseFloat(candle.h);
+        const low = parseFloat(candle.l);
+        const open = parseFloat(candle.o);
+        
+        // Validate all values are finite numbers
+        if (isFinite(timestamp) && isFinite(volume) && isFinite(close) && isFinite(high) && isFinite(low) && isFinite(open) &&
+            timestamp > 0 && volume >= 0 && close > 0 && high > 0 && low > 0 && open > 0) {
+          candlestick = {
+            timestamp,
+            volume,
+            close,
+            high,
+            low,
+            open
+          };
+        } else {
+          console.warn('⚠️ Invalid candlestick values:', { timestamp, volume, close, high, low, open });
+        }
       }
       
       if (candlestick) {
