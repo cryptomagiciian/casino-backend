@@ -1,6 +1,6 @@
 import React from 'react';
-import { SolcasinoTradingTerminal } from './SolcasinoTradingTerminal';
+import { ModernTradingTerminal } from './ModernTradingTerminal';
 
 export const TradingTerminal: React.FC = () => {
-  return <SolcasinoTradingTerminal />;
+  return <ModernTradingTerminal />;
 };

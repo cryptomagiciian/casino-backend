@@ -43,6 +43,7 @@ export const useWallet = () => {
     balances,
     loading,
     fetchBalances,
+    refreshBalances: fetchBalances, // Alias for consistency
     faucet,
   };
 };
