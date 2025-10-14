@@ -42,19 +42,19 @@ export const PumpOrDumpCanvas: React.FC<PumpOrDumpCanvasProps> = ({
   const [candles, setCandles] = useState<Candle[]>([]);
   const [isComplete, setIsComplete] = useState(false);
 
-  // Ornstein-Uhlenbeck parameters based on volatility profile
+  // Ornstein-Uhlenbeck parameters based on volatility profile (more dramatic like old version)
   const getProfileParams = useCallback((profile: string) => {
     switch (profile) {
       case 'spiky':
-        return { sigma: 0.008, kappa: 0.1, jumpRate: 0.8, jumpSize: 0.012 };
+        return { sigma: 0.012, kappa: 0.08, jumpRate: 1.2, jumpSize: 0.018 };
       case 'meanRevert':
-        return { sigma: 0.006, kappa: 0.3, jumpRate: 0.4, jumpSize: 0.008 };
+        return { sigma: 0.010, kappa: 0.25, jumpRate: 0.6, jumpSize: 0.012 };
       case 'trendThenSnap':
-        return { sigma: 0.007, kappa: 0.05, jumpRate: 0.6, jumpSize: 0.010 };
+        return { sigma: 0.011, kappa: 0.03, jumpRate: 0.8, jumpSize: 0.015 };
       case 'chopThenRip':
-        return { sigma: 0.005, kappa: 0.2, jumpRate: 0.3, jumpSize: 0.015 };
+        return { sigma: 0.008, kappa: 0.15, jumpRate: 0.5, jumpSize: 0.020 };
       default:
-        return { sigma: 0.006, kappa: 0.2, jumpRate: 0.5, jumpSize: 0.010 };
+        return { sigma: 0.010, kappa: 0.15, jumpRate: 0.7, jumpSize: 0.014 };
     }
   }, []);
 
@@ -93,17 +93,23 @@ export const PumpOrDumpCanvas: React.FC<PumpOrDumpCanvasProps> = ({
         targetBias = (targetEndPrice - currentPrice) * targetProgress * 0.1;
       }
       
-      // Fakeout: cross entry line mid-round then reverse (20% chance)
+      // Fakeout: cross entry line mid-round then reverse (30% chance for more drama)
       let fakeoutBias = 0;
-      if (progress > 0.3 && progress < 0.7 && Math.random() < 0.2) {
+      if (progress > 0.2 && progress < 0.8 && Math.random() < 0.3) {
         const fakeoutDirection = trace.willWin ? -1 : 1;
-        fakeoutBias = fakeoutDirection * entryPrice * 0.01 * Math.sin((progress - 0.3) * Math.PI / 0.4);
+        fakeoutBias = fakeoutDirection * entryPrice * 0.015 * Math.sin((progress - 0.2) * Math.PI / 0.6);
       }
       
-      currentPrice += meanReversion + volatility + jump + targetBias + fakeoutBias;
+      // Add more dramatic swings (like old version)
+      let dramaBias = 0;
+      if (Math.random() < 0.1) { // 10% chance for dramatic moves
+        dramaBias = (Math.random() - 0.5) * entryPrice * 0.02;
+      }
       
-      // Ensure we don't go too far from entry
-      const maxDeviation = entryPrice * 0.08; // 8% max deviation
+      currentPrice += meanReversion + volatility + jump + targetBias + fakeoutBias + dramaBias;
+      
+      // Allow more dramatic movements (like old version)
+      const maxDeviation = entryPrice * 0.12; // 12% max deviation for more drama
       currentPrice = Math.max(entryPrice - maxDeviation, Math.min(entryPrice + maxDeviation, currentPrice));
       
       path.push(currentPrice);
@@ -137,9 +143,9 @@ export const PumpOrDumpCanvas: React.FC<PumpOrDumpCanvasProps> = ({
       const newPrice = pricePathRef.current[pathIndex];
       setCurrentPrice(newPrice);
       
-      // Create new candle every 120ms (5fps for candles)
-      if (elapsed - lastCandleTimeRef.current >= 120) {
-        const candleStartIndex = Math.max(0, pathIndex - 7);
+      // Create new candle every 80ms (12.5fps for candles - more frequent like old version)
+      if (elapsed - lastCandleTimeRef.current >= 80) {
+        const candleStartIndex = Math.max(0, pathIndex - 5); // Shorter candle period for more frequent updates
         const candleEndIndex = pathIndex;
         
         const newCandle: Candle = {
@@ -211,35 +217,39 @@ export const PumpOrDumpCanvas: React.FC<PumpOrDumpCanvasProps> = ({
      ctx.stroke();
      ctx.setLineDash([]);
     
-    // Draw candles with smooth animation
-    const candleWidth = Math.max(8, width / 25);
-    const priceRange = entryPrice * 0.1; // 10% range
+    // Draw realistic candles (old style but with new chart layout)
+    const candleWidth = Math.max(12, width / 20); // Thicker candles like old version
+    const priceRange = entryPrice * 0.15; // 15% range for more dramatic movement
     
     candles.forEach((candle, index) => {
       const x = (index * candleWidth) + (width - candles.length * candleWidth);
       const isGreen = candle.close >= candle.open;
       
-      // Candle body with glow effect
-      const bodyHeight = Math.abs(candle.close - candle.open) / priceRange * height;
-      const bodyY = height / 2 - (candle.close - entryPrice) / priceRange * height;
+      // Calculate positions using the old realistic method
+      const bodyTop = height / 2 - (Math.max(candle.open, candle.close) - entryPrice) / priceRange * height;
+      const bodyBottom = height / 2 - (Math.min(candle.open, candle.close) - entryPrice) / priceRange * height;
+      const bodyHeight = bodyBottom - bodyTop;
       
-      // Glow effect
-      ctx.shadowColor = isGreen ? '#00ff88' : '#ff4444';
-      ctx.shadowBlur = 10;
+      // Candle body - thicker and more prominent (old style)
       ctx.fillStyle = isGreen ? '#00ff88' : '#ff4444';
-      ctx.fillRect(x, bodyY, candleWidth * 0.8, bodyHeight);
-      ctx.shadowBlur = 0;
+      ctx.fillRect(x + 2, bodyTop, candleWidth - 4, Math.max(2, bodyHeight));
       
-      // Candle wick
+      // Candle wicks - more prominent (old style)
       const wickTop = height / 2 - (candle.high - entryPrice) / priceRange * height;
       const wickBottom = height / 2 - (candle.low - entryPrice) / priceRange * height;
       
       ctx.strokeStyle = isGreen ? '#00ff88' : '#ff4444';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 3; // Thicker wicks
       ctx.beginPath();
       ctx.moveTo(x + candleWidth / 2, wickTop);
       ctx.lineTo(x + candleWidth / 2, wickBottom);
       ctx.stroke();
+      
+      // Add subtle glow to candles (enhanced from old version)
+      ctx.shadowColor = isGreen ? '#00ff88' : '#ff4444';
+      ctx.shadowBlur = 5;
+      ctx.fillRect(x + 2, bodyTop, candleWidth - 4, Math.max(2, bodyHeight));
+      ctx.shadowBlur = 0;
     });
     
     // Draw current price line with glow
