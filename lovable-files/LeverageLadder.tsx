@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiService } from '../services/api';
 import { useWallet } from '../hooks/useWallet';
+import { WalletBalance } from './WalletBalance';
 
 // Generate 100 levels with exponential growth
 // Formula: multiplier = 1.15^level (exponential curve)
@@ -172,7 +173,8 @@ export const LeverageLadder: React.FC = () => {
   };
 
   return (
-    <div className="bg-gradient-to-br from-purple-900 via-indigo-900 to-black rounded-lg p-6 border-2 border-indigo-500 shadow-2xl">
+    <div className="bg-gradient-to-br from-purple-900 via-indigo-900 to-black rounded-lg p-6 border-2 border-indigo-500 shadow-2xl relative">
+      <WalletBalance position="top-right" />
       <h2 className="text-3xl font-bold text-indigo-400 mb-2">🪜 LEVERAGE LADDER</h2>
       <p className="text-gray-300 mb-4">Climb for higher multipliers! Cash out before liquidation!</p>
 

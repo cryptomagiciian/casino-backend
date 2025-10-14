@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiService } from '../services/api';
 import { useWallet } from '../hooks/useWallet';
+import { WalletBalance } from './WalletBalance';
 
 const MULTIPLIER_OPTIONS = [
   { value: 1.5, risk: 'Safe', color: 'from-green-600 to-green-500', chance: '60%' },
@@ -100,7 +101,8 @@ export const BullVsBear: React.FC = () => {
   const selectedOption = MULTIPLIER_OPTIONS.find(o => o.value === multiplier) || MULTIPLIER_OPTIONS[1];
 
   return (
-    <div className="bg-gradient-to-br from-green-900 via-gray-900 to-red-900 rounded-lg p-6 border-2 border-yellow-500 shadow-2xl">
+    <div className="bg-gradient-to-br from-green-900 via-gray-900 to-red-900 rounded-lg p-6 border-2 border-yellow-500 shadow-2xl relative">
+      <WalletBalance position="top-right" />
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-yellow-400 to-red-400">

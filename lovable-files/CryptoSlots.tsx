@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { apiService } from '../lib/api';
 import { useWallet } from '../hooks/useWallet';
+import { WalletBalance } from './WalletBalance';
 
 interface SlotSymbol {
   id: string;
@@ -262,6 +263,7 @@ export function CryptoSlots() {
 
   return (
     <div className="bg-gradient-to-br from-[#040B14] via-[#0A1628] to-[#0F2233] rounded-lg p-8 border-2 border-cyan-500/30 shadow-2xl relative overflow-hidden">
+      <WalletBalance position="top-right" />
       {/* Animated background glow */}
       <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-cyan-500/5 to-purple-500/5 animate-pulse pointer-events-none" />
       

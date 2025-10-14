@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiService } from '../services/api';
 import { useWallet } from '../hooks/useWallet';
+import { WalletBalance } from './WalletBalance';
 
 interface Candle {
   open: number;
@@ -227,7 +228,8 @@ export const SupportOrResistance: React.FC = () => {
   const priceRange = maxPrice - minPrice || 1;
 
   return (
-    <div className="bg-gradient-to-br from-indigo-900 via-purple-900 to-black rounded-lg p-6 border-2 border-indigo-500 shadow-2xl">
+    <div className="bg-gradient-to-br from-indigo-900 via-purple-900 to-black rounded-lg p-6 border-2 border-indigo-500 shadow-2xl relative">
+      <WalletBalance position="top-right" />
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-red-400">
