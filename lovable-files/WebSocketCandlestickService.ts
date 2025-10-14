@@ -135,8 +135,11 @@ export class WebSocketCandlestickService {
     candles.forEach((candle: any, index: number) => {
       console.log(`🕯️ Processing candle ${index}:`, candle);
       
+      let candlestick: CandlestickData | null = null;
+      
+      // Handle array format: [timestamp, volume, close, high, low, open]
       if (Array.isArray(candle) && candle.length >= 6) {
-        const candlestick: CandlestickData = {
+        candlestick = {
           timestamp: parseInt(candle[0]) * 1000, // Convert to milliseconds
           volume: parseFloat(candle[1]),
           close: parseFloat(candle[2]),
@@ -144,7 +147,20 @@ export class WebSocketCandlestickService {
           low: parseFloat(candle[4]),
           open: parseFloat(candle[5])
         };
-
+      }
+      // Handle object format: {t: timestamp, v: volume, c: close, h: high, l: low, o: open}
+      else if (typeof candle === 'object' && candle.t && candle.v && candle.c && candle.h && candle.l && candle.o) {
+        candlestick = {
+          timestamp: parseInt(candle.t) * 1000, // Convert to milliseconds
+          volume: parseFloat(candle.v),
+          close: parseFloat(candle.c),
+          high: parseFloat(candle.h),
+          low: parseFloat(candle.l),
+          open: parseFloat(candle.o)
+        };
+      }
+      
+      if (candlestick) {
         console.log('✅ Parsed candlestick:', candlestick);
 
         // Check if this is a new candle (different timestamp)
