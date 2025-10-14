@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { useNetwork } from './NetworkContext';
+import { apiService } from './api';
 
 type CurrencyDisplay = 'crypto' | 'usd';
 type BettingCurrency = 'BTC' | 'ETH' | 'SOL' | 'USDC' | 'USDT';
@@ -12,6 +13,7 @@ interface CurrencyContextType {
   usdRates: Record<string, number>;
   setUsdRates: (rates: Record<string, number>) => void;
   convertToUsd: (amount: number, currency: string) => number;
+  convertUsdToCrypto: (usdAmount: number, cryptoCurrency: string) => number;
   formatBalance: (amount: number, currency: string) => string;
   getAvailableCurrencies: () => BettingCurrency[];
 }
@@ -44,6 +46,25 @@ export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }
     USDT: 1,
   });
 
+  // Fetch live prices from Gate.io API
+  const fetchLivePrices = async () => {
+    try {
+      const response = await apiService.getCryptoPrices();
+      const prices = response.prices;
+      
+      const newRates: Record<string, number> = {};
+      prices.forEach((price: any) => {
+        newRates[price.symbol] = parseFloat(price.price);
+      });
+      
+      setUsdRates(newRates);
+      console.log('💰 Live prices fetched:', newRates);
+    } catch (error) {
+      console.error('Failed to fetch live prices:', error);
+      // Keep existing rates as fallback
+    }
+  };
+
   useEffect(() => {
     // Persist currency preferences to localStorage
     if (typeof window !== 'undefined') {
@@ -52,9 +73,22 @@ export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   }, [displayCurrency, bettingCurrency]);
 
+  useEffect(() => {
+    // Fetch live prices on component mount and every 30 seconds
+    fetchLivePrices();
+    const interval = setInterval(fetchLivePrices, 30000); // Update every 30 seconds
+    
+    return () => clearInterval(interval);
+  }, []);
+
   const convertToUsd = (amount: number, currency: string): number => {
     const rate = usdRates[currency] || 1;
     return amount * rate;
+  };
+
+  const convertUsdToCrypto = (usdAmount: number, cryptoCurrency: string): number => {
+    const rate = usdRates[cryptoCurrency] || 1;
+    return usdAmount / rate;
   };
 
   const formatBalance = (amount: number, currency: string): string => {
@@ -80,6 +114,7 @@ export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }
       usdRates,
       setUsdRates,
       convertToUsd,
+      convertUsdToCrypto,
       formatBalance,
       getAvailableCurrencies,
     }}>

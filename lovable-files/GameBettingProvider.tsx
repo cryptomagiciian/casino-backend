@@ -23,7 +23,7 @@ const BettingContext = createContext<BettingContextType | undefined>(undefined);
 
 export const GameBettingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { network } = useNetwork();
-  const { bettingCurrency, convertToUsd } = useCurrency();
+  const { bettingCurrency, convertToUsd, convertUsdToCrypto } = useCurrency();
   const { refreshBalances, getAvailableBalance } = useBalance();
   const [isBetting, setIsBetting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +43,7 @@ export const GameBettingProvider: React.FC<{ children: ReactNode }> = ({ childre
       const usdStake = gameData.stake; // Stake is always in USD
       const actualCurrency = bettingCurrency; // Use selected crypto currency for transaction
       
-      // Convert USD stake to crypto amount for the transaction
+      // Convert USD stake to crypto amount for the transaction using live prices
       const cryptoStake = convertUsdToCrypto(usdStake, actualCurrency);
 
       const betData = {
@@ -76,23 +76,6 @@ export const GameBettingProvider: React.FC<{ children: ReactNode }> = ({ childre
     }
   };
 
-  // Convert USD amount to crypto amount based on current rates
-  const convertUsdToCrypto = (usdAmount: number, cryptoCurrency: string): number => {
-    // For stablecoins, 1 USD = 1 USDC/USDT
-    if (cryptoCurrency === 'USDC' || cryptoCurrency === 'USDT') {
-      return usdAmount;
-    }
-    
-    // For other cryptos, use conversion rates (you might want to fetch these from an API)
-    const rates: Record<string, number> = {
-      BTC: 45000, // $45,000 per BTC
-      ETH: 2500,  // $2,500 per ETH
-      SOL: 100,   // $100 per SOL
-    };
-    
-    const rate = rates[cryptoCurrency] || 1;
-    return usdAmount / rate;
-  };
 
   const resolveBet = async (betId: string) => {
     try {
