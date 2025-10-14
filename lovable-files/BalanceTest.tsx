@@ -11,7 +11,7 @@ export const BalanceTest: React.FC = () => {
     try {
       setLoading(true);
       console.log('🧪 Testing balance fetch...');
-      const result = await apiService.getWalletBalances(network);
+      const result = await apiService.getWalletBalances();
       console.log('🧪 Balance result:', result);
       setBalances(result);
     } catch (error) {

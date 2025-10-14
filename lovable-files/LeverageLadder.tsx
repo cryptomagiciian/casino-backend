@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useBetting } from './GameBettingProvider';
 import { useNetwork } from './NetworkContext';
 import { useCurrency } from './CurrencySelector';
+import { useBalance } from './BalanceContext';
 import { WalletBalance } from './WalletBalance';
 
 // Generate 100 levels with exponential growth
@@ -36,6 +37,7 @@ export const LeverageLadder: React.FC = () => {
   const { placeBet, resolveBet, getBalance, isBetting, error } = useBetting();
   const { network } = useNetwork();
   const { bettingCurrency, displayCurrency, formatBalance } = useCurrency();
+  const { getAvailableBalance } = useBalance();
   const [balance, setBalance] = useState<number>(0);
 
   // Auto-scroll to current level
@@ -44,9 +46,16 @@ export const LeverageLadder: React.FC = () => {
     refreshBalance();
   }, [network, bettingCurrency]);
 
+  // Sync with global balance changes
+  useEffect(() => {
+    const currentBalance = getAvailableBalance(bettingCurrency);
+    setBalance(currentBalance);
+  }, [getAvailableBalance, bettingCurrency]);
+
   const refreshBalance = async () => {
     try {
-      const currentBalance = await getBalance(bettingCurrency);
+      // Use global balance context for immediate balance access
+      const currentBalance = getAvailableBalance(bettingCurrency);
       setBalance(currentBalance);
     } catch (error) {
       console.error('Failed to refresh balance:', error);

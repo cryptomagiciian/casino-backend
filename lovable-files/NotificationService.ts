@@ -42,14 +42,44 @@ class NotificationService {
   private async checkForNewNotifications() {
     try {
       // Check for completed deposits
-      const deposits = await apiService.getDeposits(10, 0);
+      const depositsResponse = await apiService.getDeposits(10, 0);
+      console.log('🔔 NotificationService: depositsResponse:', depositsResponse);
+      
+      // Handle different response formats
+      let deposits = [];
+      if (Array.isArray(depositsResponse)) {
+        deposits = depositsResponse;
+      } else if (depositsResponse && Array.isArray(depositsResponse.data)) {
+        deposits = depositsResponse.data;
+      } else if (depositsResponse && Array.isArray(depositsResponse.deposits)) {
+        deposits = depositsResponse.deposits;
+      } else {
+        console.warn('🔔 NotificationService: Unexpected deposits response format:', depositsResponse);
+        deposits = [];
+      }
+      
       const recentDeposits = deposits.filter((deposit: any) => {
         const depositTime = new Date(deposit.createdAt);
         return depositTime > this.lastCheckTime && deposit.status === 'COMPLETED';
       });
 
       // Check for completed withdrawals
-      const withdrawals = await apiService.getWithdrawals(10, 0);
+      const withdrawalsResponse = await apiService.getWithdrawals(10, 0);
+      console.log('🔔 NotificationService: withdrawalsResponse:', withdrawalsResponse);
+      
+      // Handle different response formats
+      let withdrawals = [];
+      if (Array.isArray(withdrawalsResponse)) {
+        withdrawals = withdrawalsResponse;
+      } else if (withdrawalsResponse && Array.isArray(withdrawalsResponse.data)) {
+        withdrawals = withdrawalsResponse.data;
+      } else if (withdrawalsResponse && Array.isArray(withdrawalsResponse.withdrawals)) {
+        withdrawals = withdrawalsResponse.withdrawals;
+      } else {
+        console.warn('🔔 NotificationService: Unexpected withdrawals response format:', withdrawalsResponse);
+        withdrawals = [];
+      }
+      
       const recentWithdrawals = withdrawals.filter((withdrawal: any) => {
         const withdrawalTime = new Date(withdrawal.createdAt);
         return withdrawalTime > this.lastCheckTime && withdrawal.status === 'COMPLETED';

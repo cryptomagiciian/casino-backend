@@ -14,7 +14,7 @@ export const TestWalletAPI: React.FC = () => {
       setError(null);
       
       console.log(`🧪 Testing wallet API for ${network}...`);
-      const result = await apiService.getWalletBalances(network);
+      const result = await apiService.getWalletBalances();
       console.log('🧪 API Response:', result);
       
       setBalances(result);

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { apiService } from './api';
 import { useNetwork } from './NetworkContext';
 import { useCurrency } from './CurrencySelector';
+import { useBalance } from './BalanceContext';
 
 interface WalletBalanceDropdownProps {
   className?: string;
@@ -23,20 +24,33 @@ export const WalletBalanceDropdown: React.FC<WalletBalanceDropdownProps> = ({
 }) => {
   const { network } = useNetwork();
   const { displayCurrency, bettingCurrency, setBettingCurrency, formatBalance, convertToUsd } = useCurrency();
+  const { balances: globalBalances, loading, refreshBalances } = useBalance();
   const [wallets, setWallets] = useState<WalletData[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const fetchBalances = async () => {
     try {
-      setLoading(true);
       console.log(`🔄 Fetching wallet balances for ${network}...`);
-      const walletData = await apiService.getWalletBalances(network);
+      console.log('🧪 BALANCE DEBUG: Network type:', typeof network);
+      console.log('🧪 BALANCE DEBUG: Network value:', JSON.stringify(network));
+      console.log('🧪 BALANCE DEBUG: Network === "testnet":', network === 'testnet');
+      console.log('🧪 BALANCE DEBUG: Network === "mainnet":', network === 'mainnet');
+      console.log('🧪 BALANCE DEBUG: Component re-rendered with network:', network);
+      
+      // Use global balance context
+      await refreshBalances();
+      
+      // Convert global balances to wallet data format
+      const walletData = globalBalances.map(wallet => ({
+        currency: wallet.currency,
+        available: wallet.available,
+        locked: wallet.locked,
+        total: wallet.total
+      }));
+      
       console.log('💰 Wallet data received:', walletData);
-      console.log('🧪 BALANCE DEBUG: Network used:', network);
-      console.log('🧪 BALANCE DEBUG: API endpoint called:', `/wallets?network=${network}`);
       
       setWallets(walletData);
       setError(null);
@@ -48,8 +62,6 @@ export const WalletBalanceDropdown: React.FC<WalletBalanceDropdownProps> = ({
     } catch (err) {
       console.error('❌ Failed to fetch wallet balances:', err);
       setError('Failed to load balances');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -63,6 +75,19 @@ export const WalletBalanceDropdown: React.FC<WalletBalanceDropdownProps> = ({
       clearInterval(interval);
     };
   }, [network]); // Re-fetch when network changes
+
+  // Sync with global balances when they change
+  useEffect(() => {
+    if (globalBalances.length > 0) {
+      const walletData = globalBalances.map(wallet => ({
+        currency: wallet.currency,
+        available: wallet.available,
+        locked: wallet.locked,
+        total: wallet.total
+      }));
+      setWallets(walletData);
+    }
+  }, [globalBalances]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

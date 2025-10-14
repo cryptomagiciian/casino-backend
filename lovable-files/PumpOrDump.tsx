@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useBetting } from './GameBettingProvider';
 import { useNetwork } from './NetworkContext';
 import { useCurrency } from './CurrencySelector';
+import { useBalance } from './BalanceContext';
 import { WalletBalance } from './WalletBalance';
 
 interface Candle {
@@ -24,6 +25,7 @@ export const PumpOrDump: React.FC = () => {
   const { placeBet, resolveBet, getBalance, isBetting, error } = useBetting();
   const { network } = useNetwork();
   const { bettingCurrency, displayCurrency, formatBalance } = useCurrency();
+  const { getAvailableBalance } = useBalance();
   
   const [stake, setStake] = useState('10.00');
   const [prediction, setPrediction] = useState<'pump' | 'dump'>('pump');
@@ -53,9 +55,16 @@ export const PumpOrDump: React.FC = () => {
     refreshBalance();
   }, [network, bettingCurrency]);
 
+  // Sync with global balance changes
+  useEffect(() => {
+    const currentBalance = getAvailableBalance(bettingCurrency);
+    setBalance(currentBalance);
+  }, [getAvailableBalance, bettingCurrency]);
+
   const refreshBalance = async () => {
     try {
-      const currentBalance = await getBalance(bettingCurrency);
+      // Use global balance context for immediate balance access
+      const currentBalance = getAvailableBalance(bettingCurrency);
       setBalance(currentBalance);
     } catch (error) {
       console.error('Failed to refresh balance:', error);

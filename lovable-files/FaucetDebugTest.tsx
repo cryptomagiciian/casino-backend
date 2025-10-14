@@ -15,7 +15,7 @@ export const FaucetDebugTest: React.FC = () => {
       setError(null);
       
       console.log(`🧪 DEBUG: Fetching balances for network: ${network}`);
-      const result = await apiService.getWalletBalances(network);
+      const result = await apiService.getWalletBalances();
       console.log('🧪 DEBUG: Balance response:', result);
       setBalances(result);
     } catch (err: any) {

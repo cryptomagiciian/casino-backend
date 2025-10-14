@@ -3,6 +3,7 @@ import { apiService } from './api';
 import { notificationService } from './NotificationService';
 import { useNetwork } from './NetworkContext';
 import { useCurrency } from './CurrencyToggle';
+import { useBalance } from './BalanceContext';
 
 interface WalletBalanceProps {
   className?: string;
@@ -17,20 +18,19 @@ export const WalletBalance: React.FC<WalletBalanceProps> = ({
 }) => {
   const { network } = useNetwork();
   const { displayCurrency, formatBalance, convertToUsd } = useCurrency();
+  const { balances: globalBalances, loading, refreshBalances } = useBalance();
   const [balances, setBalances] = useState<Record<string, number>>({});
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchBalances = async () => {
     try {
-      setLoading(true);
       console.log(`🔄 Fetching wallet balances for ${network}...`);
-      const wallets = await apiService.getWalletBalances(network);
-      console.log('💰 Wallet data received:', wallets);
+      // Use global balance context
+      await refreshBalances();
       
-      // Convert to a simple balance object
+      // Convert global balances to simple balance object
       const balanceObj: Record<string, number> = {};
-      wallets.forEach(wallet => {
+      globalBalances.forEach(wallet => {
         balanceObj[wallet.currency] = parseFloat(wallet.available);
       });
       
@@ -45,8 +45,6 @@ export const WalletBalance: React.FC<WalletBalanceProps> = ({
     } catch (err) {
       console.error('❌ Failed to fetch wallet balances:', err);
       setError('Failed to load balances');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -76,6 +74,17 @@ export const WalletBalance: React.FC<WalletBalanceProps> = ({
       unsubscribe();
     };
   }, [network]); // Re-fetch when network changes
+
+  // Sync with global balances when they change
+  useEffect(() => {
+    if (globalBalances.length > 0) {
+      const balanceObj: Record<string, number> = {};
+      globalBalances.forEach(wallet => {
+        balanceObj[wallet.currency] = parseFloat(wallet.available);
+      });
+      setBalances(balanceObj);
+    }
+  }, [globalBalances]);
 
   const getPositionClasses = () => {
     switch (position) {

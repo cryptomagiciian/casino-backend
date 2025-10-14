@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, ReactNode } from 'react';
 import { apiService } from './api';
 import { useNetwork } from './NetworkContext';
 import { useCurrency } from './CurrencySelector';
+import { useBalance } from './BalanceContext';
 
 interface BettingContextType {
   placeBet: (gameData: {
@@ -23,6 +24,7 @@ const BettingContext = createContext<BettingContextType | undefined>(undefined);
 export const GameBettingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { network } = useNetwork();
   const { bettingCurrency, convertToUsd } = useCurrency();
+  const { refreshBalances, getAvailableBalance } = useBalance();
   const [isBetting, setIsBetting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -85,6 +87,10 @@ export const GameBettingProvider: React.FC<{ children: ReactNode }> = ({ childre
       const result = await apiService.resolveBet(betId);
       console.log('🎰 Bet resolved successfully:', result);
       
+      // Refresh balances after bet resolution to show updated amounts
+      console.log('🔄 Refreshing balances after bet resolution...');
+      await refreshBalances();
+      
       return result;
     } catch (err: any) {
       console.error('🎰 Bet resolution failed:', err);
@@ -104,6 +110,10 @@ export const GameBettingProvider: React.FC<{ children: ReactNode }> = ({ childre
       const result = await apiService.cashoutBet(betId, multiplier);
       console.log('🎰 Bet cashed out successfully:', result);
       
+      // Refresh balances after cashout to show updated amounts
+      console.log('🔄 Refreshing balances after cashout...');
+      await refreshBalances();
+      
       return result;
     } catch (err: any) {
       console.error('🎰 Bet cashout failed:', err);
@@ -116,10 +126,15 @@ export const GameBettingProvider: React.FC<{ children: ReactNode }> = ({ childre
 
   const getBalance = async (currency?: string): Promise<number> => {
     try {
-      const balances = await apiService.getWalletBalances(network);
       const targetCurrency = currency || bettingCurrency;
-      const wallet = balances.find((w: any) => w.currency === targetCurrency);
-      return wallet ? parseFloat(wallet.available) : 0;
+      // First read from global cache
+      let amount = getAvailableBalance(targetCurrency);
+      if (!amount || Number.isNaN(amount)) {
+        // Force refresh, then read again
+        await refreshBalances();
+        amount = getAvailableBalance(targetCurrency);
+      }
+      return amount || 0;
     } catch (err) {
       console.error('Failed to get balance:', err);
       return 0;

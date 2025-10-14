@@ -157,16 +157,25 @@ export class BetsService {
           betId,
           network,
         );
+        
+        // Release locked funds back to available (for winning bets)
+        await this.walletsService.releaseFunds(
+          bet.userId,
+          bet.currency as Currency,
+          fromSmallestUnits(bet.stake, bet.currency as Currency),
+          betId,
+          network,
+        );
+      } else {
+        // For losing bets, forfeit the locked funds (don't release them back)
+        await this.walletsService.forfeitFunds(
+          bet.userId,
+          bet.currency as Currency,
+          fromSmallestUnits(bet.stake, bet.currency as Currency),
+          betId,
+          network,
+        );
       }
-
-      // Release locked funds
-      await this.walletsService.releaseFunds(
-        bet.userId,
-        bet.currency as Currency,
-        fromSmallestUnits(bet.stake, bet.currency as Currency),
-        betId,
-        network,
-      );
 
       return {
         id: bet.id,

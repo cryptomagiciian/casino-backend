@@ -16,8 +16,8 @@ export const BalanceDebugTest: React.FC = () => {
       console.log(`🧪 BALANCE DEBUG: Fetching balances for network: ${network}`);
       
       // Fetch both detailed and regular balances
-      const regularBalances = await apiService.getWalletBalances(network);
-      const detailedBalances = await apiService.getWalletBalances(network, true);
+      const regularBalances = await apiService.getWalletBalances();
+      const detailedBalances = await apiService.getWalletBalances(undefined, true);
       
       console.log('🧪 BALANCE DEBUG: Regular balances:', regularBalances);
       console.log('🧪 BALANCE DEBUG: Detailed balances:', detailedBalances);

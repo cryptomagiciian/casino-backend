@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useBetting } from './GameBettingProvider';
 import { useNetwork } from './NetworkContext';
 import { useCurrency } from './CurrencySelector';
+import { useBalance } from './BalanceContext';
 import { WalletBalance } from './WalletBalance';
 
 export const ToTheMoon: React.FC = () => {
@@ -19,6 +20,7 @@ export const ToTheMoon: React.FC = () => {
   const { placeBet, resolveBet, getBalance, isBetting, error } = useBetting();
   const { network } = useNetwork();
   const { bettingCurrency, displayCurrency, formatBalance } = useCurrency();
+  const { getAvailableBalance } = useBalance();
   const [balance, setBalance] = useState<number>(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const exhaustCountRef = useRef(0);
@@ -29,9 +31,16 @@ export const ToTheMoon: React.FC = () => {
     refreshBalance();
   }, [network, bettingCurrency]);
 
+  // Sync with global balance changes
+  useEffect(() => {
+    const currentBalance = getAvailableBalance(bettingCurrency);
+    setBalance(currentBalance);
+  }, [getAvailableBalance, bettingCurrency]);
+
   const refreshBalance = async () => {
     try {
-      const currentBalance = await getBalance(bettingCurrency);
+      // Use global balance context for immediate balance access
+      const currentBalance = getAvailableBalance(bettingCurrency);
       setBalance(currentBalance);
     } catch (error) {
       console.error('Failed to refresh balance:', error);
@@ -67,7 +76,8 @@ export const ToTheMoon: React.FC = () => {
 
   const refreshBalance = async () => {
     try {
-      const currentBalance = await getBalance(bettingCurrency);
+      // Use global balance context for immediate balance access
+      const currentBalance = getAvailableBalance(bettingCurrency);
       setBalance(currentBalance);
     } catch (error) {
       console.error('Failed to refresh balance:', error);

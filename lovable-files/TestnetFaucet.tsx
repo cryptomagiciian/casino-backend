@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { apiService } from './api';
 import { useNetwork } from './NetworkContext';
+import { useBalance } from './BalanceContext';
 
 interface TestnetFaucetProps {
   className?: string;
@@ -11,7 +12,8 @@ export const TestnetFaucet: React.FC<TestnetFaucetProps> = ({
   className = '',
   onBalanceUpdate 
 }) => {
-  const { network } = useNetwork();
+  const { network, setNetwork } = useNetwork();
+  const { refreshBalances } = useBalance();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -40,22 +42,25 @@ export const TestnetFaucet: React.FC<TestnetFaucetProps> = ({
       
       setMessage(`✅ Received ${amount} ${currency} from testnet faucet!`);
       
-      // Refresh balances after successful faucet
+      // Refresh balances after successful faucet using global balance context
+      console.log('🧪 FAUCET DEBUG: Triggering global balance refresh...');
+      await refreshBalances();
+      
+      // Also call the legacy callback if provided
       if (onBalanceUpdate) {
-        console.log('🧪 FAUCET DEBUG: Triggering balance refresh...');
-        // Immediate refresh
         onBalanceUpdate();
-        // Also refresh after a short delay to ensure backend has processed
-        setTimeout(() => {
-          console.log('🧪 FAUCET DEBUG: Triggering delayed balance refresh (1s)...');
-          onBalanceUpdate();
-        }, 1000);
-        // And one more refresh after a longer delay
-        setTimeout(() => {
-          console.log('🧪 FAUCET DEBUG: Triggering final balance refresh (3s)...');
-          onBalanceUpdate();
-        }, 3000);
       }
+      
+      // Additional delayed refreshes to ensure backend has processed
+      setTimeout(async () => {
+        console.log('🧪 FAUCET DEBUG: Triggering delayed balance refresh (1s)...');
+        await refreshBalances();
+      }, 1000);
+      
+      setTimeout(async () => {
+        console.log('🧪 FAUCET DEBUG: Triggering final balance refresh (3s)...');
+        await refreshBalances();
+      }, 3000);
       
       // Clear message after 5 seconds
       setTimeout(() => setMessage(null), 5000);
@@ -71,7 +76,26 @@ export const TestnetFaucet: React.FC<TestnetFaucetProps> = ({
   };
 
   if (network !== 'testnet') {
-    return null; // Only show on testnet
+    return (
+      <div className={`bg-orange-900/20 border border-orange-500/30 rounded-lg p-4 ${className}`}>
+        <div className="flex items-center space-x-2 mb-3">
+          <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
+          <h3 className="text-orange-400 font-semibold">Testnet Faucet</h3>
+        </div>
+        
+        <div className="text-center">
+          <p className="text-gray-400 text-sm mb-4">
+            Switch to Demo mode to use the testnet faucet.
+          </p>
+          <button
+            onClick={() => setNetwork('testnet')}
+            className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg transition-colors"
+          >
+            Switch to Demo Mode
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (

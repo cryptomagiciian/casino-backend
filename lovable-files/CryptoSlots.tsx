@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { apiService } from '../lib/api';
 import { useWallet } from '../hooks/useWallet';
+import { useBalance } from './BalanceContext';
 import { WalletBalance } from './WalletBalance';
 
 interface SlotSymbol {
@@ -104,9 +105,16 @@ export function CryptoSlots() {
     refreshBalance();
   }, [network, bettingCurrency]);
 
+  // Sync with global balance changes
+  useEffect(() => {
+    const currentBalance = getAvailableBalance(bettingCurrency);
+    setBalance(currentBalance);
+  }, [getAvailableBalance, bettingCurrency]);
+
   const refreshBalance = async () => {
     try {
-      const currentBalance = await getBalance(bettingCurrency);
+      // Use global balance context for immediate balance access
+      const currentBalance = getAvailableBalance(bettingCurrency);
       setBalance(currentBalance);
     } catch (error) {
       console.error('Failed to refresh balance:', error);

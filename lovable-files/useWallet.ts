@@ -15,6 +15,7 @@ export const useWallet = () => {
   const fetchBalances = async () => {
     setLoading(true);
     try {
+      // Let the API service detect demo/live mode automatically
       const data = await apiService.getWalletBalances();
       setBalances(data);
     } catch (error) {

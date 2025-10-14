@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useBetting } from './GameBettingProvider';
 import { useNetwork } from './NetworkContext';
 import { useCurrency } from './CurrencySelector';
+import { useBalance } from './BalanceContext';
 import { WalletBalance } from './WalletBalance';
 
 type TileState = 'hidden' | 'safe' | 'mine';
@@ -37,6 +38,7 @@ export const DiamondHands: React.FC = () => {
   const { placeBet, resolveBet, getBalance, isBetting, error } = useBetting();
   const { network } = useNetwork();
   const { bettingCurrency, displayCurrency, formatBalance } = useCurrency();
+  const { getAvailableBalance } = useBalance();
   const [balance, setBalance] = useState<number>(0);
   
   const TOTAL_TILES = difficulty.gridSize * difficulty.gridSize;
@@ -47,9 +49,16 @@ export const DiamondHands: React.FC = () => {
     refreshBalance();
   }, [network, bettingCurrency]);
 
+  // Sync with global balance changes
+  useEffect(() => {
+    const currentBalance = getAvailableBalance(bettingCurrency);
+    setBalance(currentBalance);
+  }, [getAvailableBalance, bettingCurrency]);
+
   const refreshBalance = async () => {
     try {
-      const currentBalance = await getBalance(bettingCurrency);
+      // Use global balance context for immediate balance access
+      const currentBalance = getAvailableBalance(bettingCurrency);
       setBalance(currentBalance);
     } catch (error) {
       console.error('Failed to refresh balance:', error);

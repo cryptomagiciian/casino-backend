@@ -86,10 +86,30 @@ class ApiService {
 
   // Wallet endpoints
   async getWalletBalances(network: 'mainnet' | 'testnet' = 'mainnet', detailed = false) {
+    // PROPER DEMO/LIVE DETECTION - Check multiple indicators
+    const isDemoMode = 
+      // Check localStorage flag (set by manual override)
+      localStorage.getItem('casino-demo-mode') === 'true' ||
+      // Check URL parameter
+      window.location.search.includes('demo=true') ||
+      // Check for demo indicator in DOM (set by manual override)
+      document.querySelector('[data-demo-mode="true"]') !== null ||
+      // Check body class (set by manual override)
+      document.body.classList.contains('demo-mode') ||
+      // Check for demo toggle with active state
+      document.querySelector('.demo.active, [data-demo="true"]') !== null;
+    
+    // Use testnet for demo mode, mainnet for live mode
+    const actualNetwork = isDemoMode ? 'testnet' : 'mainnet';
+    
     const params = new URLSearchParams();
     if (detailed) params.append('detailed', 'true');
-    params.append('network', network);
+    params.append('network', actualNetwork);
     const endpoint = `/wallets?${params.toString()}`;
+    console.log('🧪 API DEBUG: getWalletBalances called with network:', network);
+    console.log('🧪 API DEBUG: Demo mode detected:', isDemoMode);
+    console.log('🧪 API DEBUG: Using actual network:', actualNetwork);
+    console.log('🧪 API DEBUG: Final endpoint:', endpoint);
     return this.request(endpoint);
   }
 

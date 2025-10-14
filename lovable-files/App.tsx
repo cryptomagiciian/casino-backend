@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './hooks/useAuth';
+import { NetworkProvider } from './NetworkContext';
+import { NetworkToggle } from './NetworkToggle';
 import { WalletBalance } from './components/wallet/WalletBalance';
 import { GameList } from './components/games/GameList';
 import { LoginForm } from './components/auth/LoginForm';
@@ -43,6 +45,7 @@ const AppContent: React.FC = () => {
           <h1 className="text-2xl font-bold text-yellow-400">🎰 Casino</h1>
           
           <div className="flex items-center space-x-4">
+            <NetworkToggle />
             <span className="text-gray-300">Welcome, <span className="font-bold text-white">{user.handle}</span></span>
             <button
               onClick={logout}
@@ -75,7 +78,9 @@ const AppContent: React.FC = () => {
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <NetworkProvider>
+        <AppContent />
+      </NetworkProvider>
     </AuthProvider>
   );
 }
