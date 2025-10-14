@@ -12,7 +12,7 @@ interface BettingContextType {
     prediction?: any; // Game-specific prediction data
     meta?: any; // Additional metadata (stored in params)
   }) => Promise<any>;
-  resolveBet: (betId: string) => Promise<any>;
+  resolveBet: (betId: string, resolveParams?: any) => Promise<any>;
   cashoutBet: (betId: string, multiplier?: number) => Promise<any>;
   getBalance: (currency: string) => Promise<number>;
   isBetting: boolean;
