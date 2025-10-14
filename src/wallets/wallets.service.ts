@@ -67,7 +67,9 @@ export class WalletsService {
 
     for (const currency of Object.values(CURRENCIES)) {
       const account = accounts.find(acc => acc.currency === currency);
-      const available = account ? await this.ledgerService.getAccountBalanceByCurrency(account.id, currency) : 0n;
+      // Use direct wallet account balance instead of summing ledger entries
+      // This ensures consistency with the betting system
+      const available = account ? account.available : 0n;
       const locked = account ? account.locked : 0n;
       const total = available + locked;
 
@@ -87,7 +89,9 @@ export class WalletsService {
    */
   async getBalance(userId: string, currency: Currency, network: 'mainnet' | 'testnet' = 'mainnet'): Promise<WalletBalance> {
     const account = await this.getOrCreateAccount(userId, currency, network);
-    const available = await this.ledgerService.getAccountBalanceByCurrency(account.id, currency);
+    // Use direct wallet account balance instead of summing ledger entries
+    // This ensures consistency with the betting system
+    const available = account.available;
     const locked = account.locked;
     const total = available + locked;
 
@@ -174,11 +178,14 @@ export class WalletsService {
     // Lock funds in ledger
     await this.ledgerService.lockFunds(account.id, amount, currency, refId);
     
-    // Update locked amount in account
+    // Update both available and locked amounts in account
     const amountSmallest = toSmallestUnits(amount, currency);
     await this.prisma.walletAccount.update({
       where: { id: account.id },
       data: {
+        available: {
+          decrement: amountSmallest,
+        },
         locked: {
           increment: amountSmallest,
         },
@@ -197,11 +204,14 @@ export class WalletsService {
     // Release funds in ledger
     await this.ledgerService.releaseFunds(account.id, amount, currency, refId);
     
-    // Update locked amount in account
+    // Update both available and locked amounts in account
     const amountSmallest = toSmallestUnits(amount, currency);
     await this.prisma.walletAccount.update({
       where: { id: account.id },
       data: {
+        available: {
+          increment: amountSmallest,
+        },
         locked: {
           decrement: amountSmallest,
         },
