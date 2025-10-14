@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as bitcoin from 'bitcoinjs-lib';
-import * as bip32 from 'bip32';
+import { BIP32Factory } from 'bip32';
 import * as ecc from 'tiny-secp256k1';
 import * as ethers from 'ethers';
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
@@ -9,6 +9,9 @@ import { Currency } from '../shared/constants';
 
 // Initialize bitcoinjs-lib with secp256k1 for version 7.x
 bitcoin.initEccLib(ecc);
+
+// Create BIP32 factory instance
+const bip32 = BIP32Factory(ecc);
 
 @Injectable()
 export class WalletService {
