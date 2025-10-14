@@ -183,6 +183,7 @@ class ApiService {
     currency: string;
     amount: number;
     network: 'mainnet' | 'testnet';
+    blockchain?: string; // For multi-chain tokens like USDC/USDT
     transactionHash?: string;
     blockNumber?: number;
   }) {
@@ -210,6 +211,7 @@ class ApiService {
     amount: number;
     walletAddress: string;
     network: 'mainnet' | 'testnet';
+    blockchain?: string; // For multi-chain tokens like USDC/USDT
     twoFactorCode?: string;
     withdrawalPassword?: string;
   }) {

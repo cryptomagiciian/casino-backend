@@ -47,7 +47,7 @@ export class DepositsService {
   ) {}
 
   async createDeposit(userId: string, createDepositDto: CreateDepositDto): Promise<DepositResponseDto> {
-    const { currency, amount, network, transactionHash, blockNumber } = createDepositDto;
+    const { currency, amount, network, blockchain, transactionHash, blockNumber } = createDepositDto;
 
     // Validate minimum deposit amount
     if (amount < this.MIN_DEPOSITS[currency]) {
@@ -60,7 +60,9 @@ export class DepositsService {
     const depositId = generateId('dep');
 
     // Generate unique wallet address for this deposit
-    const depositWalletAddress = await this.walletService.generateDepositAddress(userId, currency, network);
+    // For multi-chain tokens, use the specified blockchain
+    const targetCurrency = blockchain && ['USDC', 'USDT'].includes(currency) ? blockchain : currency;
+    const depositWalletAddress = await this.walletService.generateDepositAddress(userId, targetCurrency as Currency, network);
 
     // Create deposit record
     const deposit = await this.prisma.deposit.create({
@@ -75,6 +77,12 @@ export class DepositsService {
         transactionHash,
         requiredConfirmations: this.REQUIRED_CONFIRMATIONS[currency],
         currentConfirmations: 0,
+        meta: {
+          network,
+          blockchain,
+          transactionHash,
+          blockNumber,
+        },
       },
     });
 

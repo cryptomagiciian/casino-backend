@@ -31,6 +31,17 @@ export class CreateDepositDto {
   network: 'mainnet' | 'testnet';
 
   @ApiProperty({ 
+    description: 'Blockchain type for multi-chain tokens (BTC, ETH, SOL)', 
+    example: 'ETH',
+    enum: ['BTC', 'ETH', 'SOL'],
+    required: false
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(['BTC', 'ETH', 'SOL'])
+  blockchain?: string;
+
+  @ApiProperty({ 
     description: 'Transaction hash from blockchain (optional)', 
     example: '0x1234567890abcdef...',
     required: false
