@@ -26,6 +26,8 @@ model User {
   withdrawals   Withdrawal[]
   leaderboardDaily LeaderboardDaily[]
   fairnessSeeds FairnessSeed[]
+  futuresPositions FuturesPosition[]
+  futuresTxs    FuturesTx[]
 
   @@map("users")
 }
@@ -202,4 +204,79 @@ model LeaderboardDaily {
 
   @@unique([userId, date])
   @@map("leaderboard_daily")
+}
+
+// Futures Trading Models
+model TradingRound {
+  id              String   @id @default(cuid())
+  serverSeed      String
+  serverSeedHash  String   @unique
+  startsAt        DateTime
+  endsAt          DateTime
+  intervalMs      Int      // e.g., 1000
+  isActive        Boolean  @default(true)
+  revealedAt      DateTime?
+  createdAt       DateTime @default(now())
+
+  @@map("trading_rounds")
+}
+
+model FuturesSymbol {
+  id          String  @id
+  base        String  // BTC, ETH...
+  quote       String  // USDC (our settlement quote)
+  maxLeverage Int
+  isMajor     Boolean
+  isEnabled   Boolean @default(true)
+  createdAt   DateTime @default(now())
+
+  // Relations
+  positions   FuturesPosition[]
+  txs         FuturesTx[]
+
+  @@map("futures_symbols")
+}
+
+model FuturesPosition {
+  id            String   @id @default(cuid())
+  userId        String   @index
+  symbolId      String   @index
+  side          String   // LONG|SHORT
+  qty           Decimal  // base units
+  entryPrice    Decimal
+  collateral    Decimal  // initial margin
+  leverage      Int
+  openedAt      DateTime
+  closedAt      DateTime?
+  status        String   // OPEN|CLOSED|LIQUIDATED
+  realizedPnl   Decimal  @default(0)
+  feesPaid      Decimal  @default(0)
+  borrowStartAt DateTime? // when 8h passed
+  meta          Json?
+
+  // Relations
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  symbol FuturesSymbol @relation(fields: [symbolId], references: [id])
+  txs    FuturesTx[]
+
+  @@map("futures_positions")
+}
+
+model FuturesTx {
+  id         String   @id @default(cuid())
+  userId     String   @index
+  positionId String?
+  symbolId   String
+  type       String   // OPEN_FEE|CLOSE_FEE|IMPACT_FEE|BORROW|FUNDING|PNL|LIQUIDATION
+  amount     Decimal  // +credit to user, -debit from user
+  currency   String   // USDC, etc.
+  ref        String?  // ledger id or event
+  createdAt  DateTime @default(now())
+
+  // Relations
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  position FuturesPosition? @relation(fields: [positionId], references: [id])
+  symbol   FuturesSymbol  @relation(fields: [symbolId], references: [id])
+
+  @@map("futures_txs")
 }

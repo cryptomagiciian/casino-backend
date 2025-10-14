@@ -20,6 +20,7 @@ import { HealthModule } from './health/health.module';
 import { PricesModule } from './prices/prices.module';
 import { WalletModule } from './wallet/wallet.module';
 import { BlockchainModule } from './blockchain/blockchain.module';
+import { FuturesModule } from './futures/futures.module';
 
 @Module({
   imports: [
@@ -80,6 +81,7 @@ import { BlockchainModule } from './blockchain/blockchain.module';
     PricesModule,
     WalletModule,
     BlockchainModule,
+    FuturesModule,
   ],
 })
 export class AppModule {}

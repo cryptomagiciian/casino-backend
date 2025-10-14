@@ -478,28 +478,60 @@ export class BetsService {
         };
 
       case 'leverage_ladder':
-        // CRITICAL FIX: Use frontend-determined outcome to prevent casino losses
-        // The frontend has the actual game state and liquidation level
-        const ladderFrontendOutcome = params?.frontendOutcome;
-        const ladderFrontendMultiplier = params?.frontendMultiplier || 0;
+        // ADDICTIVE DESIGN: High win rate early, massive multipliers, but house always wins
+        const currentLevel = params?.currentLevel || 1;
+        const action = params?.action || 'climb';
         
-        if (ladderFrontendOutcome) {
-          // Trust the frontend outcome (it has the actual game state)
-          return {
-            result: ladderFrontendOutcome,
-            multiplier: ladderFrontendMultiplier,
-          };
+        if (action === 'climb') {
+          // BALANCED ADDICTION CURVE - No easy farming, but still tempting:
+          // Levels 1-3: 50% win rate (fair start, no easy wins)
+          // Levels 4-8: 45% win rate (getting harder)
+          // Levels 9-15: 40% win rate (risky but multipliers are tempting)
+          // Levels 16-25: 35% win rate (getting dangerous)
+          // Levels 26-40: 25% win rate (rare but life-changing)
+          // Levels 41-60: 15% win rate (legendary territory)
+          // Levels 61+: 10% win rate (god mode)
+          
+          let winChance;
+          if (currentLevel <= 3) {
+            winChance = 0.50; // 50% win rate - fair start, no easy farming
+          } else if (currentLevel <= 8) {
+            winChance = 0.45; // 45% win rate - getting harder
+          } else if (currentLevel <= 15) {
+            winChance = 0.40; // 40% win rate - risky but tempting
+          } else if (currentLevel <= 25) {
+            winChance = 0.35; // 35% win rate - getting dangerous
+          } else if (currentLevel <= 40) {
+            winChance = 0.25; // 25% win rate - rare but possible
+          } else if (currentLevel <= 60) {
+            winChance = 0.15; // 15% win rate - legendary territory
+          } else {
+            winChance = 0.10; // 10% win rate - god mode
+          }
+          
+          const ladderWon = rng < winChance;
+          
+          if (ladderWon) {
+            // MASSIVE MULTIPLIER CURVE - make them dream big
+            // Level 1: 1.2×, Level 5: 2.5×, Level 10: 6×, Level 20: 37×, Level 30: 230×, Level 50: 8,900×
+            const multiplier = Math.pow(1.2, currentLevel);
+            return {
+              result: 'win',
+              multiplier: multiplier,
+            };
+          } else {
+            // Liquidation - but they'll want to try again
+            return {
+              result: 'lose',
+              multiplier: 0,
+            };
+          }
         }
         
-        // Fallback: Use RNG with house edge (for backwards compatibility)
-        const targetRung = params?.targetRung || 0;
-        const multipliers = [1.3, 1.69, 2.19, 2.85, 3.7, 4.8];
-        const ladderMultiplier = multipliers[targetRung] || 1.0;
-        const ladderWinChance = Math.pow(0.9, targetRung + 1);
-        const ladderWon = rng < ladderWinChance;
+        // Fallback for other actions
         return {
-          result: ladderWon ? 'win' : 'lose',
-          multiplier: ladderWon ? ladderMultiplier : 0,
+          result: 'lose',
+          multiplier: 0,
         };
 
       case 'stop_loss_roulette':

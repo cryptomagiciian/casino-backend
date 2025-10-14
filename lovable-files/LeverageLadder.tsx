@@ -4,17 +4,17 @@ import { useNetwork } from './NetworkContext';
 import { useCurrency } from './CurrencySelector';
 import { useBalance } from './BalanceContext';
 import { WalletBalance } from './WalletBalance';
-import SimpleLadderScene, { SimpleLadderSceneRef } from './components/games/leverage/SimpleLadderScene';
+import TestLadderScene from './components/games/leverage/TestLadderScene';
 import Controls from './components/games/leverage/Controls';
 import { sfxManager } from './lib/sfx/SFXManager';
 
-// Generate 100 levels with exponential growth
-// Formula: multiplier = 1.15^level (exponential curve)
-// Level 1 = 1.15×, Level 10 = 4.0×, Level 25 = 33×, Level 50 = 1,084×, Level 100 = 1,174,313×
+// Generate 100 levels with ADDICTIVE multiplier curve
+// Formula: multiplier = 1.2^level (more aggressive growth)
+// Level 1 = 1.2×, Level 5 = 2.5×, Level 10 = 6.2×, Level 20 = 38×, Level 30 = 237×, Level 50 = 9,100×
 const generateLadderRungs = () => {
   const rungs = [];
   for (let level = 1; level <= 100; level++) {
-    const multiplier = Math.pow(1.15, level);
+    const multiplier = Math.pow(1.2, level);
     rungs.push({
       level,
       multiplier,
@@ -37,14 +37,15 @@ export const LeverageLadder: React.FC = () => {
   const [betId, setBetId] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [bustLevel, setBustLevel] = useState<number | null>(null);
+  const [isResolving, setIsResolving] = useState(false); // Prevent duplicate resolutions
   const { placeBet, resolveBet, cashoutBet, getBalance, isBetting, error } = useBetting();
   const { network } = useNetwork();
   const { bettingCurrency, displayCurrency, formatBalance, convertToUsd } = useCurrency();
   const { getAvailableBalance } = useBalance();
   const [balance, setBalance] = useState<number>(0);
   
-  // Scene ref for animations
-  const sceneRef = useRef<SimpleLadderSceneRef>(null);
+  // Scene ref for animations (simplified for test)
+  const sceneRef = useRef<any>(null);
 
   // Auto-scroll to current level
   // Refresh balance when network or currency changes
@@ -85,40 +86,7 @@ export const LeverageLadder: React.FC = () => {
     }
   }, [currentLevel]);
 
-  // Calculate bust level with AGGRESSIVE probability
-  // 85% chance of very early bust (levels 1-10) - BRUTAL
-  // 10% chance of early bust (levels 11-20)
-  // 3% chance of medium bust (levels 21-35)
-  // 1.5% chance of high bust (levels 36-50)
-  // 0.4% chance of very high (levels 51-75)
-  // 0.09% chance of legendary (levels 76-90)
-  // 0.01% chance of max (levels 91-100) - Nearly impossible
-  const calculateBustLevel = () => {
-    const rand = Math.random();
-    
-    if (rand < 0.85) {
-      // 85% - Very early bust (1-10) - Most lose immediately
-      return Math.floor(Math.random() * 10) + 1;
-    } else if (rand < 0.95) {
-      // 10% - Early bust (11-20)
-      return Math.floor(Math.random() * 10) + 11;
-    } else if (rand < 0.98) {
-      // 3% - Medium bust (21-35)
-      return Math.floor(Math.random() * 15) + 21;
-    } else if (rand < 0.995) {
-      // 1.5% - High bust (36-50)
-      return Math.floor(Math.random() * 15) + 36;
-    } else if (rand < 0.999) {
-      // 0.4% - Very high (51-75)
-      return Math.floor(Math.random() * 25) + 51;
-    } else if (rand < 0.9999) {
-      // 0.09% - Legendary (76-90)
-      return Math.floor(Math.random() * 15) + 76;
-    } else {
-      // 0.01% - God tier (91-100) - 1 in 10,000
-      return Math.floor(Math.random() * 10) + 91;
-    }
-  };
+  // Removed calculateBustLevel - backend now handles all RNG securely
 
   const startGame = async () => {
     try {
@@ -128,12 +96,8 @@ export const LeverageLadder: React.FC = () => {
       setIsPlaying(true);
       setCurrentLevel(0);
       setResult(null);
-      
-      // Calculate bust level with house edge
-      const bustLvl = calculateBustLevel();
-      setBustLevel(bustLvl);
-      
-      console.log(`🎲 Game started - Bust at level ${bustLvl}`);
+      setBustLevel(null); // Don't calculate bust level on frontend!
+      setIsResolving(false); // Reset resolving state
 
       // Check if user has sufficient balance
     if (balance < parseFloat(stake)) {
@@ -159,71 +123,88 @@ export const LeverageLadder: React.FC = () => {
   };
 
   const climbUp = async () => {
-    if (!isPlaying || currentLevel >= 100 || !betId) return;
+    if (!isPlaying || currentLevel >= 100 || !betId || isResolving) return;
 
     const nextLevel = currentLevel + 1;
+    
+    // Prevent duplicate resolutions
+    setIsResolving(true);
     
     // Play climb attempt sound
     sfxManager.play('climb_success', 0.5);
     
-    // Check if busted
-    if (nextLevel >= (bustLevel || 101)) {
-      setCurrentLevel(nextLevel);
-      setResult('💥 LIQUIDATED! You lost everything!');
-      setIsPlaying(false);
+    try {
+      // Let backend determine if this climb succeeds or fails
+      // Send the current level to backend for RNG decision
+      const resolveParams = {
+        currentLevel: nextLevel,
+        action: 'climb'
+      };
       
-      // Play liquidation sound and animation
-      sfxManager.play('liquidation_thunder', 0.8);
-      sceneRef.current?.animateLiquidation();
+      console.log('🎯 Sending climb request to backend:', resolveParams);
+      const result = await resolveBet(betId, resolveParams);
       
-      // Resolve bet as loss - send the actual game outcome
-      if (betId) {
-        const resolveParams = {
-          frontendOutcome: 'lose', // Player hit liquidation level
-          frontendMultiplier: 0,   // No payout for liquidation
-          liquidationLevel: nextLevel,
-          bustLevel: bustLevel
-        };
+      if (result.outcome === 'lose' || result.outcome === 'crash') {
+        // Backend determined liquidation
+        setCurrentLevel(nextLevel);
+        setResult('💥 LIQUIDATED! You lost everything!');
+        setIsPlaying(false);
         
-        console.log('🎯 Sending liquidation resolve params:', resolveParams);
-        resolveBet(betId, resolveParams).then(() => refreshBalance());
+        // Play liquidation sound and animation
+        sfxManager.play('liquidation_thunder', 0.8);
+        console.log('💥 Liquidation animation triggered');
+        
+        await refreshBalance();
+      } else {
+        // Backend determined success
+        setCurrentLevel(nextLevel);
+        
+        // Play success animation
+        console.log('🎯 Advance animation triggered');
+        
+        // Give feedback at milestones - BALANCED PSYCHOLOGICAL HOOKS
+        if (nextLevel === 3) {
+          console.log('🎯 Good start! Level 3 - 1.7× multiplier! The real challenge begins now!');
+          sfxManager.play('milestone_reached', 0.7);
+        } else if (nextLevel === 8) {
+          console.log('🔥 Nice progress! Level 8 - 4.3× multiplier! Getting interesting!');
+          sfxManager.play('milestone_reached', 0.7);
+        } else if (nextLevel === 15) {
+          console.log('💎 Impressive! Level 15 - 15.4× multiplier! This is where legends are made!');
+          sfxManager.play('milestone_reached', 0.7);
+        } else if (nextLevel === 25) {
+          console.log('🚀 LEGENDARY! Level 25 - 95× multiplier! You could be rich!');
+          sfxManager.play('milestone_reached', 0.7);
+        } else if (nextLevel === 40) {
+          console.log('👑 GODLIKE! Level 40 - 1,470× multiplier! LIFE CHANGING MONEY!');
+          sfxManager.play('milestone_reached', 0.7);
+        } else if (nextLevel === 60) {
+          console.log('🌟 UNSTOPPABLE! Level 60 - 56,348× multiplier! LEGEND STATUS!');
+          sfxManager.play('milestone_reached', 0.7);
+        } else if (nextLevel === 100) {
+          console.log('👑 MAXIMUM POWER! Level 100 - 83M× multiplier! YOU ARE THE CHOSEN ONE!');
+          sfxManager.play('milestone_reached', 0.7);
+        }
       }
-    } else {
-      setCurrentLevel(nextLevel);
-      
-      // Play success animation
-      sceneRef.current?.animateAdvance();
-      
-      // Give feedback at milestones
-      if (nextLevel === 10) {
-        console.log('🎯 Nice! Level 10 reached - 4× multiplier');
-        sfxManager.play('milestone_reached', 0.7);
-      } else if (nextLevel === 25) {
-        console.log('🔥 Amazing! Level 25 - 33× multiplier!');
-        sfxManager.play('milestone_reached', 0.7);
-      } else if (nextLevel === 50) {
-        console.log('💎 INSANE! Level 50 - 1,084× multiplier!!');
-        sfxManager.play('milestone_reached', 0.7);
-      } else if (nextLevel === 75) {
-        console.log('🚀 LEGENDARY! Level 75 - 37K× multiplier!!!');
-        sfxManager.play('milestone_reached', 0.7);
-      } else if (nextLevel === 100) {
-        console.log('👑 GODLIKE! MAX LEVEL 100 - 1.17M× MULTIPLIER!!!!');
-        sfxManager.play('milestone_reached', 0.7);
-      }
+    } catch (error) {
+      console.error('Climb failed:', error);
+      alert('Climb failed: ' + (error as Error).message);
+    } finally {
+      setIsResolving(false);
     }
   };
 
   const cashOut = async () => {
-    if (!isPlaying || currentLevel === 0 || !betId) return;
+    if (!isPlaying || currentLevel === 0 || !betId || isResolving) return;
 
+    setIsResolving(true);
     setIsPlaying(false);
     const multiplier = LADDER_RUNGS[currentLevel - 1].multiplier;
 
     try {
       // Play cashout sound and animation
       sfxManager.play('cashout_chime', 0.8);
-      sceneRef.current?.animateCashout();
+      console.log('💰 Cashout animation triggered');
       
       // Send current multiplier to backend
       await cashoutBet(betId, multiplier);
@@ -233,6 +214,8 @@ export const LeverageLadder: React.FC = () => {
       console.error('Cashout failed:', error);
       alert('Cashout failed: ' + (error as Error).message);
       setIsPlaying(true); // Re-enable if cashout failed
+    } finally {
+      setIsResolving(false);
     }
   };
 
@@ -242,6 +225,7 @@ export const LeverageLadder: React.FC = () => {
     setResult(null);
     setBetId(null);
     setBustLevel(null);
+    setIsResolving(false);
   };
 
   // Calculate current multiplier and potential win
@@ -273,15 +257,14 @@ export const LeverageLadder: React.FC = () => {
       </div>
       
       <h2 className="text-3xl font-bold text-indigo-400 mb-2">🪜 LEVERAGE LADDER</h2>
-      <p className="text-gray-300 mb-4">Climb the neon ladder! Cash out before liquidation!</p>
+      <p className="text-gray-300 mb-4">The ultimate test of greed! Every level is a 50/50 gamble with massive multipliers - will you cash out or risk it all?</p>
 
       {/* Main Game Area */}
       <div className="space-y-4">
-        {/* Ladder Scene - Canvas */}
+        {/* Ladder Scene - Test Version */}
         <div className="bg-black rounded-lg border border-indigo-700 overflow-hidden" 
              style={{ height: '56vh', minHeight: '400px' }}>
-          <SimpleLadderScene
-            ref={sceneRef}
+          <TestLadderScene
             currentLevel={currentLevel}
             multiplier={currentMultiplier}
             risk={riskLevel}
@@ -301,6 +284,7 @@ export const LeverageLadder: React.FC = () => {
             risk={riskLevel}
             nextLevelProb={nextLevelProb}
             isClimbing={isBetting}
+            isResolving={isResolving}
             canCashOut={currentLevel > 0}
             onClimb={climbUp}
             onCashOut={cashOut}
@@ -339,7 +323,7 @@ export const LeverageLadder: React.FC = () => {
               onClick={result ? resetGame : startGame}
               className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-lg font-bold text-xl transition-all transform hover:scale-105 shadow-lg"
             >
-              {result ? '🔄 New Climb' : '🚀 START CLIMBING'}
+              {result ? '🔄 Try Again' : '🚀 START YOUR JOURNEY TO RICHES'}
             </button>
           </div>
         )}

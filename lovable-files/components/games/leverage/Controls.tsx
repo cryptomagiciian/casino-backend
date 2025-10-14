@@ -8,6 +8,7 @@ interface ControlsProps {
   risk: number; // 0-100
   nextLevelProb: number; // 0-100
   isClimbing: boolean;
+  isResolving: boolean;
   canCashOut: boolean;
   onClimb: () => void;
   onCashOut: () => void;
@@ -20,6 +21,7 @@ const Controls: React.FC<ControlsProps> = ({
   risk,
   nextLevelProb,
   isClimbing,
+  isResolving,
   canCashOut,
   onClimb,
   onCashOut
@@ -103,10 +105,10 @@ const Controls: React.FC<ControlsProps> = ({
         {/* CLIMB Button */}
         <button
           onClick={onClimb}
-          disabled={isClimbing}
+          disabled={isClimbing || isResolving}
           className={`
             relative px-6 py-3 rounded-lg font-bold text-white transition-all duration-200
-            ${isClimbing 
+            ${isClimbing || isResolving
               ? 'opacity-50 cursor-not-allowed' 
               : 'hover:scale-105 active:scale-95'
             }
@@ -114,7 +116,7 @@ const Controls: React.FC<ControlsProps> = ({
           `}
           style={{
             background: `linear-gradient(135deg, ${formatRiskColor(COLORS.climbButton.start)}, ${formatRiskColor(COLORS.climbButton.end)})`,
-            boxShadow: isClimbing 
+            boxShadow: isClimbing || isResolving
               ? '0 4px 8px rgba(0,0,0,0.3)' 
               : '0 8px 16px rgba(29, 233, 182, 0.3), 0 0 20px rgba(0, 194, 255, 0.2)'
           }}
@@ -139,10 +141,10 @@ const Controls: React.FC<ControlsProps> = ({
         {/* CASH OUT Button */}
         <button
           onClick={onCashOut}
-          disabled={!canCashOut || isClimbing}
+          disabled={!canCashOut || isClimbing || isResolving}
           className={`
             relative px-6 py-3 rounded-lg font-bold text-white transition-all duration-200
-            ${!canCashOut || isClimbing
+            ${!canCashOut || isClimbing || isResolving
               ? 'opacity-50 cursor-not-allowed' 
               : 'hover:scale-105 active:scale-95'
             }
@@ -151,7 +153,7 @@ const Controls: React.FC<ControlsProps> = ({
           `}
           style={{
             background: `linear-gradient(135deg, ${formatRiskColor(COLORS.cashoutButton.start)}, ${formatRiskColor(COLORS.cashoutButton.end)})`,
-            boxShadow: !canCashOut || isClimbing
+            boxShadow: !canCashOut || isClimbing || isResolving
               ? '0 4px 8px rgba(0,0,0,0.3)'
               : '0 8px 16px rgba(255, 154, 46, 0.3), 0 0 20px rgba(255, 77, 109, 0.2)'
           }}

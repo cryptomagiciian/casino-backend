@@ -279,6 +279,64 @@ class ApiService {
   async getWithdrawalLimits(currency: string) {
     return this.request(`/withdrawals/limits/${currency}`);
   }
+
+  // Futures Trading endpoints
+  async getFuturesSymbols() {
+    return this.request('/futures/symbols');
+  }
+
+  async getCurrentTradingRound() {
+    return this.request('/futures/round/current');
+  }
+
+  async openFuturesPosition(orderData: {
+    symbolId: string;
+    side: 'LONG' | 'SHORT';
+    leverage: number;
+    collateral: number;
+    qty?: number;
+    splitSize?: number;
+  }) {
+    return this.request('/futures/order/open', {
+      method: 'POST',
+      body: JSON.stringify(orderData),
+    });
+  }
+
+  async closeFuturesPosition(positionId: string, qty?: number) {
+    return this.request('/futures/order/close', {
+      method: 'POST',
+      body: JSON.stringify({ positionId, qty }),
+    });
+  }
+
+  async getFuturesPositions(status?: 'OPEN' | 'CLOSED' | 'LIQUIDATED', page = 1, limit = 20) {
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    params.append('page', page.toString());
+    params.append('limit', limit.toString());
+    return this.request(`/futures/positions?${params.toString()}`);
+  }
+
+  async getFuturesPosition(positionId: string) {
+    return this.request(`/futures/positions/${positionId}`);
+  }
+
+  async getLiquidationPrice(positionId: string) {
+    return this.request(`/futures/positions/${positionId}/liquidation-price`);
+  }
+
+  async getFundingRate(symbolId: string) {
+    return this.request(`/futures/funding-rate/${symbolId}`);
+  }
+
+  async getBorrowRate(symbolId: string) {
+    return this.request(`/futures/borrow-rate/${symbolId}`);
+  }
+
+  async getMaintenanceMarginRate(leverage: number) {
+    return this.request(`/futures/maintenance-margin-rate/${leverage}`);
+  }
 }
 
 export const apiService = new ApiService(API_BASE_URL);
