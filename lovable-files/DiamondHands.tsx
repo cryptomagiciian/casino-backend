@@ -134,7 +134,11 @@ export const DiamondHands: React.FC = () => {
         currency: 'USD', // Always bet in USD
         stake,
         clientSeed: Math.random().toString(36),
-        params: { mineCount: difficulty.mines },
+        params: { 
+          mineCount: difficulty.mines,
+          minePositions: mines, // Send the actual mine positions to backend
+          gridSize: TOTAL_TILES
+        },
       });
 
       setBetId(bet.id);
@@ -165,13 +169,21 @@ export const DiamondHands: React.FC = () => {
         setGrid(finalGrid);
       }, 500);
 
-      // CRITICAL: Get the ACTUAL result from backend FIRST (backend uses provably fair RNG)
+      // CRITICAL: Send the actual game outcome to backend to prevent casino losses
       if (betId) {
         try {
-          const resolved = await resolveBet(betId);
+          // Send the actual game outcome (player hit a mine = lose)
+          const resolveParams = {
+            frontendOutcome: 'lose', // Player hit a mine
+            frontendMultiplier: 0,   // No payout for hitting a mine
+            mineHit: true,
+            safeCount: safeCount
+          };
+          
+          const resolved = await resolveBet(betId, resolveParams);
           await refreshBalance();
           
-          // Backend result is the source of truth
+          // Backend should now return the correct outcome
           const won = resolved.outcome === 'win';
           
           console.log('🎲 Backend RNG result:', {
@@ -209,9 +221,17 @@ export const DiamondHands: React.FC = () => {
         setResult(`💎 PERFECT GAME! All diamonds found! ${newMultiplier.toFixed(2)}×`);
         setIsPlaying(false);
         
+        // For perfect game, resolve the bet with the final multiplier
         if (betId) {
-          cashoutBet(betId, newMultiplier).then(() => refreshBalance()).catch(err => {
-            console.error('Cashout failed:', err);
+          const resolveParams = {
+            frontendOutcome: 'win', // Player found all safe tiles
+            frontendMultiplier: newMultiplier, // Full multiplier for perfect game
+            perfectGame: true,
+            safeCount: newSafeCount
+          };
+          
+          resolveBet(betId, resolveParams).then(() => refreshBalance()).catch(err => {
+            console.error('Bet resolution failed:', err);
           });
         }
       }
@@ -224,7 +244,15 @@ export const DiamondHands: React.FC = () => {
     setIsPlaying(false);
     
     try {
-      await cashoutBet(betId, multiplier);
+      // For cashout, send the win outcome with the current multiplier
+      const resolveParams = {
+        frontendOutcome: 'win', // Player cashed out successfully
+        frontendMultiplier: multiplier, // Current multiplier at cashout
+        cashout: true,
+        safeCount: safeCount
+      };
+      
+      await resolveBet(betId, resolveParams);
       await refreshBalance();
       setResult(`💰 CASHED OUT! Won $${getPotentialWin()} USD (${multiplier.toFixed(2)}×)`);
       

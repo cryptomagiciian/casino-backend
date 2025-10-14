@@ -77,13 +77,13 @@ export const GameBettingProvider: React.FC<{ children: ReactNode }> = ({ childre
   };
 
 
-  const resolveBet = async (betId: string) => {
+  const resolveBet = async (betId: string, resolveParams?: any) => {
     try {
       setIsBetting(true);
       setError(null);
 
-      console.log('🎰 Resolving bet:', betId);
-      const result = await apiService.resolveBet(betId);
+      console.log('🎰 Resolving bet:', betId, resolveParams ? `with params: ${JSON.stringify(resolveParams)}` : '');
+      const result = await apiService.resolveBet(betId, resolveParams);
       console.log('🎰 Bet resolved successfully:', result);
       
       // Refresh balances after bet resolution to show updated amounts

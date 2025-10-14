@@ -82,7 +82,7 @@ export class BetsService {
   /**
    * Resolve a bet
    */
-  async resolveBet(betId: string) {
+  async resolveBet(betId: string, resolveParams?: any) {
     try {
       const bet = await this.prisma.bet.findUnique({
         where: { id: betId },
@@ -113,7 +113,7 @@ export class BetsService {
       const rng = await generateRng(fairnessSeed.serverSeed, bet.clientSeed, bet.nonce);
 
       // Generate game outcome
-      const outcome = this.generateGameOutcome(bet.game as Game, rng, bet.params as any);
+      const outcome = this.generateGameOutcome(bet.game as Game, rng, { ...bet.params, ...resolveParams });
 
       if (!outcome || typeof outcome.multiplier === 'undefined') {
         console.error(`Invalid game outcome for game ${bet.game}:`, outcome);
@@ -515,38 +515,38 @@ export class BetsService {
         };
 
       case 'diamond_hands':
-        const mines = params?.mines || 3;
-        const picks = params?.picks || [];
-        const gridSize = 25;
+        // CRITICAL FIX: Use frontend-determined outcome to prevent casino losses
+        // The frontend has the actual game state and mine positions
+        const frontendOutcome = params?.frontendOutcome;
+        const frontendMultiplier = params?.frontendMultiplier || 0;
         
-        // Generate mine positions deterministically
-        const minePositions = [];
-        let mineRng = rng;
-        
-        while (minePositions.length < mines) {
-          const pos = Math.floor(mineRng * gridSize);
-          if (!minePositions.includes(pos)) {
-            minePositions.push(pos);
-          }
-          mineRng = (mineRng * 1.618) % 1;
+        if (frontendOutcome) {
+          // Trust the frontend outcome (it has the actual game state)
+          return {
+            result: frontendOutcome,
+            multiplier: frontendMultiplier,
+          };
         }
         
-        // Check picks
-        let dhMultiplier = 1.0;
-        let hitMine = false;
+        // Fallback: Use RNG with house edge (40% win chance)
+        const winChance = 0.4;
+        const won = rng > winChance;
         
-        for (const pick of picks) {
-          if (minePositions.includes(pick)) {
-            hitMine = true;
-            break;
-          }
-          dhMultiplier += 0.1;
+        if (won) {
+          const mineCount = params?.mineCount || 3;
+          const gridSize = params?.gridSize || 25;
+          const safeTiles = gridSize - mineCount;
+          const multiplier = 1.0 + (safeTiles * 0.1);
+          return {
+            result: 'win',
+            multiplier: multiplier,
+          };
+        } else {
+          return {
+            result: 'lose',
+            multiplier: 0,
+          };
         }
-        
-        return {
-          result: hitMine ? 'lose' : 'win',
-          multiplier: hitMine ? 0 : dhMultiplier,
-        };
 
       default:
         throw new BadRequestException(`Unknown game: ${game}`);

@@ -91,10 +91,10 @@ export class BetsController {
   @ApiOperation({ summary: 'Resolve a bet (admin only)' })
   @ApiResponse({ status: 200, description: 'Bet resolved successfully' })
   @ApiResponse({ status: 404, description: 'Bet not found' })
-  async resolveBet(@Param('id') betId: string) {
+  async resolveBet(@Param('id') betId: string, @Body() resolveParams?: any) {
     try {
-      console.log(`🎲 Resolving bet: ${betId}`);
-      const result = await this.betsService.resolveBet(betId);
+      console.log(`🎲 Resolving bet: ${betId}`, resolveParams ? `with params: ${JSON.stringify(resolveParams)}` : '');
+      const result = await this.betsService.resolveBet(betId, resolveParams);
       console.log(`✅ Bet resolved: ${betId}, outcome: ${result.outcome}, multiplier: ${result.resultMultiplier}`);
       return result;
     } catch (error) {

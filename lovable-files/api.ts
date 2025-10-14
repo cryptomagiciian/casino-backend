@@ -150,9 +150,10 @@ class ApiService {
     });
   }
 
-  async resolveBet(betId: string) {
+  async resolveBet(betId: string, resolveParams?: any) {
     return this.request(`/bets/resolve/${betId}`, {
       method: 'POST',
+      body: resolveParams ? JSON.stringify(resolveParams) : undefined,
     });
   }
 
