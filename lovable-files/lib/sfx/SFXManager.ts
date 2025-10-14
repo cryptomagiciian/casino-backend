@@ -6,7 +6,8 @@ export class SFXManager {
   private volume: number = 0.3;
 
   constructor() {
-    this.initializeAudioContext();
+    // Don't auto-initialize to avoid browser restrictions
+    // Will initialize on first user interaction
   }
 
   private async initializeAudioContext() {
@@ -79,6 +80,11 @@ export class SFXManager {
   }
 
   async play(soundName: string, volume: number = 1): Promise<void> {
+    // Initialize on first play if not already done
+    if (!this.audioContext) {
+      await this.initializeAudioContext();
+    }
+
     if (this.isMuted || !this.audioContext || this.audioContext.state === 'suspended') {
       return;
     }
@@ -119,6 +125,13 @@ export class SFXManager {
 
   isAudioEnabled(): boolean {
     return !this.isMuted && this.audioContext !== null;
+  }
+
+  // Initialize audio on user interaction
+  async initializeOnUserInteraction(): Promise<void> {
+    if (!this.audioContext) {
+      await this.initializeAudioContext();
+    }
   }
 }
 

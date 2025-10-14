@@ -478,6 +478,20 @@ export class BetsService {
         };
 
       case 'leverage_ladder':
+        // CRITICAL FIX: Use frontend-determined outcome to prevent casino losses
+        // The frontend has the actual game state and liquidation level
+        const frontendOutcome = params?.frontendOutcome;
+        const frontendMultiplier = params?.frontendMultiplier || 0;
+        
+        if (frontendOutcome) {
+          // Trust the frontend outcome (it has the actual game state)
+          return {
+            result: frontendOutcome,
+            multiplier: frontendMultiplier,
+          };
+        }
+        
+        // Fallback: Use RNG with house edge (for backwards compatibility)
         const targetRung = params?.targetRung || 0;
         const multipliers = [1.3, 1.69, 2.19, 2.85, 3.7, 4.8];
         const ladderMultiplier = multipliers[targetRung] || 1.0;

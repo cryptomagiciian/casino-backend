@@ -4,7 +4,7 @@ import { useNetwork } from './NetworkContext';
 import { useCurrency } from './CurrencySelector';
 import { useBalance } from './BalanceContext';
 import { WalletBalance } from './WalletBalance';
-import LadderScene, { LadderSceneRef } from './components/games/leverage/LadderScene';
+import SimpleLadderScene, { SimpleLadderSceneRef } from './components/games/leverage/SimpleLadderScene';
 import Controls from './components/games/leverage/Controls';
 import { sfxManager } from './lib/sfx/SFXManager';
 
@@ -44,7 +44,7 @@ export const LeverageLadder: React.FC = () => {
   const [balance, setBalance] = useState<number>(0);
   
   // Scene ref for animations
-  const sceneRef = useRef<LadderSceneRef>(null);
+  const sceneRef = useRef<SimpleLadderSceneRef>(null);
 
   // Auto-scroll to current level
   // Refresh balance when network or currency changes
@@ -122,6 +122,9 @@ export const LeverageLadder: React.FC = () => {
 
   const startGame = async () => {
     try {
+      // Initialize SFX on first user interaction
+      await sfxManager.initializeOnUserInteraction();
+      
       setIsPlaying(true);
       setCurrentLevel(0);
       setResult(null);
@@ -274,10 +277,10 @@ export const LeverageLadder: React.FC = () => {
 
       {/* Main Game Area */}
       <div className="space-y-4">
-        {/* Ladder Scene - PixiJS Canvas */}
+        {/* Ladder Scene - Canvas */}
         <div className="bg-black rounded-lg border border-indigo-700 overflow-hidden" 
              style={{ height: '56vh', minHeight: '400px' }}>
-          <LadderScene
+          <SimpleLadderScene
             ref={sceneRef}
             currentLevel={currentLevel}
             multiplier={currentMultiplier}
