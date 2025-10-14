@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { apiService } from '../services/api';
-import { useWallet } from '../hooks/useWallet';
+import { useBetting } from './GameBettingProvider';
+import { useNetwork } from './NetworkContext';
+import { useCurrency } from './CurrencySelector';
 import { WalletBalance } from './WalletBalance';
 
 interface Candle {
@@ -23,8 +24,25 @@ export const SupportOrResistance: React.FC = () => {
   const [result, setResult] = useState<string | null>(null);
   const [priceMoving, setPriceMoving] = useState(false);
   const [breakoutDirection, setBreakoutDirection] = useState<'up' | 'down' | null>(null);
-  const { fetchBalances } = useWallet();
+  const { placeBet, resolveBet, getBalance, isBetting, error } = useBetting();
+  const { network } = useNetwork();
+  const { bettingCurrency, displayCurrency, formatBalance } = useCurrency();
+  const [balance, setBalance] = useState<number>(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Refresh balance when network or currency changes
+  useEffect(() => {
+    refreshBalance();
+  }, [network, bettingCurrency]);
+
+  const refreshBalance = async () => {
+    try {
+      const currentBalance = await getBalance(bettingCurrency);
+      setBalance(currentBalance);
+    } catch (error) {
+      console.error('Failed to refresh balance:', error);
+    }
+  };
 
   useEffect(() => {
     // Initialize with candlesticks
@@ -69,9 +87,16 @@ export const SupportOrResistance: React.FC = () => {
       setResult(null);
       setBreakoutDirection(null);
 
-      const bet = await apiService.placeBet({
+      // Check if user has sufficient balance
+    if (balance < parseFloat(stake)) {
+      setResult('❌ Insufficient balance!');
+      setIsPlaying(false);
+      return;
+    }
+
+    const bet = await placeBet({
         game: 'support_or_resistance',
-        currency: 'USDC',
+        currency: '{displayCurrency === 'usd' ? 'USD' : bettingCurrency}',
         stake,
         clientSeed: Math.random().toString(36),
         params: { prediction },
@@ -230,6 +255,20 @@ export const SupportOrResistance: React.FC = () => {
   return (
     <div className="bg-gradient-to-br from-indigo-900 via-purple-900 to-black rounded-lg p-6 border-2 border-indigo-500 shadow-2xl relative">
       <WalletBalance position="top-right" />
+      {/* Balance Display */}
+      <div className="mb-4 p-3 bg-gray-800/50 rounded-lg border border-gray-600">
+        <div className="flex items-center justify-between">
+          <span className="text-gray-400">Balance:</span>
+          <span className="font-mono font-bold text-green-400">
+            {formatBalance(balance, bettingCurrency)}
+          </span>
+        </div>
+        <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
+          <span>Network: {network}</span>
+          <span>Currency: {bettingCurrency}</span>
+        </div>
+      </div>
+      
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-red-400">
@@ -350,7 +389,7 @@ export const SupportOrResistance: React.FC = () => {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Stake (USDC):
+              Stake ({displayCurrency === 'usd' ? 'USD' : bettingCurrency}):
             </label>
             <input
               type="number"
@@ -404,7 +443,7 @@ export const SupportOrResistance: React.FC = () => {
             onClick={placeBet}
             className="w-full py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 text-white rounded-xl font-bold text-xl transition-all transform hover:scale-105 shadow-lg shadow-indigo-500/50"
           >
-            🎯 PLACE BET ({stake} USDC)
+            🎯 PLACE BET ({stake} {displayCurrency === 'usd' ? 'USD' : bettingCurrency})
           </button>
         </div>
       )}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { apiService } from '../services/api';
-import { useWallet } from '../hooks/useWallet';
+import { useBetting } from './GameBettingProvider';
+import { useNetwork } from './NetworkContext';
+import { useCurrency } from './CurrencySelector';
 import { WalletBalance } from './WalletBalance';
 
 export const ToTheMoon: React.FC = () => {
@@ -15,10 +16,27 @@ export const ToTheMoon: React.FC = () => {
   const [exhaust, setExhaust] = useState<{id: number, y: number, opacity: number}[]>([]);
   const [crashPoint, setCrashPoint] = useState<number>(2.0);
   const [canCashout, setCanCashout] = useState(false);
-  const { fetchBalances } = useWallet();
+  const { placeBet, resolveBet, getBalance, isBetting, error } = useBetting();
+  const { network } = useNetwork();
+  const { bettingCurrency, displayCurrency, formatBalance } = useCurrency();
+  const [balance, setBalance] = useState<number>(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const exhaustCountRef = useRef(0);
   const startTimeRef = useRef<number>(0);
+
+  // Refresh balance when network or currency changes
+  useEffect(() => {
+    refreshBalance();
+  }, [network, bettingCurrency]);
+
+  const refreshBalance = async () => {
+    try {
+      const currentBalance = await getBalance(bettingCurrency);
+      setBalance(currentBalance);
+    } catch (error) {
+      console.error('Failed to refresh balance:', error);
+    }
+  };
 
   // HOUSE EDGE: Generate crash point with balanced early crash prevention
   const generateCrashPoint = (): number => {
@@ -40,6 +58,20 @@ export const ToTheMoon: React.FC = () => {
     if (rand < 0.99) return 7.0 + Math.random() * 8.0;
     // 1% crash at 15x+ (jackpot - keeps them playing)
     return 15.0 + Math.random() * 35.0;
+  };
+
+  // Refresh balance when network or currency changes
+  useEffect(() => {
+    refreshBalance();
+  }, [network, bettingCurrency]);
+
+  const refreshBalance = async () => {
+    try {
+      const currentBalance = await getBalance(bettingCurrency);
+      setBalance(currentBalance);
+    } catch (error) {
+      console.error('Failed to refresh balance:', error);
+    }
   };
 
   useEffect(() => {
@@ -66,12 +98,30 @@ export const ToTheMoon: React.FC = () => {
     }
     
     try {
-      const bet = await apiService.placeBet({
+      // Check if user has sufficient balance
+    if (balance < parseFloat(stake)) {
+      setResult('❌ Insufficient balance!');
+      setIsPlaying(false);
+      return;
+    }
+
+    // Check if user has sufficient balance
+    if (balance < parseFloat(stake)) {
+      alert('❌ Insufficient balance!');
+      return;
+    }
+
+    const bet = await placeBet({
         game: 'to_the_moon',
-        currency: 'USDC',
-        stake,
-        clientSeed: Math.random().toString(36),
-        params: {},
+        stake: parseFloat(stake),
+        currency: displayCurrency === 'usd' ? 'USD' : bettingCurrency,
+        prediction: { multiplier: crashPoint },
+        meta: {
+          network,
+          displayCurrency,
+          bettingCurrency,
+          timestamp: Date.now(),
+        },
       });
       
       // Generate crash point (house edge)
@@ -115,7 +165,7 @@ export const ToTheMoon: React.FC = () => {
             }
             setCrashed(true);
             setIsRunning(false);
-            resolveBet(bet.id, targetCrash);
+            resolveGameBet(bet.id, targetCrash);
             return targetCrash;
           }
           return newMultiplier;
@@ -158,10 +208,10 @@ export const ToTheMoon: React.FC = () => {
     }
   };
 
-  const resolveBet = async (id: string, finalMultiplier: number) => {
+  const resolveGameBet = async (id: string, finalMultiplier: number) => {
     try {
-      await apiService.resolveBet(id);
-      await fetchBalances();
+      await resolveBet(id);
+      await refreshBalance();
     } catch (error) {
       console.error('Bet resolution failed:', error);
     }
@@ -180,6 +230,21 @@ export const ToTheMoon: React.FC = () => {
   return (
     <div className="bg-gradient-to-br from-black via-indigo-950 to-purple-950 rounded-lg p-6 border-2 border-indigo-500 shadow-2xl relative">
       <WalletBalance position="top-right" />
+      
+      {/* Balance Display */}
+      <div className="mb-4 p-3 bg-gray-800/50 rounded-lg border border-gray-600">
+        <div className="flex items-center justify-between">
+          <span className="text-gray-400">Balance:</span>
+          <span className="font-mono font-bold text-green-400">
+            {formatBalance(balance, bettingCurrency)}
+          </span>
+        </div>
+        <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
+          <span>Network: {network}</span>
+          <span>Currency: {bettingCurrency}</span>
+        </div>
+      </div>
+      
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
@@ -189,7 +254,9 @@ export const ToTheMoon: React.FC = () => {
         </div>
         <div className="text-right">
           <div className="text-sm text-gray-400">Potential Win</div>
-          <div className="text-lg font-bold text-green-400">${(parseFloat(stake) * multiplier).toFixed(2)}</div>
+          <div className="text-lg font-bold text-green-400">
+            {displayCurrency === 'usd' ? '$' : ''}{(parseFloat(stake) * multiplier).toFixed(2)}{displayCurrency === 'crypto' ? ` ${bettingCurrency}` : ''}
+          </div>
         </div>
       </div>
 
@@ -417,7 +484,7 @@ export const ToTheMoon: React.FC = () => {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Stake (USDC):
+              Stake ({displayCurrency === 'usd' ? 'USD' : bettingCurrency}):
             </label>
             <input
               type="number"

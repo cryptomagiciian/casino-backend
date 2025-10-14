@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { apiService } from '../services/api';
-import { useWallet } from '../hooks/useWallet';
+import { useBetting } from './GameBettingProvider';
+import { useNetwork } from './NetworkContext';
+import { useCurrency } from './CurrencySelector';
 import { WalletBalance } from './WalletBalance';
 
 type TileState = 'hidden' | 'safe' | 'mine';
@@ -33,11 +34,28 @@ export const DiamondHands: React.FC = () => {
   const [safeCount, setSafeCount] = useState(0);
   const [multiplier, setMultiplier] = useState(1.0);
   const [result, setResult] = useState<string | null>(null);
-  const { fetchBalances } = useWallet();
+  const { placeBet, resolveBet, getBalance, isBetting, error } = useBetting();
+  const { network } = useNetwork();
+  const { bettingCurrency, displayCurrency, formatBalance } = useCurrency();
+  const [balance, setBalance] = useState<number>(0);
   
   const TOTAL_TILES = difficulty.gridSize * difficulty.gridSize;
 
   // Reset grid when difficulty changes
+  // Refresh balance when network or currency changes
+  useEffect(() => {
+    refreshBalance();
+  }, [network, bettingCurrency]);
+
+  const refreshBalance = async () => {
+    try {
+      const currentBalance = await getBalance(bettingCurrency);
+      setBalance(currentBalance);
+    } catch (error) {
+      console.error('Failed to refresh balance:', error);
+    }
+  };
+
   useEffect(() => {
     if (!isPlaying) {
       setGrid(Array(TOTAL_TILES).fill('hidden'));
@@ -89,9 +107,16 @@ export const DiamondHands: React.FC = () => {
       }
       setMinePositions(mines);
 
-      const bet = await apiService.placeBet({
+      // Check if user has sufficient balance
+    if (balance < parseFloat(stake)) {
+      setResult('❌ Insufficient balance!');
+      setIsPlaying(false);
+      return;
+    }
+
+    const bet = await placeBet({
         game: 'diamond_hands',
-        currency: 'USDC',
+        currency: '{displayCurrency === 'usd' ? 'USD' : bettingCurrency}',
         stake,
         clientSeed: Math.random().toString(36),
         params: { mineCount: difficulty.mines },
@@ -115,7 +140,7 @@ export const DiamondHands: React.FC = () => {
       // Hit a mine!
       newGrid[index] = 'mine';
       setGrid(newGrid);
-      setResult(`💣 BOOM! Hit mine after ${safeCount} safe picks. Lost ${stake} USDC!`);
+      setResult(`💣 BOOM! Hit mine after ${safeCount} safe picks. Lost ${stake} {displayCurrency === 'usd' ? 'USD' : bettingCurrency}!`);
       setIsPlaying(false);
 
       // Reveal all mines
@@ -165,7 +190,7 @@ export const DiamondHands: React.FC = () => {
     try {
       await apiService.cashoutBet(betId, multiplier);
       await fetchBalances();
-      setResult(`💰 CASHED OUT! Won ${getPotentialWin()} USDC (${multiplier.toFixed(2)}×)`);
+      setResult(`💰 CASHED OUT! Won ${getPotentialWin()} {displayCurrency === 'usd' ? 'USD' : bettingCurrency} (${multiplier.toFixed(2)}×)`);
       
       // Reveal all mines
       const finalGrid = grid.map((tile, i) => 
@@ -191,6 +216,20 @@ export const DiamondHands: React.FC = () => {
   return (
     <div className="bg-gradient-to-br from-blue-900 via-purple-900 to-black rounded-lg p-6 border-2 border-cyan-500 shadow-2xl relative">
       <WalletBalance position="top-right" />
+      {/* Balance Display */}
+      <div className="mb-4 p-3 bg-gray-800/50 rounded-lg border border-gray-600">
+        <div className="flex items-center justify-between">
+          <span className="text-gray-400">Balance:</span>
+          <span className="font-mono font-bold text-green-400">
+            {formatBalance(balance, bettingCurrency)}
+          </span>
+        </div>
+        <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
+          <span>Network: {network}</span>
+          <span>Currency: {bettingCurrency}</span>
+        </div>
+      </div>
+      
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">
@@ -292,7 +331,7 @@ export const DiamondHands: React.FC = () => {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Stake (USDC):
+              Stake ({displayCurrency === 'usd' ? 'USD' : bettingCurrency}):
             </label>
             <input
               type="number"
@@ -351,7 +390,7 @@ export const DiamondHands: React.FC = () => {
             onClick={startGame}
             className="w-full py-4 bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white rounded-lg font-bold text-xl transition-all transform hover:scale-105 shadow-lg shadow-cyan-500/50"
           >
-            💎 START MINING ({stake} USDC)
+            💎 START MINING ({stake} {displayCurrency === 'usd' ? 'USD' : bettingCurrency})
           </button>
         </div>
       )}

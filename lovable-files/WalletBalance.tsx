@@ -2,17 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { apiService } from './api';
 import { notificationService } from './NotificationService';
 import { useNetwork } from './NetworkContext';
+import { useCurrency } from './CurrencyToggle';
 
 interface WalletBalanceProps {
   className?: string;
   position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  onBalanceUpdate?: () => void; // Callback when balances are updated
 }
 
 export const WalletBalance: React.FC<WalletBalanceProps> = ({ 
   className = '', 
-  position = 'top-right' 
+  position = 'top-right',
+  onBalanceUpdate
 }) => {
   const { network } = useNetwork();
+  const { displayCurrency, formatBalance, convertToUsd } = useCurrency();
   const [balances, setBalances] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +37,11 @@ export const WalletBalance: React.FC<WalletBalanceProps> = ({
       console.log('💰 Processed balances:', balanceObj);
       setBalances(balanceObj);
       setError(null);
+      
+      // Notify parent component that balances were updated
+      if (onBalanceUpdate) {
+        onBalanceUpdate();
+      }
     } catch (err) {
       console.error('❌ Failed to fetch wallet balances:', err);
       setError('Failed to load balances');
@@ -114,7 +123,9 @@ export const WalletBalance: React.FC<WalletBalanceProps> = ({
     );
   }
 
-  const totalBalance = Object.values(balances).reduce((sum, balance) => sum + balance, 0);
+  const totalBalance = displayCurrency === 'usd' 
+    ? Object.entries(balances).reduce((sum, [currency, balance]) => sum + convertToUsd(balance, currency), 0)
+    : Object.values(balances).reduce((sum, balance) => sum + balance, 0);
 
   return (
     <div className={`fixed ${getPositionClasses()} z-50 ${className}`}>
@@ -144,11 +155,13 @@ export const WalletBalance: React.FC<WalletBalanceProps> = ({
           {Object.keys(balances).length > 0 ? (
             Object.entries(balances).map(([currency, balance]) => (
               <div key={currency} className="flex items-center justify-between">
-                <span className="text-gray-400 text-xs font-mono">{currency}</span>
+                <span className="text-gray-400 text-xs font-mono">
+                  {displayCurrency === 'usd' ? currency : currency}
+                </span>
                 <span className={`text-sm font-mono font-bold ${
                   balance > 0 ? 'text-green-400' : 'text-gray-500'
                 }`}>
-                  {balance.toFixed(2)}
+                  {formatBalance(balance, currency)}
                 </span>
               </div>
             ))
@@ -164,7 +177,7 @@ export const WalletBalance: React.FC<WalletBalanceProps> = ({
             <div className="flex items-center justify-between">
               <span className="text-gray-400 text-xs font-mono">Total</span>
               <span className="text-sm font-mono font-bold text-purple-400">
-                {totalBalance.toFixed(2)}
+                {displayCurrency === 'usd' ? `$${totalBalance.toFixed(2)}` : totalBalance.toFixed(2)}
               </span>
             </div>
           </div>

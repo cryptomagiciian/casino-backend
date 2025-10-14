@@ -4,9 +4,13 @@ import { useNetwork } from './NetworkContext';
 
 interface TestnetFaucetProps {
   className?: string;
+  onBalanceUpdate?: () => void; // Callback to refresh balances
 }
 
-export const TestnetFaucet: React.FC<TestnetFaucetProps> = ({ className = '' }) => {
+export const TestnetFaucet: React.FC<TestnetFaucetProps> = ({ 
+  className = '',
+  onBalanceUpdate 
+}) => {
   const { network } = useNetwork();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -29,8 +33,21 @@ export const TestnetFaucet: React.FC<TestnetFaucetProps> = ({ className = '' }) 
       setLoading(true);
       setMessage(null);
       
+      // Call faucet API without amount parameter (backend handles the amount)
       const result = await apiService.faucet(currency);
+      console.log('Faucet result:', result);
+      
       setMessage(`✅ Received ${amount} ${currency} from testnet faucet!`);
+      
+      // Refresh balances after successful faucet
+      if (onBalanceUpdate) {
+        // Immediate refresh
+        onBalanceUpdate();
+        // Also refresh after a short delay to ensure backend has processed
+        setTimeout(() => {
+          onBalanceUpdate();
+        }, 2000);
+      }
       
       // Clear message after 5 seconds
       setTimeout(() => setMessage(null), 5000);

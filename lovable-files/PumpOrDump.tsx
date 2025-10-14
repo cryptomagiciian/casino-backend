@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { apiService } from '../services/api';
-import { useWallet } from '../hooks/useWallet';
+import { useBetting } from './GameBettingProvider';
+import { useNetwork } from './NetworkContext';
+import { useCurrency } from './CurrencySelector';
 import { WalletBalance } from './WalletBalance';
 
 interface Candle {
@@ -20,6 +21,10 @@ const TIME_OPTIONS = [
 ];
 
 export const PumpOrDump: React.FC = () => {
+  const { placeBet, resolveBet, getBalance, isBetting, error } = useBetting();
+  const { network } = useNetwork();
+  const { bettingCurrency, displayCurrency, formatBalance } = useCurrency();
+  
   const [stake, setStake] = useState('10.00');
   const [prediction, setPrediction] = useState<'pump' | 'dump'>('pump');
   const [timeframe, setTimeframe] = useState(10);
@@ -34,7 +39,7 @@ export const PumpOrDump: React.FC = () => {
   const [volumeBars, setVolumeBars] = useState<number[]>([]);
   const [entryPrice, setEntryPrice] = useState<number>(0);
   const [currentPnL, setCurrentPnL] = useState<number>(0);
-  const { fetchBalances } = useWallet();
+  const [balance, setBalance] = useState<number>(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
   const cleanupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -42,6 +47,20 @@ export const PumpOrDump: React.FC = () => {
   const entryPriceRef = useRef<number>(0);
   const predictionRef = useRef<'pump' | 'dump'>('pump');
   const isFinalizingRef = useRef<boolean>(false);
+
+  // Refresh balance when network or currency changes
+  useEffect(() => {
+    refreshBalance();
+  }, [network, bettingCurrency]);
+
+  const refreshBalance = async () => {
+    try {
+      const currentBalance = await getBalance(bettingCurrency);
+      setBalance(currentBalance);
+    } catch (error) {
+      console.error('Failed to refresh balance:', error);
+    }
+  };
 
   useEffect(() => {
     const initialCandles: Candle[] = [];
@@ -153,19 +172,34 @@ export const PumpOrDump: React.FC = () => {
     };
     setCurrentCandle(newCandle);
 
+    // Check if user has sufficient balance
+    if (balance < parseFloat(stake)) {
+      setResult('❌ Insufficient balance!');
+      setIsPlaying(false);
+      return;
+    }
+
     // Automatically place bet when round starts
     try {
-      const bet = await apiService.placeBet({
+      const bet = await placeBet({
         game: 'pump_or_dump',
-        currency: 'USDC',
-        stake,
-        clientSeed: Math.random().toString(36),
-        params: { prediction },
+        stake: parseFloat(stake),
+        currency: displayCurrency === 'usd' ? 'USD' : bettingCurrency,
+        prediction: { prediction, timeframe },
+        meta: {
+          network,
+          displayCurrency,
+          bettingCurrency,
+          timestamp: Date.now(),
+        },
       });
       
       console.log('✅ Bet placed, ID:', bet.id);
       setBetId(bet.id);
       betIdRef.current = bet.id; // ✅ Also update ref!
+      
+      // Refresh balance after placing bet
+      await refreshBalance();
     } catch (error) {
       console.error('Bet failed:', error);
       setResult('❌ Bet failed: ' + (error as Error).message);
@@ -338,8 +372,8 @@ export const PumpOrDump: React.FC = () => {
       
       try {
         // Get the ACTUAL result from backend FIRST (backend uses provably fair RNG)
-        const resolved = await apiService.resolveBet(currentBetId);
-        await fetchBalances();
+        const resolved = await resolveBet(currentBetId);
+        await refreshBalance(); // Refresh balance after bet resolution
         
         // Backend result is the source of truth (44% win chance via RNG)
         const won = resolved.outcome === 'win';
@@ -421,8 +455,8 @@ export const PumpOrDump: React.FC = () => {
         
         // Show detailed result - visual now matches backend RNG outcome
         const resultMessage = won 
-          ? `🎉 WON! Price ${isPump ? 'PUMPED ⬆️' : 'DUMPED ⬇️'} ${Math.abs(parseFloat(priceChange))}%! +${(parseFloat(stake) * (resolved.resultMultiplier || 1.88)).toFixed(2)} USDC`
-          : `💥 LOST! Price ${isPump ? 'PUMPED ⬆️' : 'DUMPED ⬇️'} ${Math.abs(parseFloat(priceChange))}%. You bet ${currentPrediction.toUpperCase()}. -${stake} USDC`;
+          ? `🎉 WON! Price ${isPump ? 'PUMPED ⬆️' : 'DUMPED ⬇️'} ${Math.abs(parseFloat(priceChange))}%! +${(parseFloat(stake) * (resolved.resultMultiplier || 1.88)).toFixed(2)} ${displayCurrency === 'usd' ? 'USD' : bettingCurrency}`
+          : `💥 LOST! Price ${isPump ? 'PUMPED ⬆️' : 'DUMPED ⬇️'} ${Math.abs(parseFloat(priceChange))}%. You bet ${currentPrediction.toUpperCase()}. -${stake} ${displayCurrency === 'usd' ? 'USD' : bettingCurrency}`;
         
         console.log('📢 Setting result:', resultMessage);
         
@@ -447,7 +481,7 @@ export const PumpOrDump: React.FC = () => {
         }, 3000);
       } catch (error) {
         console.error('Bet resolution failed:', error);
-        await fetchBalances();
+        await refreshBalance();
         setResult('❌ Error: ' + (error as Error).message);
         setIsPlaying(false);
         setCanBet(true);
@@ -544,6 +578,21 @@ export const PumpOrDump: React.FC = () => {
   return (
     <div className="bg-gradient-to-br from-gray-900 via-purple-900 to-black rounded-lg p-6 border-2 border-purple-500 shadow-2xl relative">
       <WalletBalance position="top-right" />
+      
+      {/* Balance Display */}
+      <div className="mb-4 p-3 bg-gray-800/50 rounded-lg border border-gray-600">
+        <div className="flex items-center justify-between">
+          <span className="text-gray-400">Balance:</span>
+          <span className="font-mono font-bold text-green-400">
+            {formatBalance(balance, bettingCurrency)}
+          </span>
+        </div>
+        <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
+          <span>Network: {network}</span>
+          <span>Currency: {bettingCurrency}</span>
+        </div>
+      </div>
+      
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-yellow-400 to-red-400">
@@ -599,7 +648,7 @@ export const PumpOrDump: React.FC = () => {
         {/* Bet indicator */}
         {betId && !result && (
           <div className="absolute top-4 left-4 bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-bold animate-pulse border-2 border-purple-300 shadow-lg z-10">
-            🎲 {prediction.toUpperCase()} • {stake} USDC
+            🎲 {prediction.toUpperCase()} • {stake} {displayCurrency === 'usd' ? 'USD' : bettingCurrency}
           </div>
         )}
 
@@ -688,7 +737,7 @@ export const PumpOrDump: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Stake (USDC):
+              Stake ({displayCurrency === 'usd' ? 'USD' : bettingCurrency}):
             </label>
             <input
               type="number"
@@ -742,7 +791,7 @@ export const PumpOrDump: React.FC = () => {
             onClick={startRound}
             className="w-full py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 hover:from-purple-500 hover:via-pink-500 hover:to-red-500 text-white rounded-xl font-bold text-xl transition-all transform hover:scale-105 shadow-lg shadow-purple-500/50"
           >
-            🚀 START {timeframe}s ROUND & BET {prediction.toUpperCase()} ({stake} USDC)
+            🚀 START {timeframe}s ROUND & BET {prediction.toUpperCase()} ({stake} {displayCurrency === 'usd' ? 'USD' : bettingCurrency})
           </button>
         </div>
       )}

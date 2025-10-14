@@ -99,6 +99,20 @@ export function CryptoSlots() {
   const [spinOffsets, setSpinOffsets] = useState<number[][]>([[0, 0, 0], [0, 0, 0], [0, 0, 0]]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Refresh balance when network or currency changes
+  useEffect(() => {
+    refreshBalance();
+  }, [network, bettingCurrency]);
+
+  const refreshBalance = async () => {
+    try {
+      const currentBalance = await getBalance(bettingCurrency);
+      setBalance(currentBalance);
+    } catch (error) {
+      console.error('Failed to refresh balance:', error);
+    }
+  };
+
   useEffect(() => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
@@ -187,9 +201,16 @@ export function CryptoSlots() {
       setResult(null);
       setShowWinEffect(false);
 
-      const bet = await apiService.placeBet({
+      // Check if user has sufficient balance
+    if (balance < parseFloat(stake)) {
+      setResult('❌ Insufficient balance!');
+      setIsPlaying(false);
+      return;
+    }
+
+    const bet = await placeBet({
         game: 'candle_flip',
-        currency: 'USDC',
+        currency: '{displayCurrency === 'usd' ? 'USD' : bettingCurrency}',
         stake,
         clientSeed: Math.random().toString(36),
         params: {},
@@ -264,6 +285,20 @@ export function CryptoSlots() {
   return (
     <div className="bg-gradient-to-br from-[#040B14] via-[#0A1628] to-[#0F2233] rounded-lg p-8 border-2 border-cyan-500/30 shadow-2xl relative overflow-hidden">
       <WalletBalance position="top-right" />
+      {/* Balance Display */}
+      <div className="mb-4 p-3 bg-gray-800/50 rounded-lg border border-gray-600">
+        <div className="flex items-center justify-between">
+          <span className="text-gray-400">Balance:</span>
+          <span className="font-mono font-bold text-green-400">
+            {formatBalance(balance, bettingCurrency)}
+          </span>
+        </div>
+        <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
+          <span>Network: {network}</span>
+          <span>Currency: {bettingCurrency}</span>
+        </div>
+      </div>
+      
       {/* Animated background glow */}
       <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-cyan-500/5 to-purple-500/5 animate-pulse pointer-events-none" />
       
@@ -296,7 +331,7 @@ export function CryptoSlots() {
           <div className="text-right">
             <div className="text-sm text-gray-400">Balance</div>
             <div className="text-2xl font-bold text-cyan-400">
-              {balances.find(b => b.currency === 'USDC')?.balance || '0.00'} USDC
+              {balances.find(b => b.currency === '{displayCurrency === 'usd' ? 'USD' : bettingCurrency}')?.balance || '0.00'} {displayCurrency === 'usd' ? 'USD' : bettingCurrency}
             </div>
           </div>
         </div>
@@ -353,7 +388,7 @@ export function CryptoSlots() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-cyan-300 mb-2">
-                Stake (USDC):
+                Stake ({displayCurrency === 'usd' ? 'USD' : bettingCurrency}):
               </label>
               <input
                 type="number"

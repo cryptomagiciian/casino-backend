@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { apiService } from '../services/api';
-import { useWallet } from '../hooks/useWallet';
+import { useBetting } from './GameBettingProvider';
+import { useNetwork } from './NetworkContext';
+import { useCurrency } from './CurrencySelector';
 import { WalletBalance } from './WalletBalance';
 
 const MULTIPLIER_OPTIONS = [
@@ -18,8 +19,25 @@ export const BullVsBear: React.FC = () => {
   const [barPosition, setBarPosition] = useState(50);
   const [result, setResult] = useState<string | null>(null);
   const [intensity, setIntensity] = useState(0);
-  const { fetchBalances } = useWallet();
+  const { placeBet, resolveBet, getBalance, isBetting, error } = useBetting();
+  const { network } = useNetwork();
+  const { bettingCurrency, displayCurrency, formatBalance } = useCurrency();
+  const [balance, setBalance] = useState<number>(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Refresh balance when network or currency changes
+  useEffect(() => {
+    refreshBalance();
+  }, [network, bettingCurrency]);
+
+  const refreshBalance = async () => {
+    try {
+      const currentBalance = await getBalance(bettingCurrency);
+      setBalance(currentBalance);
+    } catch (error) {
+      console.error('Failed to refresh balance:', error);
+    }
+  };
 
   useEffect(() => {
     return () => {
@@ -36,9 +54,16 @@ export const BullVsBear: React.FC = () => {
       setBarPosition(50);
       setIntensity(0);
 
-      const bet = await apiService.placeBet({
+      // Check if user has sufficient balance
+    if (balance < parseFloat(stake)) {
+      setResult('❌ Insufficient balance!');
+      setIsPlaying(false);
+      return;
+    }
+
+    const bet = await placeBet({
         game: 'bull_vs_bear_battle',
-        currency: 'USDC',
+        currency: '{displayCurrency === 'usd' ? 'USD' : bettingCurrency}',
         stake,
         clientSeed: Math.random().toString(36),
         params: { side, multiplier },
@@ -103,6 +128,20 @@ export const BullVsBear: React.FC = () => {
   return (
     <div className="bg-gradient-to-br from-green-900 via-gray-900 to-red-900 rounded-lg p-6 border-2 border-yellow-500 shadow-2xl relative">
       <WalletBalance position="top-right" />
+      {/* Balance Display */}
+      <div className="mb-4 p-3 bg-gray-800/50 rounded-lg border border-gray-600">
+        <div className="flex items-center justify-between">
+          <span className="text-gray-400">Balance:</span>
+          <span className="font-mono font-bold text-green-400">
+            {formatBalance(balance, bettingCurrency)}
+          </span>
+        </div>
+        <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
+          <span>Network: {network}</span>
+          <span>Currency: {bettingCurrency}</span>
+        </div>
+      </div>
+      
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-yellow-400 to-red-400">
@@ -230,7 +269,7 @@ export const BullVsBear: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Stake (USDC):
+              Stake ({displayCurrency === 'usd' ? 'USD' : bettingCurrency}):
             </label>
             <input
               type="number"
@@ -293,7 +332,7 @@ export const BullVsBear: React.FC = () => {
             onClick={placeBet}
             className="w-full py-4 bg-gradient-to-r from-green-600 via-yellow-600 to-red-600 hover:from-green-500 hover:via-yellow-500 hover:to-red-500 text-white rounded-xl font-bold text-xl transition-all transform hover:scale-105 shadow-lg shadow-yellow-500/50"
           >
-            ⚔️ START BATTLE ({stake} USDC)
+            ⚔️ START BATTLE ({stake} {displayCurrency === 'usd' ? 'USD' : bettingCurrency})
           </button>
         </div>
       )}

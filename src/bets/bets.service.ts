@@ -44,8 +44,11 @@ export class BetsService {
     // Use provided client seed or generate one
     const finalClientSeed = clientSeed || generateClientSeed();
 
-    // Lock funds (default to mainnet for now, will be updated when frontend passes network)
-    await this.walletsService.lockFunds(userId, currency, stake, 'bet_placement', 'mainnet');
+    // Extract network from params, default to mainnet
+    const network = params?.network || 'mainnet';
+    
+    // Lock funds using the correct network
+    await this.walletsService.lockFunds(userId, currency, stake, 'bet_placement', network);
 
     // Create bet record
     const bet = await this.prisma.bet.create({
@@ -141,6 +144,9 @@ export class BetsService {
         },
       });
 
+      // Extract network from bet params, default to mainnet
+      const network = (bet.params as any)?.network || 'mainnet';
+
       // Handle funds
       if (outcome.multiplier > 0) {
         // Credit winnings
@@ -149,7 +155,7 @@ export class BetsService {
           bet.currency as Currency,
           payout.toString(),
           betId,
-          'mainnet', // TODO: Get network from bet metadata
+          network,
         );
       }
 
@@ -159,7 +165,7 @@ export class BetsService {
         bet.currency as Currency,
         fromSmallestUnits(bet.stake, bet.currency as Currency),
         betId,
-        'mainnet', // TODO: Get network from bet metadata
+        network,
       );
 
       return {
@@ -220,13 +226,16 @@ export class BetsService {
       },
     });
 
+    // Extract network from bet params, default to mainnet
+    const network = (bet.params as any)?.network || 'mainnet';
+
     // Credit winnings
     await this.walletsService.creditWinnings(
       bet.userId,
       bet.currency as Currency,
       payout.toString(),
       betId,
-      'mainnet', // TODO: Get network from bet metadata
+      network,
     );
 
     // Release locked funds
@@ -235,7 +244,7 @@ export class BetsService {
       bet.currency as Currency,
       fromSmallestUnits(bet.stake, bet.currency as Currency),
       betId,
-      'mainnet', // TODO: Get network from bet metadata
+      network,
     );
 
     return {

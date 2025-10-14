@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { apiService } from '../services/api';
+import { apiService } from './api';
 
 interface WalletBalance {
   currency: string;
@@ -24,9 +24,9 @@ export const useWallet = () => {
     }
   };
 
-  const faucet = async (currency: string, amount: string) => {
+  const faucet = async (currency: string) => {
     try {
-      await apiService.faucet(currency, amount);
+      await apiService.faucet(currency);
       await fetchBalances(); // Refresh balances
     } catch (error) {
       console.error('Faucet failed:', error);

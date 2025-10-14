@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { apiService } from '../services/api';
-import { useWallet } from '../hooks/useWallet';
+import { useBetting } from './GameBettingProvider';
+import { useNetwork } from './NetworkContext';
+import { useCurrency } from './CurrencySelector';
 import { WalletBalance } from './WalletBalance';
 
 // Generate 100 levels with exponential growth
@@ -32,9 +33,26 @@ export const LeverageLadder: React.FC = () => {
   const [betId, setBetId] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [bustLevel, setBustLevel] = useState<number | null>(null);
-  const { fetchBalances } = useWallet();
+  const { placeBet, resolveBet, getBalance, isBetting, error } = useBetting();
+  const { network } = useNetwork();
+  const { bettingCurrency, displayCurrency, formatBalance } = useCurrency();
+  const [balance, setBalance] = useState<number>(0);
 
   // Auto-scroll to current level
+  // Refresh balance when network or currency changes
+  useEffect(() => {
+    refreshBalance();
+  }, [network, bettingCurrency]);
+
+  const refreshBalance = async () => {
+    try {
+      const currentBalance = await getBalance(bettingCurrency);
+      setBalance(currentBalance);
+    } catch (error) {
+      console.error('Failed to refresh balance:', error);
+    }
+  };
+
   useEffect(() => {
     if (currentLevel > 0) {
       const element = document.getElementById(`level-${currentLevel}`);
@@ -97,9 +115,16 @@ export const LeverageLadder: React.FC = () => {
       
       console.log(`🎲 Game started - Bust at level ${bustLvl}`);
 
-      const bet = await apiService.placeBet({
+      // Check if user has sufficient balance
+    if (balance < parseFloat(stake)) {
+      setResult('❌ Insufficient balance!');
+      setIsPlaying(false);
+      return;
+    }
+
+    const bet = await placeBet({
         game: 'leverage_ladder',
-        currency: 'USDC',
+        currency: '{displayCurrency === 'usd' ? 'USD' : bettingCurrency}',
         stake,
         clientSeed: Math.random().toString(36),
         params: {},
@@ -175,6 +200,20 @@ export const LeverageLadder: React.FC = () => {
   return (
     <div className="bg-gradient-to-br from-purple-900 via-indigo-900 to-black rounded-lg p-6 border-2 border-indigo-500 shadow-2xl relative">
       <WalletBalance position="top-right" />
+      {/* Balance Display */}
+      <div className="mb-4 p-3 bg-gray-800/50 rounded-lg border border-gray-600">
+        <div className="flex items-center justify-between">
+          <span className="text-gray-400">Balance:</span>
+          <span className="font-mono font-bold text-green-400">
+            {formatBalance(balance, bettingCurrency)}
+          </span>
+        </div>
+        <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
+          <span>Network: {network}</span>
+          <span>Currency: {bettingCurrency}</span>
+        </div>
+      </div>
+      
       <h2 className="text-3xl font-bold text-indigo-400 mb-2">🪜 LEVERAGE LADDER</h2>
       <p className="text-gray-300 mb-4">Climb for higher multipliers! Cash out before liquidation!</p>
 
@@ -251,7 +290,7 @@ export const LeverageLadder: React.FC = () => {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Stake (USDC):
+              Stake ({displayCurrency === 'usd' ? 'USD' : bettingCurrency}):
             </label>
             <input
               type="number"
@@ -292,7 +331,7 @@ export const LeverageLadder: React.FC = () => {
           {currentLevel > 0 && (
             <div className="bg-gradient-to-r from-green-900 to-emerald-900 rounded p-2 border border-green-600 text-center">
               <div className="text-green-300 text-sm font-bold">
-                💰 Potential Win: {(parseFloat(stake) * LADDER_RUNGS[currentLevel - 1].multiplier).toFixed(2)} USDC
+                💰 Potential Win: {(parseFloat(stake) * LADDER_RUNGS[currentLevel - 1].multiplier).toFixed(2)} {displayCurrency === 'usd' ? 'USD' : bettingCurrency}
               </div>
             </div>
           )}
