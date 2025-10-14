@@ -38,33 +38,25 @@ export const ProfessionalTradingInterface: React.FC<ProfessionalTradingInterface
   const [candlestickData, setCandlestickData] = useState<CandlestickData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Fetch live data from Gate.io API
+  // Fetch live data from our backend proxy (avoids CORS issues)
   const fetchLiveData = useCallback(async (symbol: string, tf: string) => {
     try {
-      // Convert timeframe to Gate.io format
-      const gateTimeframe = tf === '5s' ? '5s' : tf === '15s' ? '15s' : tf === '30s' ? '30s' : tf === '1m' ? '1m' : tf === '5m' ? '5m' : '15m';
+      console.log(`📊 Fetching live candlestick data for ${symbol} ${tf}...`);
       
-      // Fetch candlestick data from Gate.io
-      const response = await fetch(`https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=${symbol}_USDT&interval=${gateTimeframe}&limit=100`);
-      const data = await response.json();
+      // Use our backend proxy to avoid CORS issues
+      const candlesticks = await apiService.getCandlestickData(symbol, tf, 100);
       
-      if (data && Array.isArray(data)) {
-        const candlesticks: CandlestickData[] = data.map((candle: any) => ({
-          timestamp: parseInt(candle[0]) * 1000, // Convert to milliseconds
-          open: parseFloat(candle[2]),
-          high: parseFloat(candle[3]),
-          low: parseFloat(candle[4]),
-          close: parseFloat(candle[5]),
-          volume: parseFloat(candle[6]),
-        }));
-        
+      if (candlesticks && Array.isArray(candlesticks) && candlesticks.length > 0) {
+        console.log(`✅ Received ${candlesticks.length} live candlesticks for ${symbol} ${tf}`);
         return candlesticks;
       }
       
       // Fallback to mock data if API fails
+      console.log(`⚠️ No live data received, using mock data for ${symbol} ${tf}`);
       return generateMockData(symbol, tf);
     } catch (error) {
       console.error('Failed to fetch live data:', error);
+      console.log(`⚠️ API error, using mock data for ${symbol} ${tf}`);
       return generateMockData(symbol, tf);
     }
   }, []);

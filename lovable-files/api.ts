@@ -1,5 +1,5 @@
 const API_BASE_URL = 'https://casino-backend-production-8186.up.railway.app/api/v1';
-const API_VERSION = 'v-demo-fix-10-simple'; // Simple BalanceContext approach
+const API_VERSION = 'v-auth-persistence-fix'; // Fixed authentication persistence
 
 class ApiService {
   private baseURL: string;
@@ -11,6 +11,7 @@ class ApiService {
     console.log(`🚀 API Service initialized with version: ${API_VERSION}`);
     console.log(`🚀 Cache bust timestamp: ${Date.now()}`);
     console.log(`🔑 Token loaded: ${this.token ? 'Yes' : 'No'}`);
+    console.log(`🔑 Token preview: ${this.token ? this.token.substring(0, 20) + '...' : 'None'}`);
   }
 
   setToken(token: string) {
@@ -221,6 +222,15 @@ class ApiService {
   // Prices endpoints
   async getCryptoPrices() {
     return this.request('/prices/crypto');
+  }
+
+  async getCandlestickData(symbol: string, timeframe: string, limit: number = 100) {
+    const params = new URLSearchParams({
+      symbol,
+      timeframe,
+      limit: limit.toString()
+    });
+    return this.request(`/prices/candlesticks?${params.toString()}`);
   }
 
   // Web3 Deposit endpoints
