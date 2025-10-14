@@ -5,8 +5,15 @@
  */
 
 const { PrismaClient } = require('@prisma/client');
+require('dotenv').config();
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL,
+    },
+  },
+});
 
 async function clearDemoFunds() {
   console.log('🧹 Clearing old demo funds from database...');
