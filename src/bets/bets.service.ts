@@ -113,7 +113,7 @@ export class BetsService {
       const rng = await generateRng(fairnessSeed.serverSeed, bet.clientSeed, bet.nonce);
 
       // Generate game outcome
-      const outcome = this.generateGameOutcome(bet.game as Game, rng, { ...(bet.params || {}), ...(resolveParams || {}) });
+      const outcome = this.generateGameOutcome(bet.game as Game, rng, { ...(bet.params as any || {}), ...(resolveParams || {}) });
 
       if (!outcome || typeof outcome.multiplier === 'undefined') {
         console.error(`Invalid game outcome for game ${bet.game}:`, outcome);
