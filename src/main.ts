@@ -5,8 +5,14 @@ import { ConfigService } from '@nestjs/config';
 // import { Logger } from 'nestjs-pino';
 import helmet from 'helmet';
 // import * as compression from 'compression';
+import * as crypto from 'crypto';
 
 import { AppModule } from './app.module';
+
+// Polyfill for crypto module if not available
+if (typeof globalThis.crypto === 'undefined') {
+  globalThis.crypto = crypto as any;
+}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
