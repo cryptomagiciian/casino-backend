@@ -113,7 +113,7 @@ export class BetsService {
       const rng = await generateRng(fairnessSeed.serverSeed, bet.clientSeed, bet.nonce);
 
       // Generate game outcome
-      const outcome = this.generateGameOutcome(bet.game as Game, rng, { ...bet.params, ...resolveParams });
+      const outcome = this.generateGameOutcome(bet.game as Game, rng, { ...bet.params, ...(resolveParams || {}) });
 
       if (!outcome || typeof outcome.multiplier === 'undefined') {
         console.error(`Invalid game outcome for game ${bet.game}:`, outcome);
@@ -457,11 +457,11 @@ export class BetsService {
       case 'candle_flip':
       case 'bull_vs_bear_battle':
         // HOUSE EDGE: 44% win chance × 1.88× payout = ~17% house edge
-        const winChance = 0.44;
-        const won = rng < winChance;
+        const bullBearWinChance = 0.44;
+        const bullBearWon = rng < bullBearWinChance;
         return {
-          result: won ? 'win' : 'lose',
-          multiplier: won ? 1.88 : 0,
+          result: bullBearWon ? 'win' : 'lose',
+          multiplier: bullBearWon ? 1.88 : 0,
         };
 
       case 'support_or_resistance':
@@ -529,10 +529,10 @@ export class BetsService {
         }
         
         // Fallback: Use RNG with house edge (40% win chance)
-        const winChance = 0.4;
-        const won = rng > winChance;
+        const diamondHandsWinChance = 0.4;
+        const diamondHandsWon = rng > diamondHandsWinChance;
         
-        if (won) {
+        if (diamondHandsWon) {
           const mineCount = params?.mineCount || 3;
           const gridSize = params?.gridSize || 25;
           const safeTiles = gridSize - mineCount;
