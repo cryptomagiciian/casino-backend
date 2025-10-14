@@ -1,5 +1,5 @@
 const API_BASE_URL = 'https://casino-backend-production-8186.up.railway.app/api/v1';
-const API_VERSION = 'v-demo-fix-8-cache-bust'; // Aggressive cache bust
+const API_VERSION = 'v-demo-fix-10-simple'; // Simple BalanceContext approach
 
 class ApiService {
   private baseURL: string;
@@ -89,19 +89,12 @@ class ApiService {
 
   // Wallet endpoints
   async getWalletBalances(detailed = false) {
-    // SIMPLE DEMO MODE DETECTION - Just check localStorage
-    const isDemoMode = localStorage.getItem('casino-demo-mode') === 'true';
-    const actualNetwork = isDemoMode ? 'testnet' : 'mainnet';
-    
+    // Default to mainnet for live mode
     const params = new URLSearchParams();
     if (detailed) params.append('detailed', 'true');
-    params.append('network', actualNetwork);
+    params.append('network', 'mainnet');
     const endpoint = `/wallets?${params.toString()}`;
-    console.log('🧪 API DEBUG: getWalletBalances called (no network param)');
-    console.log('🧪 API DEBUG: Demo mode detected:', isDemoMode);
-    console.log('🧪 API DEBUG: Using actual network:', actualNetwork);
-    console.log('🧪 API DEBUG: Final endpoint:', endpoint);
-    console.log('🧪 API DEBUG: localStorage value:', localStorage.getItem('casino-demo-mode'));
+    console.log('🧪 API DEBUG: getWalletBalances called (mainnet)');
     return this.request(endpoint);
   }
 
