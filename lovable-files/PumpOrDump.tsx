@@ -103,18 +103,25 @@ export const PumpOrDump: React.FC = () => {
     predictionRef.current = prediction; // ✅ Also update ref!
     setCurrentPnL(0);
     
-    // Generate fresh historical candles CENTERED around the entry price
-    // All candles stay within ±2% of entry to keep chart centered
+    // Generate continuous historical candles like real trading charts
+    // Each candle starts where the previous one closed
     const newHistoricalCandles: Candle[] = [];
     const newVolume: number[] = [];
     
+    let currentPrice = open; // Start from the entry price
+    
     for (let i = 0; i < 11; i++) {
-      // Keep all candles within ±2% of entry price
-      const deviation = (Math.random() - 0.5) * 0.04; // -2% to +2%
-      const candleOpen = open * (1 + deviation * Math.random());
-      const candleClose = open * (1 + (Math.random() - 0.5) * 0.03); // -1.5% to +1.5%
-      const candleHigh = Math.max(candleOpen, candleClose) * (1 + Math.random() * 0.01);
-      const candleLow = Math.min(candleOpen, candleClose) * (1 - Math.random() * 0.01);
+      // Each candle starts where the previous one closed
+      const candleOpen = currentPrice;
+      
+      // Generate realistic price movement for this candle
+      const priceChange = (Math.random() - 0.5) * open * 0.02; // ±1% movement
+      const candleClose = candleOpen + priceChange;
+      
+      // Generate realistic high and low with wicks
+      const wickSize = Math.random() * open * 0.01; // Up to 1% wick
+      const candleHigh = Math.max(candleOpen, candleClose) + wickSize;
+      const candleLow = Math.min(candleOpen, candleClose) - wickSize;
       
       newHistoricalCandles.push({ 
         open: candleOpen, 
@@ -124,16 +131,23 @@ export const PumpOrDump: React.FC = () => {
         timestamp: Date.now() - (11 - i) * 10000 
       });
       newVolume.push(30 + Math.random() * 70);
+      
+      // Next candle starts where this one closed
+      currentPrice = candleClose;
     }
     
     setCandles(newHistoricalCandles);
     setVolumeBars(newVolume);
     
+    // Start the live candle exactly where the last historical candle closed
+    const lastHistoricalCandle = newHistoricalCandles[newHistoricalCandles.length - 1];
+    const liveCandleStartPrice = lastHistoricalCandle ? lastHistoricalCandle.close : open;
+    
     const newCandle: Candle = {
-      open,
-      close: open,
-      high: open,
-      low: open,
+      open: liveCandleStartPrice, // Start where last historical candle closed
+      close: liveCandleStartPrice,
+      high: liveCandleStartPrice,
+      low: liveCandleStartPrice,
       timestamp: Date.now(),
     };
     setCurrentCandle(newCandle);
@@ -225,9 +239,9 @@ export const PumpOrDump: React.FC = () => {
               return [...prev.slice(-10), 30 + Math.random() * 70];
             });
             
-            // Start NEW candle
+            // Start NEW candle exactly where the previous one closed (like real trading charts)
             return {
-              open: newPrice,
+              open: newPrice, // New candle starts where previous closed
               close: newPrice,
               high: newPrice,
               low: newPrice,
