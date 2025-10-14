@@ -86,24 +86,8 @@ class ApiService {
 
   // Wallet endpoints
   async getWalletBalances(network: 'mainnet' | 'testnet' = 'mainnet', detailed = false) {
-    // ENHANCED DEMO/LIVE DETECTION - Check multiple indicators
-    const isDemoMode = 
-      // Check localStorage flag (set by manual override)
-      localStorage.getItem('casino-demo-mode') === 'true' ||
-      // Check URL parameter
-      window.location.search.includes('demo=true') ||
-      // Check for demo indicator in DOM (set by manual override)
-      document.querySelector('[data-demo-mode="true"]') !== null ||
-      // Check body class (set by manual override)
-      document.body.classList.contains('demo-mode') ||
-      // Check for demo toggle with active state
-      document.querySelector('.demo.active, [data-demo="true"]') !== null ||
-      // Check for demo text in DOM (temporarily disabled to avoid performance issues)
-      // Array.from(document.querySelectorAll('*')).some(el => el.textContent?.includes('Demo')) ||
-      // Check for demo button/toggle
-      document.querySelector('[class*="demo"][class*="active"], [class*="demo"][class*="selected"]') !== null ||
-      // Check for orange demo indicator
-      document.querySelector('.text-orange-500, .bg-orange-500, [style*="orange"]') !== null;
+    // SIMPLIFIED DEMO/LIVE DETECTION - Only check localStorage to avoid caching issues
+    const isDemoMode = localStorage.getItem('casino-demo-mode') === 'true';
     
     // Use testnet for demo mode, mainnet for live mode
     const actualNetwork = isDemoMode ? 'testnet' : 'mainnet';
@@ -116,16 +100,7 @@ class ApiService {
     console.log('🧪 API DEBUG: Demo mode detected:', isDemoMode);
     console.log('🧪 API DEBUG: Using actual network:', actualNetwork);
     console.log('🧪 API DEBUG: Final endpoint:', endpoint);
-    console.log('🧪 API DEBUG: Detection details:', {
-      localStorage: localStorage.getItem('casino-demo-mode'),
-      urlParam: window.location.search.includes('demo=true'),
-      domIndicator: document.querySelector('[data-demo-mode="true"]') !== null,
-      bodyClass: document.body.classList.contains('demo-mode'),
-      demoToggle: document.querySelector('.demo.active, [data-demo="true"]') !== null,
-      demoText: false, // Temporarily disabled
-      demoButton: document.querySelector('[class*="demo"][class*="active"], [class*="demo"][class*="selected"]') !== null,
-      orangeIndicator: document.querySelector('.text-orange-500, .bg-orange-500, [style*="orange"]') !== null
-    });
+    console.log('🧪 API DEBUG: localStorage value:', localStorage.getItem('casino-demo-mode'));
     return this.request(endpoint);
   }
 
