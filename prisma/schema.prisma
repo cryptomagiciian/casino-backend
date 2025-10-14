@@ -131,15 +131,20 @@ model FairnessSeed {
 }
 
 model Deposit {
-  id       String        @id @default(cuid())
-  userId   String
-  currency String
-  amount   BigInt        // in smallest units
-  provider String        // 'coinbase', 'circle', 'nowpayments', 'manual'
-  status   DepositStatus @default(PENDING)
-  txRef    String?       // transaction reference
-  meta     Json?         // provider-specific metadata
-  createdAt DateTime     @default(now())
+  id                    String        @id @default(cuid())
+  userId                String
+  currency              String
+  amount                BigInt        // in smallest units
+  paymentMethod         String        @default("crypto") // 'crypto' for Web3
+  status                DepositStatus @default(PENDING)
+  walletAddress         String?       // generated wallet address
+  transactionHash       String?       // blockchain transaction hash
+  blockNumber           Int?          // block number
+  requiredConfirmations Int?          // required confirmations
+  currentConfirmations  Int?          @default(0) // current confirmations
+  completedAt           DateTime?     // completion timestamp
+  meta                  Json?         // additional metadata
+  createdAt             DateTime      @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -148,23 +153,28 @@ model Deposit {
 
 enum DepositStatus {
   PENDING
-  CONFIRMED
+  PROCESSING
+  COMPLETED
   FAILED
   CANCELLED
 }
 
 model Withdrawal {
-  id           String          @id @default(cuid())
-  userId       String
-  currency     String
-  amount       BigInt          // in smallest units
-  address      String
-  status       WithdrawalStatus @default(PENDING)
-  reviewNeeded Boolean         @default(false)
-  txHash       String?         // blockchain transaction hash
-  meta         Json?           // additional metadata
-  createdAt    DateTime        @default(now())
-  processedAt  DateTime?
+  id              String           @id @default(cuid())
+  userId          String
+  currency        String
+  amount          BigInt           // in smallest units
+  fee             BigInt           // withdrawal fee in smallest units
+  netAmount       BigInt           // amount after fees in smallest units
+  walletAddress   String           // destination wallet address
+  withdrawalMethod String          @default("crypto") // 'crypto' for Web3
+  status          WithdrawalStatus @default(PENDING)
+  transactionHash String?          // blockchain transaction hash
+  blockNumber     Int?             // block number
+  processingTime  String?          // estimated processing time
+  completedAt     DateTime?        // completion timestamp
+  meta            Json?            // additional metadata
+  createdAt       DateTime         @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

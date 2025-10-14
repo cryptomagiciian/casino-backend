@@ -68,7 +68,7 @@ export class DepositsService {
         currency,
         amount: toSmallestUnits(amount.toString(), currency),
         paymentMethod: 'crypto', // Always crypto for Web3
-        status: 'pending',
+        status: 'PENDING',
         walletAddress: depositWalletAddress,
         transactionHash,
         requiredConfirmations: this.REQUIRED_CONFIRMATIONS[currency],
@@ -166,7 +166,7 @@ export class DepositsService {
       throw new NotFoundException('Deposit not found');
     }
 
-    if (deposit.status === 'completed') {
+    if (deposit.status === 'COMPLETED') {
       return; // Already processed
     }
 
@@ -190,7 +190,7 @@ export class DepositsService {
       where: { id: depositId },
     });
 
-    if (!deposit || deposit.status === 'completed') {
+    if (!deposit || deposit.status === 'COMPLETED') {
       return;
     }
 
@@ -198,20 +198,20 @@ export class DepositsService {
     await this.prisma.deposit.update({
       where: { id: depositId },
       data: {
-        status: 'completed',
+        status: 'COMPLETED',
         completedAt: new Date(),
       },
     });
 
     // Credit user's wallet
-    await this.ledgerService.createTransaction({
+    await this.ledgerService.createUserTransaction({
       userId: deposit.userId,
       type: 'DEPOSIT',
       currency: deposit.currency as Currency,
-      amount: deposit.amount,
+      amount: fromSmallestUnits(deposit.amount, deposit.currency as Currency),
       description: `Deposit ${deposit.id}`,
-      metadata: {
-        depositId: deposit.id,
+      refId: deposit.id,
+      meta: {
         paymentMethod: deposit.paymentMethod,
         transactionHash: deposit.transactionHash,
       },

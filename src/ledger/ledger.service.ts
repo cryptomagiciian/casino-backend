@@ -12,6 +12,16 @@ export interface LedgerEntryData {
   meta?: any;
 }
 
+export interface LedgerTransactionData {
+  userId: string;
+  amount: string; // in display units
+  currency: Currency;
+  type: LedgerType;
+  description?: string;
+  refId?: string;
+  meta?: any;
+}
+
 @Injectable()
 export class LedgerService {
   constructor(private prisma: PrismaService) {}
@@ -30,6 +40,60 @@ export class LedgerService {
         type: data.type,
         refId: data.refId,
         meta: data.meta,
+      },
+    });
+  }
+
+  /**
+   * Create a transaction for a user (automatically gets account)
+   */
+  async createUserTransaction(data: LedgerTransactionData) {
+    // Get or create the wallet account
+    let account = await this.prisma.walletAccount.findUnique({
+      where: {
+        userId_currency: {
+          userId: data.userId,
+          currency: data.currency,
+        },
+      },
+    });
+
+    if (!account) {
+      account = await this.prisma.walletAccount.create({
+        data: {
+          userId: data.userId,
+          currency: data.currency,
+          available: 0n,
+          locked: 0n,
+        },
+      });
+    }
+
+    const amountSmallest = toSmallestUnits(data.amount, data.currency);
+    
+    // Update wallet balance
+    const isCredit = amountSmallest > 0n;
+    const updateData = isCredit 
+      ? { available: { increment: amountSmallest } }
+      : { available: { decrement: -amountSmallest } };
+
+    await this.prisma.walletAccount.update({
+      where: { id: account.id },
+      data: updateData,
+    });
+
+    // Create ledger entry
+    return this.prisma.ledgerEntry.create({
+      data: {
+        accountId: account.id,
+        amount: amountSmallest,
+        currency: data.currency,
+        type: data.type,
+        refId: data.refId,
+        meta: {
+          ...data.meta,
+          description: data.description,
+        },
       },
     });
   }

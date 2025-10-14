@@ -40,6 +40,20 @@ export class WalletsService {
   }
 
   /**
+   * Get wallet balance for a specific currency
+   */
+  async getWalletBalance(userId: string, currency: Currency): Promise<WalletBalance> {
+    const account = await this.getOrCreateAccount(userId, currency);
+    
+    return {
+      currency,
+      available: fromSmallestUnits(account.available, currency),
+      locked: fromSmallestUnits(account.locked, currency),
+      total: fromSmallestUnits(account.available + account.locked, currency),
+    };
+  }
+
+  /**
    * Get all wallet balances for a user
    */
   async getWalletBalances(userId: string): Promise<WalletBalance[]> {

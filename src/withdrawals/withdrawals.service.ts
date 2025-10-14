@@ -94,7 +94,7 @@ export class WithdrawalsService {
         netAmount: toSmallestUnits(netAmount.toString(), currency),
         walletAddress,
         withdrawalMethod: 'crypto', // Always crypto for Web3
-        status: 'pending',
+        status: 'PENDING',
         processingTime: this.getProcessingTime(currency, 'crypto'),
       },
     });
@@ -102,14 +102,14 @@ export class WithdrawalsService {
     this.logger.log(`Created Web3 withdrawal ${withdrawalId} for user ${userId}: ${amount} ${currency} to ${walletAddress} on ${network}`);
 
     // Lock the funds immediately
-    await this.ledgerService.createTransaction({
+    await this.ledgerService.createUserTransaction({
       userId,
       type: 'WITHDRAWAL_LOCK',
       currency,
-      amount: toSmallestUnits(amount.toString(), currency),
+      amount: amount.toString(),
       description: `Withdrawal ${withdrawalId} - funds locked`,
-      metadata: {
-        withdrawalId: withdrawal.id,
+      refId: withdrawal.id,
+      meta: {
         walletAddress,
         network,
       },
@@ -203,26 +203,25 @@ export class WithdrawalsService {
       throw new NotFoundException('Withdrawal not found');
     }
 
-    if (withdrawal.status !== 'pending') {
+    if (withdrawal.status !== 'PENDING') {
       throw new BadRequestException('Only pending withdrawals can be cancelled');
     }
 
     // Update withdrawal status
     await this.prisma.withdrawal.update({
       where: { id: withdrawalId },
-      data: { status: 'cancelled' },
+      data: { status: 'CANCELLED' },
     });
 
     // Unlock the funds
-    await this.ledgerService.createTransaction({
+    await this.ledgerService.createUserTransaction({
       userId,
       type: 'WITHDRAWAL_UNLOCK',
       currency: withdrawal.currency as Currency,
-      amount: withdrawal.amount,
+      amount: fromSmallestUnits(withdrawal.amount, withdrawal.currency as Currency),
       description: `Withdrawal ${withdrawalId} cancelled - funds unlocked`,
-      metadata: {
-        withdrawalId: withdrawal.id,
-      },
+      refId: withdrawal.id,
+      meta: {},
     });
 
     this.logger.log(`Cancelled withdrawal ${withdrawalId} for user ${userId}`);
@@ -238,7 +237,7 @@ export class WithdrawalsService {
       where: {
         userId,
         currency,
-        status: { in: ['completed', 'processing'] },
+        status: { in: ['COMPLETED', 'PROCESSING'] },
         createdAt: {
           gte: today,
           lt: tomorrow,
@@ -357,7 +356,7 @@ export class WithdrawalsService {
       where: { id: withdrawalId },
     });
 
-    if (!withdrawal || withdrawal.status !== 'pending') {
+    if (!withdrawal || withdrawal.status !== 'PENDING') {
       return;
     }
 
@@ -368,24 +367,24 @@ export class WithdrawalsService {
     await this.prisma.withdrawal.update({
       where: { id: withdrawalId },
       data: {
-        status: 'completed',
+        status: 'COMPLETED',
         transactionHash,
         completedAt: new Date(),
       },
     });
 
     // Create final withdrawal transaction
-    await this.ledgerService.createTransaction({
+    await this.ledgerService.createUserTransaction({
       userId: withdrawal.userId,
       type: 'WITHDRAWAL',
       currency: withdrawal.currency as Currency,
-      amount: withdrawal.netAmount, // Use net amount (after fees)
+      amount: fromSmallestUnits(withdrawal.netAmount, withdrawal.currency as Currency),
       description: `Withdrawal ${withdrawal.id} completed`,
-      metadata: {
-        withdrawalId: withdrawal.id,
+      refId: withdrawal.id,
+      meta: {
         walletAddress: withdrawal.walletAddress,
         transactionHash,
-        fee: withdrawal.fee,
+        fee: fromSmallestUnits(withdrawal.fee, withdrawal.currency as Currency),
       },
     });
 
@@ -397,26 +396,25 @@ export class WithdrawalsService {
       where: { id: withdrawalId },
     });
 
-    if (!withdrawal || withdrawal.status !== 'pending') {
+    if (!withdrawal || withdrawal.status !== 'PENDING') {
       return;
     }
 
     // Update withdrawal status
     await this.prisma.withdrawal.update({
       where: { id: withdrawalId },
-      data: { status: 'failed' },
+      data: { status: 'FAILED' },
     });
 
     // Unlock the funds
-    await this.ledgerService.createTransaction({
+    await this.ledgerService.createUserTransaction({
       userId: withdrawal.userId,
       type: 'WITHDRAWAL_UNLOCK',
       currency: withdrawal.currency as Currency,
-      amount: withdrawal.amount,
+      amount: fromSmallestUnits(withdrawal.amount, withdrawal.currency as Currency),
       description: `Withdrawal ${withdrawal.id} failed - funds unlocked`,
-      metadata: {
-        withdrawalId: withdrawal.id,
-      },
+      refId: withdrawal.id,
+      meta: {},
     });
 
     this.logger.log(`Failed withdrawal ${withdrawalId} for user ${withdrawal.userId}`);
