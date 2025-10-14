@@ -17,7 +17,9 @@ export const WalletBalance: React.FC<WalletBalanceProps> = ({
   const fetchBalances = async () => {
     try {
       setLoading(true);
-      const wallets = await apiService.getWallets();
+      console.log('🔄 Fetching wallet balances...');
+      const wallets = await apiService.getWalletBalances();
+      console.log('💰 Wallet data received:', wallets);
       
       // Convert to a simple balance object
       const balanceObj: Record<string, number> = {};
@@ -25,10 +27,11 @@ export const WalletBalance: React.FC<WalletBalanceProps> = ({
         balanceObj[wallet.currency] = parseFloat(wallet.balance);
       });
       
+      console.log('💰 Processed balances:', balanceObj);
       setBalances(balanceObj);
       setError(null);
     } catch (err) {
-      console.error('Failed to fetch wallet balances:', err);
+      console.error('❌ Failed to fetch wallet balances:', err);
       setError('Failed to load balances');
     } finally {
       setLoading(false);
@@ -64,7 +67,7 @@ export const WalletBalance: React.FC<WalletBalanceProps> = ({
         <div className="bg-gray-800/90 backdrop-blur-sm border border-gray-600 rounded-lg p-3 shadow-lg">
           <div className="flex items-center space-x-2">
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-500"></div>
-            <span className="text-gray-300 text-sm">Loading...</span>
+            <span className="text-gray-300 text-sm">Loading wallet...</span>
           </div>
         </div>
       </div>
@@ -107,16 +110,22 @@ export const WalletBalance: React.FC<WalletBalanceProps> = ({
         </div>
         
         <div className="space-y-1">
-          {Object.entries(balances).map(([currency, balance]) => (
-            <div key={currency} className="flex items-center justify-between">
-              <span className="text-gray-400 text-xs font-mono">{currency}</span>
-              <span className={`text-sm font-mono font-bold ${
-                balance > 0 ? 'text-green-400' : 'text-gray-500'
-              }`}>
-                {balance.toFixed(2)}
-              </span>
+          {Object.keys(balances).length > 0 ? (
+            Object.entries(balances).map(([currency, balance]) => (
+              <div key={currency} className="flex items-center justify-between">
+                <span className="text-gray-400 text-xs font-mono">{currency}</span>
+                <span className={`text-sm font-mono font-bold ${
+                  balance > 0 ? 'text-green-400' : 'text-gray-500'
+                }`}>
+                  {balance.toFixed(2)}
+                </span>
+              </div>
+            ))
+          ) : (
+            <div className="text-center text-gray-500 text-xs">
+              No wallets found
             </div>
-          ))}
+          )}
         </div>
         
         {Object.keys(balances).length > 1 && (

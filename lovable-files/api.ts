@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:3000/api/v1';
+const API_BASE_URL = 'https://casino-backend-production-8186.up.railway.app/api/v1';
 
 class ApiService {
   private baseURL: string;
