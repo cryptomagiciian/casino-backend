@@ -57,6 +57,7 @@ export class WalletsService {
 
   /**
    * Get all wallet balances for a user on a specific network
+   * Updated to use direct account balance instead of ledger sum for consistency
    */
   async getWalletBalances(userId: string, network: 'mainnet' | 'testnet' = 'mainnet'): Promise<WalletBalance[]> {
     const accounts = await this.prisma.walletAccount.findMany({

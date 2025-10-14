@@ -34,19 +34,27 @@ export const TestnetFaucet: React.FC<TestnetFaucetProps> = ({
       setMessage(null);
       
       // Call faucet API without amount parameter (backend handles the amount)
+      console.log(`🧪 FAUCET DEBUG: Calling faucet for ${currency} on network ${network}`);
       const result = await apiService.faucet(currency);
-      console.log('Faucet result:', result);
+      console.log('🧪 FAUCET DEBUG: Faucet result:', result);
       
       setMessage(`✅ Received ${amount} ${currency} from testnet faucet!`);
       
       // Refresh balances after successful faucet
       if (onBalanceUpdate) {
+        console.log('🧪 FAUCET DEBUG: Triggering balance refresh...');
         // Immediate refresh
         onBalanceUpdate();
         // Also refresh after a short delay to ensure backend has processed
         setTimeout(() => {
+          console.log('🧪 FAUCET DEBUG: Triggering delayed balance refresh (1s)...');
           onBalanceUpdate();
-        }, 2000);
+        }, 1000);
+        // And one more refresh after a longer delay
+        setTimeout(() => {
+          console.log('🧪 FAUCET DEBUG: Triggering final balance refresh (3s)...');
+          onBalanceUpdate();
+        }, 3000);
       }
       
       // Clear message after 5 seconds

@@ -35,6 +35,8 @@ export const WalletBalanceDropdown: React.FC<WalletBalanceDropdownProps> = ({
       console.log(`🔄 Fetching wallet balances for ${network}...`);
       const walletData = await apiService.getWalletBalances(network);
       console.log('💰 Wallet data received:', walletData);
+      console.log('🧪 BALANCE DEBUG: Network used:', network);
+      console.log('🧪 BALANCE DEBUG: API endpoint called:', `/wallets?network=${network}`);
       
       setWallets(walletData);
       setError(null);
