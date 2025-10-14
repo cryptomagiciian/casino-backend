@@ -86,7 +86,7 @@ class ApiService {
 
   // Wallet endpoints
   async getWalletBalances(network: 'mainnet' | 'testnet' = 'mainnet', detailed = false) {
-    // PROPER DEMO/LIVE DETECTION - Check multiple indicators
+    // ENHANCED DEMO/LIVE DETECTION - Check multiple indicators
     const isDemoMode = 
       // Check localStorage flag (set by manual override)
       localStorage.getItem('casino-demo-mode') === 'true' ||
@@ -97,7 +97,13 @@ class ApiService {
       // Check body class (set by manual override)
       document.body.classList.contains('demo-mode') ||
       // Check for demo toggle with active state
-      document.querySelector('.demo.active, [data-demo="true"]') !== null;
+      document.querySelector('.demo.active, [data-demo="true"]') !== null ||
+      // Check for demo text in DOM
+      document.querySelector('*:contains("Demo")') !== null ||
+      // Check for demo button/toggle
+      document.querySelector('[class*="demo"][class*="active"], [class*="demo"][class*="selected"]') !== null ||
+      // Check for orange demo indicator
+      document.querySelector('.text-orange-500, .bg-orange-500, [style*="orange"]') !== null;
     
     // Use testnet for demo mode, mainnet for live mode
     const actualNetwork = isDemoMode ? 'testnet' : 'mainnet';
@@ -110,6 +116,16 @@ class ApiService {
     console.log('🧪 API DEBUG: Demo mode detected:', isDemoMode);
     console.log('🧪 API DEBUG: Using actual network:', actualNetwork);
     console.log('🧪 API DEBUG: Final endpoint:', endpoint);
+    console.log('🧪 API DEBUG: Detection details:', {
+      localStorage: localStorage.getItem('casino-demo-mode'),
+      urlParam: window.location.search.includes('demo=true'),
+      domIndicator: document.querySelector('[data-demo-mode="true"]') !== null,
+      bodyClass: document.body.classList.contains('demo-mode'),
+      demoToggle: document.querySelector('.demo.active, [data-demo="true"]') !== null,
+      demoText: document.querySelector('*:contains("Demo")') !== null,
+      demoButton: document.querySelector('[class*="demo"][class*="active"], [class*="demo"][class*="selected"]') !== null,
+      orangeIndicator: document.querySelector('.text-orange-500, .bg-orange-500, [style*="orange"]') !== null
+    });
     return this.request(endpoint);
   }
 
