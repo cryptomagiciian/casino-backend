@@ -87,7 +87,7 @@ export class WebSocketCandlestickService {
     };
 
     this.ws.send(JSON.stringify(subscription));
-    console.log(`📊 Subscribed to ${this.symbol}_USDT trades`);
+    console.log(`📊 Subscribed to ${this.symbol}_USDT trades for ${this.timeframe} timeframe`);
   }
 
   private handleMessage(data: any): void {
@@ -96,6 +96,11 @@ export class WebSocketCandlestickService {
       if (Array.isArray(trades)) {
         trades.forEach(trade => this.processTrade(trade));
       }
+    } else if (data.method === 'trades.subscribe' && data.result) {
+      console.log(`✅ Successfully subscribed to ${this.symbol}_USDT trades`);
+    } else if (data.error) {
+      console.error('WebSocket subscription error:', data.error);
+      this.onError?.(new Error(`Subscription failed: ${data.error.message || 'Unknown error'}`));
     }
   }
 

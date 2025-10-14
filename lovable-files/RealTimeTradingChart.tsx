@@ -129,7 +129,7 @@ export const RealTimeTradingChart: React.FC<RealTimeTradingChartProps> = ({
     
     candlestickData.forEach((candle, index) => {
       const x = chartX + (chartWidth / candlestickData.length) * index;
-      const isGreen = candle.close >= candle.open;
+      const isGreen = candle.close > candle.open; // Green for upward movement (close > open)
       
       // Calculate Y positions
       const highY = chartY + chartHeight - ((candle.high - minPrice + padding) / (priceRange + padding * 2)) * chartHeight;

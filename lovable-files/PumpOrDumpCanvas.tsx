@@ -223,7 +223,7 @@ export const PumpOrDumpCanvas: React.FC<PumpOrDumpCanvasProps> = ({
     
     candles.forEach((candle, index) => {
       const x = (index * candleWidth) + (width - candles.length * candleWidth);
-      const isGreen = candle.close >= candle.open;
+      const isGreen = candle.close > candle.open; // Green for upward movement (close > open)
       
       // Calculate positions using the old realistic method
       const bodyTop = height / 2 - (Math.max(candle.open, candle.close) - entryPrice) / priceRange * height;

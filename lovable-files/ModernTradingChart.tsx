@@ -202,7 +202,7 @@ export const ModernTradingChart: React.FC<ModernTradingChartProps> = ({
     
     candlestickData.forEach((candle, index) => {
       const x = chartX + (chartWidth / candlestickData.length) * index;
-      const isGreen = candle.close >= candle.open;
+      const isGreen = candle.close > candle.open; // Green for upward movement (close > open)
       
       // Calculate Y positions
       const highY = chartY + chartHeight - ((candle.high - minPrice + padding) / (priceRange + padding * 2)) * chartHeight;
@@ -292,7 +292,7 @@ export const ModernTradingChart: React.FC<ModernTradingChartProps> = ({
     candlestickData.forEach((candle, index) => {
       const x = chartX + (chartWidth / candlestickData.length) * index;
       const barHeight = (candle.volume / maxVolume) * volumeHeight;
-      const isGreen = candle.close >= candle.open;
+      const isGreen = candle.close > candle.open; // Green for upward movement (close > open)
       
       ctx.fillStyle = isGreen ? `${colors.bullish}40` : `${colors.bearish}40`;
       ctx.fillRect(x - candleWidth / 2, volumeY + volumeHeight - barHeight, candleWidth, barHeight);

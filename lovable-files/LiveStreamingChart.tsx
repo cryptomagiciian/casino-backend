@@ -266,7 +266,7 @@ export const LiveStreamingChart: React.FC<LiveStreamingChartProps> = ({
     
     candlesticks.forEach((candle, index) => {
       const x = chartX + (chartWidth / candlesticks.length) * index;
-      const isGreen = candle.close >= candle.open;
+      const isGreen = candle.close > candle.open; // Green for upward movement (close > open)
       const isLastCandle = index === candlesticks.length - 1;
       
       // Calculate Y positions
@@ -363,7 +363,7 @@ export const LiveStreamingChart: React.FC<LiveStreamingChartProps> = ({
     candlesticks.forEach((candle, index) => {
       const x = chartX + (chartWidth / candlesticks.length) * index;
       const barHeight = (candle.volume / maxVolume) * volumeHeight;
-      const isGreen = candle.close >= candle.open;
+      const isGreen = candle.close > candle.open; // Green for upward movement (close > open)
       const isLastCandle = index === candlesticks.length - 1;
       
       ctx.fillStyle = isGreen ? `${colors.bullish}40` : `${colors.bearish}40`;

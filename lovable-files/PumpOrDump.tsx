@@ -683,7 +683,7 @@ export const PumpOrDump: React.FC = () => {
       <div className="flex gap-1 mb-4 h-12 items-end bg-gray-900 rounded p-2">
         {volumeBars.slice(-11).map((vol, i) => {
           const candle = candles.slice(-11)[i];
-          const isGreen = candle && candle.close >= candle.open;
+          const isGreen = candle && candle.close > candle.open; // Green for upward movement (close > open)
           return (
             <div 
               key={i} 
