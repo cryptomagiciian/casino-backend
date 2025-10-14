@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { NetworkProvider } from './NetworkContext';
 import { NetworkToggle } from './NetworkToggle';
+import { BalanceProvider } from './BalanceContext';
 import { WalletBalance } from './components/wallet/WalletBalance';
 import { GameList } from './components/games/GameList';
 import { LoginForm } from './components/auth/LoginForm';
@@ -79,7 +80,9 @@ function App() {
   return (
     <AuthProvider>
       <NetworkProvider>
-        <AppContent />
+        <BalanceProvider>
+          <AppContent />
+        </BalanceProvider>
       </NetworkProvider>
     </AuthProvider>
   );
