@@ -1,4 +1,5 @@
 const API_BASE_URL = 'https://casino-backend-production-8186.up.railway.app/api/v1';
+const API_VERSION = 'v-demo-fix-4'; // Version bump to force cache refresh
 
 class ApiService {
   private baseURL: string;
@@ -7,6 +8,7 @@ class ApiService {
   constructor(baseURL: string) {
     this.baseURL = baseURL;
     this.token = localStorage.getItem('accessToken');
+    console.log(`🚀 API Service initialized with version: ${API_VERSION}`);
   }
 
   setToken(token: string) {
