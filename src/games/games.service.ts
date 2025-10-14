@@ -150,13 +150,11 @@ export class GamesService {
       .filter(([id, config]) => {
         const name = config.name.toLowerCase();
         const description = config.description.toLowerCase();
-        const type = config.type?.toLowerCase() || '';
         const slug = this.getGameSlug(id);
         
         return (
           name.includes(searchTerm) ||
           description.includes(searchTerm) ||
-          type.includes(searchTerm) ||
           slug.includes(searchTerm) ||
           id.toLowerCase().includes(searchTerm)
         );
@@ -165,7 +163,7 @@ export class GamesService {
       .map(([id, config]) => ({
         slug: this.getGameSlug(id),
         name: config.name,
-        type: config.type || 'prediction',
+        type: 'prediction', // Default type for all games
         description: config.description,
         minBet: '1.00',
         maxBet: '10000.00',

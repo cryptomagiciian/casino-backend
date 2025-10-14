@@ -29,7 +29,7 @@ export class PricesService {
         }),
       );
 
-      const data = response.data;
+      const data = response.data as any;
       
       const prices = [
         {

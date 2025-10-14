@@ -217,14 +217,14 @@ export class WalletsService {
     };
 
     const detailedBalances = balances.map(balance => {
-      const balanceFloat = parseFloat(balance.balance);
+      const balanceFloat = parseFloat(balance.available);
       const usdValue = balanceFloat * (usdRates[balance.currency] || 1);
       
       return {
         currency: balance.currency,
-        available: balance.balance,
-        locked: '0.00', // For now, no locked funds
-        total: balance.balance,
+        available: balance.available,
+        locked: balance.locked,
+        total: balance.total,
         usdValue: usdValue.toFixed(2),
       };
     });
