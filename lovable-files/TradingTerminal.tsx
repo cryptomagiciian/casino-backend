@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from './api';
+import { TradingChart } from './TradingChart';
 
 interface FuturesSymbol {
   id: string;
@@ -43,6 +44,7 @@ export const TradingTerminal: React.FC = () => {
   const [positions, setPositions] = useState<FuturesPosition[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [seeding, setSeeding] = useState(false);
 
   // Order form state
   const [side, setSide] = useState<'LONG' | 'SHORT'>('LONG');
@@ -63,13 +65,17 @@ export const TradingTerminal: React.FC = () => {
         apiService.getFuturesPositions('OPEN'),
       ]);
 
-      setSymbols(symbolsData);
-      setCurrentRound(roundData);
-      setPositions(positionsData.positions);
+      // Handle empty responses gracefully
+      setSymbols(Array.isArray(symbolsData) ? symbolsData : []);
+      setCurrentRound(roundData && Object.keys(roundData).length > 0 ? roundData : null);
+      setPositions(positionsData && positionsData.positions ? positionsData.positions : []);
 
-      if (symbolsData.length > 0) {
+      if (Array.isArray(symbolsData) && symbolsData.length > 0) {
         setSelectedSymbol(symbolsData[0].id);
         setLeverage(symbolsData[0].maxLeverage);
+      } else {
+        // If no symbols, show a helpful message
+        setError('No trading symbols available. Please contact support to initialize the trading system.');
       }
     } catch (err) {
       setError('Failed to load trading data');
@@ -119,6 +125,22 @@ export const TradingTerminal: React.FC = () => {
     }
   };
 
+  const handleSeedDatabase = async () => {
+    try {
+      setSeeding(true);
+      await Promise.all([
+        apiService.seedFuturesSymbols(),
+        apiService.createInitialTradingRound(),
+      ]);
+      alert('Database seeded successfully!');
+      loadInitialData(); // Refresh data
+    } catch (err: any) {
+      alert(`Failed to seed database: ${err.message}`);
+    } finally {
+      setSeeding(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
@@ -130,7 +152,18 @@ export const TradingTerminal: React.FC = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-red-400 text-xl">{error}</div>
+        <div className="text-center">
+          <div className="text-red-400 text-xl mb-4">{error}</div>
+          {error.includes('No trading symbols available') && (
+            <button
+              onClick={handleSeedDatabase}
+              disabled={seeding}
+              className="px-6 py-3 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white rounded-lg font-semibold transition-colors"
+            >
+              {seeding ? 'Seeding Database...' : 'Initialize Trading System'}
+            </button>
+          )}
+        </div>
       </div>
     );
   }
@@ -166,6 +199,18 @@ export const TradingTerminal: React.FC = () => {
                 <div>{new Date(currentRound.endsAt).toLocaleString()}</div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Trading Chart */}
+        {selectedSymbol && (
+          <div className="mb-6">
+            <TradingChart 
+              symbolId={selectedSymbol}
+              showCommittedMark={true}
+              showBaseline={true}
+              height={400}
+            />
           </div>
         )}
 

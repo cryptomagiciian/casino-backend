@@ -337,6 +337,19 @@ class ApiService {
   async getMaintenanceMarginRate(leverage: number) {
     return this.request(`/futures/maintenance-margin-rate/${leverage}`);
   }
+
+  // Admin seeding endpoints
+  async seedFuturesSymbols() {
+    return this.request('/futures/seed/symbols', {
+      method: 'POST',
+    });
+  }
+
+  async createInitialTradingRound() {
+    return this.request('/futures/seed/round', {
+      method: 'POST',
+    });
+  }
 }
 
 export const apiService = new ApiService(API_BASE_URL);

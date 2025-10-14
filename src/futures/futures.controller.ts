@@ -152,4 +152,21 @@ export class FuturesController {
   ) {
     return this.roundService.getRounds(page, limit);
   }
+
+  // Admin endpoints for seeding
+  @Post('seed/symbols')
+  @ApiOperation({ summary: 'Seed futures symbols (admin only)' })
+  @ApiResponse({ status: 200, description: 'Futures symbols seeded successfully' })
+  async seedSymbols() {
+    await this.futuresService.seedSymbols();
+    return { success: true, message: 'Futures symbols seeded successfully' };
+  }
+
+  @Post('seed/round')
+  @ApiOperation({ summary: 'Create initial trading round (admin only)' })
+  @ApiResponse({ status: 200, description: 'Trading round created successfully' })
+  async createInitialRound() {
+    await this.roundService.initializeFirstRound();
+    return { success: true, message: 'Initial trading round created successfully' };
+  }
 }
