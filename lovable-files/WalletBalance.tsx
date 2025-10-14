@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { apiService } from '../services/api';
+import { apiService } from './api';
+import { notificationService } from './NotificationService';
 
 interface WalletBalanceProps {
   className?: string;
@@ -43,7 +44,26 @@ export const WalletBalance: React.FC<WalletBalanceProps> = ({
     
     // Refresh balances every 30 seconds
     const interval = setInterval(fetchBalances, 30000);
-    return () => clearInterval(interval);
+    
+    // Subscribe to notification service for real-time updates
+    const unsubscribe = notificationService.subscribe((notifications) => {
+      // Check if there are any new deposit/withdrawal notifications
+      const hasNewTransactions = notifications.some(n => 
+        (n.type === 'deposit' || n.type === 'withdrawal') && 
+        !n.read && 
+        new Date(n.timestamp) > new Date(Date.now() - 60000) // Last minute
+      );
+      
+      if (hasNewTransactions) {
+        // Refresh balances when new transactions are detected
+        fetchBalances();
+      }
+    });
+    
+    return () => {
+      clearInterval(interval);
+      unsubscribe();
+    };
   }, []);
 
   const getPositionClasses = () => {

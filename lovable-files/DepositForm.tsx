@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { apiService } from './api';
+import { notificationService } from './NotificationService';
 
 interface DepositFormProps {
   onDepositCreated?: (deposit: any) => void;
@@ -57,6 +58,18 @@ export const DepositForm: React.FC<DepositFormProps> = ({ onDepositCreated }) =>
       
       setDeposit(result);
       onDepositCreated?.(result);
+
+      // Add notification for deposit creation
+      notificationService.addManualNotification(
+        'deposit',
+        'Deposit Address Generated! 📍',
+        `Your ${currency} deposit address has been generated. Send ${amount} ${currency} to complete your deposit.`,
+        {
+          amount: parseFloat(amount),
+          currency,
+          status: 'PENDING'
+        }
+      );
     } catch (err: any) {
       console.error('Deposit creation failed:', err);
       setError(err.message || 'Failed to create deposit');

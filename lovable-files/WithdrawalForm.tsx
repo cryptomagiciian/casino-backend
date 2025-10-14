@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { apiService } from './api';
+import { notificationService } from './NotificationService';
 
 interface WithdrawalFormProps {
   onWithdrawalCreated?: (withdrawal: any) => void;
@@ -59,6 +60,18 @@ export const WithdrawalForm: React.FC<WithdrawalFormProps> = ({ onWithdrawalCrea
       
       setWithdrawal(result);
       onWithdrawalCreated?.(result);
+
+      // Add notification for withdrawal creation
+      notificationService.addManualNotification(
+        'withdrawal',
+        'Withdrawal Submitted! 🚀',
+        `Your withdrawal of ${amount} ${currency} has been submitted and is being processed.`,
+        {
+          amount: parseFloat(amount),
+          currency,
+          status: 'PENDING'
+        }
+      );
     } catch (err: any) {
       console.error('Withdrawal creation failed:', err);
       setError(err.message || 'Failed to create withdrawal');
