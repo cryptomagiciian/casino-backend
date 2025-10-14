@@ -480,14 +480,14 @@ export class BetsService {
       case 'leverage_ladder':
         // CRITICAL FIX: Use frontend-determined outcome to prevent casino losses
         // The frontend has the actual game state and liquidation level
-        const frontendOutcome = params?.frontendOutcome;
-        const frontendMultiplier = params?.frontendMultiplier || 0;
+        const ladderFrontendOutcome = params?.frontendOutcome;
+        const ladderFrontendMultiplier = params?.frontendMultiplier || 0;
         
-        if (frontendOutcome) {
+        if (ladderFrontendOutcome) {
           // Trust the frontend outcome (it has the actual game state)
           return {
-            result: frontendOutcome,
-            multiplier: frontendMultiplier,
+            result: ladderFrontendOutcome,
+            multiplier: ladderFrontendMultiplier,
           };
         }
         
@@ -536,14 +536,14 @@ export class BetsService {
       case 'diamond_hands':
         // CRITICAL FIX: Use frontend-determined outcome to prevent casino losses
         // The frontend has the actual game state and mine positions
-        const frontendOutcome = params?.frontendOutcome;
-        const frontendMultiplier = params?.frontendMultiplier || 0;
+        const diamondFrontendOutcome = params?.frontendOutcome;
+        const diamondFrontendMultiplier = params?.frontendMultiplier || 0;
         
-        if (frontendOutcome) {
+        if (diamondFrontendOutcome) {
           // Trust the frontend outcome (it has the actual game state)
           return {
-            result: frontendOutcome,
-            multiplier: frontendMultiplier,
+            result: diamondFrontendOutcome,
+            multiplier: diamondFrontendMultiplier,
           };
         }
         
