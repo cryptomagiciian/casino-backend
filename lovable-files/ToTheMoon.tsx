@@ -31,11 +31,11 @@ export const ToTheMoon: React.FC = () => {
     refreshBalance();
   }, [network, bettingCurrency]);
 
-  // Sync with global balance changes
+  // Sync with global balance changes - only when betting currency changes
   useEffect(() => {
     const currentBalance = getAvailableBalance(bettingCurrency);
     setBalance(currentBalance);
-  }, [getAvailableBalance, bettingCurrency]);
+  }, [bettingCurrency]);
 
   const refreshBalance = async () => {
     try {

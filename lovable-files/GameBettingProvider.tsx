@@ -89,7 +89,10 @@ export const GameBettingProvider: React.FC<{ children: ReactNode }> = ({ childre
       
       // Refresh balances after bet resolution to show updated amounts
       console.log('🔄 Refreshing balances after bet resolution...');
-      await refreshBalances();
+      // Use setTimeout to avoid updating state during render
+      setTimeout(() => {
+        refreshBalances();
+      }, 0);
       
       return result;
     } catch (err: any) {
@@ -112,7 +115,10 @@ export const GameBettingProvider: React.FC<{ children: ReactNode }> = ({ childre
       
       // Refresh balances after cashout to show updated amounts
       console.log('🔄 Refreshing balances after cashout...');
-      await refreshBalances();
+      // Use setTimeout to avoid updating state during render
+      setTimeout(() => {
+        refreshBalances();
+      }, 0);
       
       return result;
     } catch (err: any) {

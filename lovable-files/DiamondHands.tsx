@@ -53,7 +53,7 @@ export const DiamondHands: React.FC = () => {
   useEffect(() => {
     const currentBalance = getAvailableBalance(bettingCurrency);
     setBalance(currentBalance);
-  }, [getAvailableBalance, bettingCurrency]);
+  }, [bettingCurrency]); // Remove getAvailableBalance from dependencies to prevent render loop
 
   const refreshBalance = async () => {
     try {

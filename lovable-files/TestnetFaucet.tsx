@@ -44,7 +44,10 @@ export const TestnetFaucet: React.FC<TestnetFaucetProps> = ({
       
       // Refresh balances after successful faucet using global balance context
       console.log('🧪 FAUCET DEBUG: Triggering global balance refresh...');
-      await refreshBalances();
+      // Use setTimeout to avoid updating state during render
+      setTimeout(() => {
+        refreshBalances();
+      }, 0);
       
       // Also call the legacy callback if provided
       if (onBalanceUpdate) {
@@ -52,14 +55,14 @@ export const TestnetFaucet: React.FC<TestnetFaucetProps> = ({
       }
       
       // Additional delayed refreshes to ensure backend has processed
-      setTimeout(async () => {
+      setTimeout(() => {
         console.log('🧪 FAUCET DEBUG: Triggering delayed balance refresh (1s)...');
-        await refreshBalances();
+        refreshBalances();
       }, 1000);
       
-      setTimeout(async () => {
+      setTimeout(() => {
         console.log('🧪 FAUCET DEBUG: Triggering final balance refresh (3s)...');
-        await refreshBalances();
+        refreshBalances();
       }, 3000);
       
       // Clear message after 5 seconds
