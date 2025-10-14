@@ -10,6 +10,7 @@ class ApiService {
     this.token = localStorage.getItem('accessToken');
     console.log(`🚀 API Service initialized with version: ${API_VERSION}`);
     console.log(`🚀 Cache bust timestamp: ${Date.now()}`);
+    console.log(`🔑 Token loaded: ${this.token ? 'Yes' : 'No'}`);
   }
 
   setToken(token: string) {
@@ -20,6 +21,12 @@ class ApiService {
   clearToken() {
     this.token = null;
     localStorage.removeItem('accessToken');
+  }
+
+  refreshTokenFromStorage() {
+    this.token = localStorage.getItem('accessToken');
+    console.log(`🔄 Token refreshed from storage: ${this.token ? 'Yes' : 'No'}`);
+    return this.token;
   }
 
   private async request<T>(
@@ -52,7 +59,10 @@ class ApiService {
       if (response.status === 401) {
         console.warn('Token expired or invalid - logging out');
         this.clearToken();
-        window.location.href = '/'; // Redirect to login
+        // Only redirect to login if this is NOT the profile check during initialization
+        if (endpoint !== '/auth/me') {
+          window.location.href = '/'; // Redirect to login
+        }
         throw new Error('Session expired. Please login again.');
       }
       

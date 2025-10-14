@@ -32,10 +32,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const initAuth = async () => {
       try {
+        // Check if we have a token first
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+          console.log('No token found in localStorage');
+          setLoading(false);
+          return;
+        }
+
+        // Try to get profile with the existing token
         const profile = await apiService.getProfile();
         setUser(profile);
+        console.log('✅ Valid session restored');
       } catch (error) {
-        console.log('No valid session');
+        console.log('❌ No valid session - token may be expired');
+        // Clear any invalid token
+        apiService.clearToken();
       } finally {
         setLoading(false);
       }
