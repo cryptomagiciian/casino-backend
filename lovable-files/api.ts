@@ -98,8 +98,8 @@ class ApiService {
       document.body.classList.contains('demo-mode') ||
       // Check for demo toggle with active state
       document.querySelector('.demo.active, [data-demo="true"]') !== null ||
-      // Check for demo text in DOM (using textContent search)
-      Array.from(document.querySelectorAll('*')).some(el => el.textContent?.includes('Demo')) ||
+      // Check for demo text in DOM (temporarily disabled to avoid performance issues)
+      // Array.from(document.querySelectorAll('*')).some(el => el.textContent?.includes('Demo')) ||
       // Check for demo button/toggle
       document.querySelector('[class*="demo"][class*="active"], [class*="demo"][class*="selected"]') !== null ||
       // Check for orange demo indicator
@@ -122,7 +122,7 @@ class ApiService {
       domIndicator: document.querySelector('[data-demo-mode="true"]') !== null,
       bodyClass: document.body.classList.contains('demo-mode'),
       demoToggle: document.querySelector('.demo.active, [data-demo="true"]') !== null,
-      demoText: Array.from(document.querySelectorAll('*')).some(el => el.textContent?.includes('Demo')),
+      demoText: false, // Temporarily disabled
       demoButton: document.querySelector('[class*="demo"][class*="active"], [class*="demo"][class*="selected"]') !== null,
       orangeIndicator: document.querySelector('.text-orange-500, .bg-orange-500, [style*="orange"]') !== null
     });
