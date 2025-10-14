@@ -178,13 +178,13 @@ class ApiService {
     return this.request('/prices/crypto');
   }
 
-  // Deposit endpoints
+  // Web3 Deposit endpoints
   async createDeposit(data: {
     currency: string;
     amount: number;
-    paymentMethod: 'crypto' | 'card' | 'bank_transfer';
-    walletAddress?: string;
+    network: 'mainnet' | 'testnet';
     transactionHash?: string;
+    blockNumber?: number;
   }) {
     return this.request('/deposits', {
       method: 'POST',
@@ -204,12 +204,12 @@ class ApiService {
     return this.request(`/deposits/limits/${currency}`);
   }
 
-  // Withdrawal endpoints
+  // Web3 Withdrawal endpoints
   async createWithdrawal(data: {
     currency: string;
     amount: number;
     walletAddress: string;
-    withdrawalMethod: 'crypto' | 'bank_transfer';
+    network: 'mainnet' | 'testnet';
     twoFactorCode?: string;
     withdrawalPassword?: string;
   }) {

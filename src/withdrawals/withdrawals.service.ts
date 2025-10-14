@@ -46,7 +46,7 @@ export class WithdrawalsService {
   ) {}
 
   async createWithdrawal(userId: string, createWithdrawalDto: CreateWithdrawalDto): Promise<WithdrawalResponseDto> {
-    const { currency, amount, walletAddress, withdrawalMethod, twoFactorCode, withdrawalPassword } = createWithdrawalDto;
+    const { currency, amount, walletAddress, network, twoFactorCode, withdrawalPassword } = createWithdrawalDto;
 
     // Validate minimum withdrawal amount
     if (amount < this.MIN_WITHDRAWALS[currency]) {
@@ -93,13 +93,13 @@ export class WithdrawalsService {
         fee: toSmallestUnits(fee.toString(), currency),
         netAmount: toSmallestUnits(netAmount.toString(), currency),
         walletAddress,
-        withdrawalMethod,
+        withdrawalMethod: 'crypto', // Always crypto for Web3
         status: 'pending',
-        processingTime: this.getProcessingTime(currency, withdrawalMethod),
+        processingTime: this.getProcessingTime(currency, 'crypto'),
       },
     });
 
-    this.logger.log(`Created withdrawal ${withdrawalId} for user ${userId}: ${amount} ${currency} to ${walletAddress}`);
+    this.logger.log(`Created Web3 withdrawal ${withdrawalId} for user ${userId}: ${amount} ${currency} to ${walletAddress} on ${network}`);
 
     // Lock the funds immediately
     await this.ledgerService.createTransaction({
@@ -111,12 +111,15 @@ export class WithdrawalsService {
       metadata: {
         withdrawalId: withdrawal.id,
         walletAddress,
-        withdrawalMethod,
+        network,
       },
     });
 
     // Process withdrawal (in real implementation, this would be queued)
     await this.processWithdrawal(withdrawalId);
+
+    // Generate blockchain explorer URL
+    const explorerUrl = this.generateExplorerUrl(currency, walletAddress, network);
 
     return {
       id: withdrawal.id,
@@ -125,9 +128,10 @@ export class WithdrawalsService {
       fee: fromSmallestUnits(withdrawal.fee, withdrawal.currency as Currency),
       netAmount: fromSmallestUnits(withdrawal.netAmount, withdrawal.currency as Currency),
       walletAddress: withdrawal.walletAddress,
-      withdrawalMethod: withdrawal.withdrawalMethod,
+      network,
       status: withdrawal.status,
       processingTime: withdrawal.processingTime,
+      explorerUrl,
       createdAt: withdrawal.createdAt.toISOString(),
       completedAt: withdrawal.completedAt?.toISOString(),
     };
@@ -297,10 +301,37 @@ export class WithdrawalsService {
         USDC: '5-30 minutes',
         USDT: '5-30 minutes',
       },
-      bank_transfer: '1-3 business days',
     };
 
     return times[method]?.[currency] || '10-60 minutes';
+  }
+
+  private generateExplorerUrl(currency: Currency, address: string, network: 'mainnet' | 'testnet'): string {
+    const explorers = {
+      BTC: {
+        mainnet: 'https://blockstream.info/address',
+        testnet: 'https://blockstream.info/testnet/address',
+      },
+      ETH: {
+        mainnet: 'https://etherscan.io/address',
+        testnet: 'https://sepolia.etherscan.io/address',
+      },
+      SOL: {
+        mainnet: 'https://explorer.solana.com/address',
+        testnet: 'https://explorer.solana.com/address?cluster=testnet',
+      },
+      USDC: {
+        mainnet: 'https://etherscan.io/token/0xa0b86a33e6ba0e0e5c4b8b8b8b8b8b8b8b8b8b8b8b?a=',
+        testnet: 'https://sepolia.etherscan.io/token/0xa0b86a33e6ba0e0e5c4b8b8b8b8b8b8b8b8b8b8b8b?a=',
+      },
+      USDT: {
+        mainnet: 'https://etherscan.io/token/0xdac17f958d2ee523a2206206994597c13d831ec7?a=',
+        testnet: 'https://sepolia.etherscan.io/token/0xdac17f958d2ee523a2206206994597c13d831ec7?a=',
+      },
+    };
+
+    const explorer = explorers[currency][network];
+    return `${explorer}/${address}`;
   }
 
   private async processWithdrawal(withdrawalId: string): Promise<void> {

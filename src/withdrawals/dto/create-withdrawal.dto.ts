@@ -1,10 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNumber, IsIn, IsOptional, Min, Max } from 'class-validator';
+import { IsString, IsNumber, IsIn, IsOptional, Min } from 'class-validator';
 import { Currency } from '../../shared/constants';
 
 export class CreateWithdrawalDto {
   @ApiProperty({ 
-    description: 'Currency for withdrawal', 
+    description: 'Cryptocurrency for withdrawal', 
     example: 'BTC',
     enum: ['BTC', 'ETH', 'SOL', 'USDC', 'USDT']
   })
@@ -14,11 +14,11 @@ export class CreateWithdrawalDto {
 
   @ApiProperty({ 
     description: 'Amount to withdraw', 
-    example: '50.00',
-    minimum: 1
+    example: '0.001',
+    minimum: 0.0001
   })
   @IsNumber()
-  @Min(1)
+  @Min(0.0001)
   amount: number;
 
   @ApiProperty({ 
@@ -29,13 +29,13 @@ export class CreateWithdrawalDto {
   walletAddress: string;
 
   @ApiProperty({ 
-    description: 'Withdrawal method', 
-    example: 'crypto',
-    enum: ['crypto', 'bank_transfer']
+    description: 'Blockchain network', 
+    example: 'mainnet',
+    enum: ['mainnet', 'testnet']
   })
   @IsString()
-  @IsIn(['crypto', 'bank_transfer'])
-  withdrawalMethod: 'crypto' | 'bank_transfer';
+  @IsIn(['mainnet', 'testnet'])
+  network: 'mainnet' | 'testnet';
 
   @ApiProperty({ 
     description: 'Two-factor authentication code', 

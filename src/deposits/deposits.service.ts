@@ -45,7 +45,7 @@ export class DepositsService {
   ) {}
 
   async createDeposit(userId: string, createDepositDto: CreateDepositDto): Promise<DepositResponseDto> {
-    const { currency, amount, paymentMethod, walletAddress, transactionHash } = createDepositDto;
+    const { currency, amount, network, transactionHash, blockNumber } = createDepositDto;
 
     // Validate minimum deposit amount
     if (amount < this.MIN_DEPOSITS[currency]) {
@@ -57,11 +57,8 @@ export class DepositsService {
     // Generate deposit ID
     const depositId = generateId('dep');
 
-    // Generate wallet address for crypto deposits
-    let depositWalletAddress = walletAddress;
-    if (paymentMethod === 'crypto' && !depositWalletAddress) {
-      depositWalletAddress = await this.generateWalletAddress(currency);
-    }
+    // Generate unique wallet address for this deposit
+    const depositWalletAddress = await this.generateWalletAddress(currency, network);
 
     // Create deposit record
     const deposit = await this.prisma.deposit.create({
@@ -70,7 +67,7 @@ export class DepositsService {
         userId,
         currency,
         amount: toSmallestUnits(amount.toString(), currency),
-        paymentMethod,
+        paymentMethod: 'crypto', // Always crypto for Web3
         status: 'pending',
         walletAddress: depositWalletAddress,
         transactionHash,
@@ -79,32 +76,27 @@ export class DepositsService {
       },
     });
 
-    this.logger.log(`Created deposit ${depositId} for user ${userId}: ${amount} ${currency}`);
+    this.logger.log(`Created Web3 deposit ${depositId} for user ${userId}: ${amount} ${currency} on ${network}`);
 
-    // Generate QR code data for crypto deposits
-    let qrCodeData: string | undefined;
-    if (paymentMethod === 'crypto' && depositWalletAddress) {
-      qrCodeData = this.generateQrCodeData(currency, depositWalletAddress, amount);
-    }
+    // Generate QR code data for easy scanning
+    const qrCodeData = this.generateQrCodeData(currency, depositWalletAddress, amount);
 
-    // Generate confirmation URL for card/bank transfers
-    let confirmationUrl: string | undefined;
-    if (paymentMethod === 'card' || paymentMethod === 'bank_transfer') {
-      confirmationUrl = await this.generateConfirmationUrl(depositId, amount, currency);
-    }
+    // Generate blockchain explorer URL
+    const explorerUrl = this.generateExplorerUrl(currency, depositWalletAddress, network);
 
     return {
       id: deposit.id,
       currency: deposit.currency as Currency,
       amount: fromSmallestUnits(deposit.amount, deposit.currency as Currency),
-      paymentMethod: deposit.paymentMethod,
+      network,
       status: deposit.status,
       walletAddress: deposit.walletAddress,
       transactionHash: deposit.transactionHash,
-      confirmationUrl,
+      blockNumber,
       qrCodeData,
       requiredConfirmations: deposit.requiredConfirmations,
       currentConfirmations: deposit.currentConfirmations,
+      explorerUrl,
       createdAt: deposit.createdAt.toISOString(),
       completedAt: deposit.completedAt?.toISOString(),
     };
@@ -228,26 +220,52 @@ export class DepositsService {
     this.logger.log(`Completed deposit ${depositId}: ${fromSmallestUnits(deposit.amount, deposit.currency as Currency)} ${deposit.currency}`);
   }
 
-  private async generateWalletAddress(currency: Currency): Promise<string> {
-    // In a real implementation, this would integrate with:
-    // - Bitcoin: Electrum, Bitcoin Core, or third-party service
-    // - Ethereum: Web3 providers, Infura, Alchemy
-    // - Solana: Solana Web3.js
-    // - USDC/USDT: Ethereum network
+  private async generateWalletAddress(currency: Currency, network: 'mainnet' | 'testnet'): Promise<string> {
+    // In a real Web3 implementation, this would integrate with:
+    // - Bitcoin: HD wallet generation, BIP32/BIP44
+    // - Ethereum: Web3.js, ethers.js, or HD wallet
+    // - Solana: @solana/web3.js, HD wallet
+    // - USDC/USDT: Ethereum network (ERC-20 tokens)
     
-    // For demo purposes, generate a mock address
-    const addressPrefixes = {
-      BTC: '1',
-      ETH: '0x',
-      SOL: '',
-      USDC: '0x',
-      USDT: '0x',
+    // For demo purposes, generate realistic-looking addresses
+    const addressGenerators = {
+      BTC: (net: string) => {
+        // Bitcoin addresses: Legacy (1...), SegWit (3...), Bech32 (bc1...)
+        const prefixes = net === 'testnet' ? ['m', 'n', '2', 'tb1'] : ['1', '3', 'bc1'];
+        const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+        const randomPart = Math.random().toString(36).substring(2, 34);
+        return `${prefix}${randomPart}`;
+      },
+      ETH: (net: string) => {
+        // Ethereum addresses: 0x + 40 hex characters
+        const randomHex = Array.from({length: 40}, () => 
+          Math.floor(Math.random() * 16).toString(16)
+        ).join('');
+        return `0x${randomHex}`;
+      },
+      SOL: (net: string) => {
+        // Solana addresses: Base58 encoded, 32-44 characters
+        const chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+        const length = 32 + Math.floor(Math.random() * 12);
+        return Array.from({length}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+      },
+      USDC: (net: string) => {
+        // USDC is ERC-20 token on Ethereum
+        const randomHex = Array.from({length: 40}, () => 
+          Math.floor(Math.random() * 16).toString(16)
+        ).join('');
+        return `0x${randomHex}`;
+      },
+      USDT: (net: string) => {
+        // USDT is ERC-20 token on Ethereum
+        const randomHex = Array.from({length: 40}, () => 
+          Math.floor(Math.random() * 16).toString(16)
+        ).join('');
+        return `0x${randomHex}`;
+      },
     };
 
-    const prefix = addressPrefixes[currency];
-    const randomPart = Math.random().toString(36).substring(2, 42);
-    
-    return `${prefix}${randomPart}`;
+    return addressGenerators[currency](network);
   }
 
   private generateQrCodeData(currency: Currency, address: string, amount: number): string {
@@ -263,14 +281,32 @@ export class DepositsService {
     return `${scheme}:${address}?amount=${amount}`;
   }
 
-  private async generateConfirmationUrl(depositId: string, amount: number, currency: Currency): Promise<string> {
-    // In a real implementation, this would integrate with payment processors like:
-    // - Stripe for card payments
-    // - Plaid for bank transfers
-    // - MoonPay, Ramp, or similar for crypto on-ramps
-    
-    // For demo purposes, return a mock URL
-    return `https://payment-provider.com/confirm/${depositId}?amount=${amount}&currency=${currency}`;
+  private generateExplorerUrl(currency: Currency, address: string, network: 'mainnet' | 'testnet'): string {
+    const explorers = {
+      BTC: {
+        mainnet: 'https://blockstream.info/address',
+        testnet: 'https://blockstream.info/testnet/address',
+      },
+      ETH: {
+        mainnet: 'https://etherscan.io/address',
+        testnet: 'https://sepolia.etherscan.io/address',
+      },
+      SOL: {
+        mainnet: 'https://explorer.solana.com/address',
+        testnet: 'https://explorer.solana.com/address?cluster=testnet',
+      },
+      USDC: {
+        mainnet: 'https://etherscan.io/token/0xa0b86a33e6ba0e0e5c4b8b8b8b8b8b8b8b8b8b8b?a=',
+        testnet: 'https://sepolia.etherscan.io/token/0xa0b86a33e6ba0e0e5c4b8b8b8b8b8b8b8b8b8b8b8b?a=',
+      },
+      USDT: {
+        mainnet: 'https://etherscan.io/token/0xdac17f958d2ee523a2206206994597c13d831ec7?a=',
+        testnet: 'https://sepolia.etherscan.io/token/0xdac17f958d2ee523a2206206994597c13d831ec7?a=',
+      },
+    };
+
+    const explorer = explorers[currency][network];
+    return `${explorer}/${address}`;
   }
 
   async getDepositLimits(currency: Currency) {

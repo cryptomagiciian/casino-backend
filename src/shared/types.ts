@@ -114,20 +114,20 @@ export interface DiamondHandsParams {
   picks: number[]; // array of grid positions to pick
 }
 
-// Deposit/Withdrawal types
+// Web3 Deposit/Withdrawal types
 export interface DepositRequest {
   currency: Currency;
   amount: string;
-  paymentMethod: 'crypto' | 'card' | 'bank_transfer';
-  walletAddress?: string;
+  network: 'mainnet' | 'testnet';
   transactionHash?: string;
+  blockNumber?: number;
 }
 
 export interface WithdrawalRequest {
   currency: Currency;
   amount: string;
   walletAddress: string;
-  withdrawalMethod: 'crypto' | 'bank_transfer';
+  network: 'mainnet' | 'testnet';
   twoFactorCode?: string;
   withdrawalPassword?: string;
 }
@@ -136,14 +136,15 @@ export interface DepositResponse {
   id: string;
   currency: Currency;
   amount: string;
-  paymentMethod: string;
+  network: string;
   status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
-  walletAddress?: string;
+  walletAddress: string;
   transactionHash?: string;
-  confirmationUrl?: string;
-  qrCodeData?: string;
-  requiredConfirmations?: number;
-  currentConfirmations?: number;
+  blockNumber?: number;
+  qrCodeData: string;
+  requiredConfirmations: number;
+  currentConfirmations: number;
+  explorerUrl: string;
   createdAt: string;
   completedAt?: string;
 }
@@ -155,10 +156,12 @@ export interface WithdrawalResponse {
   fee: string;
   netAmount: string;
   walletAddress: string;
-  withdrawalMethod: string;
+  network: string;
   status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
   transactionHash?: string;
-  processingTime?: string;
+  blockNumber?: number;
+  processingTime: string;
+  explorerUrl?: string;
   createdAt: string;
   completedAt?: string;
 }

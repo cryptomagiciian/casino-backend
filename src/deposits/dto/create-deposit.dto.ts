@@ -1,10 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNumber, IsIn, IsOptional, Min, Max } from 'class-validator';
+import { IsString, IsNumber, IsIn, IsOptional, Min } from 'class-validator';
 import { Currency } from '../../shared/constants';
 
 export class CreateDepositDto {
   @ApiProperty({ 
-    description: 'Currency for deposit', 
+    description: 'Cryptocurrency for deposit', 
     example: 'BTC',
     enum: ['BTC', 'ETH', 'SOL', 'USDC', 'USDT']
   })
@@ -14,37 +14,37 @@ export class CreateDepositDto {
 
   @ApiProperty({ 
     description: 'Amount to deposit', 
-    example: '100.00',
-    minimum: 1
+    example: '0.001',
+    minimum: 0.0001
   })
   @IsNumber()
-  @Min(1)
+  @Min(0.0001)
   amount: number;
 
   @ApiProperty({ 
-    description: 'Payment method', 
-    example: 'crypto',
-    enum: ['crypto', 'card', 'bank_transfer']
+    description: 'Blockchain network', 
+    example: 'mainnet',
+    enum: ['mainnet', 'testnet']
   })
   @IsString()
-  @IsIn(['crypto', 'card', 'bank_transfer'])
-  paymentMethod: 'crypto' | 'card' | 'bank_transfer';
+  @IsIn(['mainnet', 'testnet'])
+  network: 'mainnet' | 'testnet';
 
   @ApiProperty({ 
-    description: 'Wallet address for crypto deposits (optional)', 
-    example: '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa',
-    required: false
-  })
-  @IsOptional()
-  @IsString()
-  walletAddress?: string;
-
-  @ApiProperty({ 
-    description: 'Transaction hash for crypto deposits (optional)', 
+    description: 'Transaction hash from blockchain (optional)', 
     example: '0x1234567890abcdef...',
     required: false
   })
   @IsOptional()
   @IsString()
   transactionHash?: string;
+
+  @ApiProperty({ 
+    description: 'Block number (optional)', 
+    example: '18500000',
+    required: false
+  })
+  @IsOptional()
+  @IsNumber()
+  blockNumber?: number;
 }
