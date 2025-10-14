@@ -88,6 +88,7 @@ export class DepositsService {
       id: deposit.id,
       currency: deposit.currency as Currency,
       amount: fromSmallestUnits(deposit.amount, deposit.currency as Currency),
+      paymentMethod: deposit.paymentMethod,
       network,
       status: deposit.status,
       walletAddress: deposit.walletAddress,
@@ -142,16 +143,24 @@ export class DepositsService {
       throw new NotFoundException('Deposit not found');
     }
 
+    // Generate QR code data and explorer URL for existing deposit
+    const qrCodeData = this.generateQrCodeData(deposit.currency as Currency, deposit.walletAddress, parseFloat(fromSmallestUnits(deposit.amount, deposit.currency as Currency)));
+    const explorerUrl = this.generateExplorerUrl(deposit.currency as Currency, deposit.walletAddress, 'mainnet'); // Default to mainnet for existing deposits
+
     return {
       id: deposit.id,
       currency: deposit.currency as Currency,
       amount: fromSmallestUnits(deposit.amount, deposit.currency as Currency),
       paymentMethod: deposit.paymentMethod,
+      network: 'mainnet', // Default for existing deposits
       status: deposit.status,
       walletAddress: deposit.walletAddress,
       transactionHash: deposit.transactionHash,
+      blockNumber: deposit.blockNumber,
+      qrCodeData,
       requiredConfirmations: deposit.requiredConfirmations,
       currentConfirmations: deposit.currentConfirmations,
+      explorerUrl,
       createdAt: deposit.createdAt.toISOString(),
       completedAt: deposit.completedAt?.toISOString(),
     };

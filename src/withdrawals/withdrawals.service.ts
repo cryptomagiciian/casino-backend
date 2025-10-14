@@ -128,8 +128,11 @@ export class WithdrawalsService {
       fee: fromSmallestUnits(withdrawal.fee, withdrawal.currency as Currency),
       netAmount: fromSmallestUnits(withdrawal.netAmount, withdrawal.currency as Currency),
       walletAddress: withdrawal.walletAddress,
+      withdrawalMethod: withdrawal.withdrawalMethod,
       network,
       status: withdrawal.status,
+      transactionHash: withdrawal.transactionHash,
+      blockNumber: withdrawal.blockNumber,
       processingTime: withdrawal.processingTime,
       explorerUrl,
       createdAt: withdrawal.createdAt.toISOString(),
@@ -178,6 +181,9 @@ export class WithdrawalsService {
       throw new NotFoundException('Withdrawal not found');
     }
 
+    // Generate explorer URL for existing withdrawal
+    const explorerUrl = this.generateExplorerUrl(withdrawal.currency as Currency, withdrawal.walletAddress, 'mainnet'); // Default to mainnet for existing withdrawals
+
     return {
       id: withdrawal.id,
       currency: withdrawal.currency as Currency,
@@ -186,9 +192,12 @@ export class WithdrawalsService {
       netAmount: fromSmallestUnits(withdrawal.netAmount, withdrawal.currency as Currency),
       walletAddress: withdrawal.walletAddress,
       withdrawalMethod: withdrawal.withdrawalMethod,
+      network: 'mainnet', // Default for existing withdrawals
       status: withdrawal.status,
       transactionHash: withdrawal.transactionHash,
+      blockNumber: withdrawal.blockNumber,
       processingTime: withdrawal.processingTime,
+      explorerUrl,
       createdAt: withdrawal.createdAt.toISOString(),
       completedAt: withdrawal.completedAt?.toISOString(),
     };
