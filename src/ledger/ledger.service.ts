@@ -271,22 +271,4 @@ export class LedgerService {
       },
     });
   }
-
-  /**
-   * Forfeit locked funds (for lost bets)
-   */
-  async forfeitFunds(accountId: string, amount: string, currency: Currency, refId: string) {
-    const amountSmallest = toSmallestUnits(amount, currency);
-    
-    return this.prisma.ledgerEntry.create({
-      data: {
-        accountId,
-        amount: amountSmallest,
-        currency,
-        type: LEDGER_TYPES.BET_LOSS,
-        refId,
-        meta: { forfeited: true },
-      },
-    });
-  }
 }

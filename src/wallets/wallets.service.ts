@@ -239,35 +239,6 @@ export class WalletsService {
         available: {
           increment: amountSmallest,
         },
-        total: {
-          increment: amountSmallest,
-        },
-      },
-    });
-    
-    return { success: true };
-  }
-
-  /**
-   * Forfeit locked funds (for losing bets)
-   */
-  async forfeitFunds(userId: string, currency: Currency, amount: string, refId: string, network: 'mainnet' | 'testnet' = 'mainnet') {
-    const account = await this.getOrCreateAccount(userId, currency, network);
-    
-    // Record forfeit in ledger
-    await this.ledgerService.forfeitFunds(account.id, amount, currency, refId);
-    
-    // Remove locked funds from account (they're forfeited, not returned to available)
-    const amountSmallest = toSmallestUnits(amount, currency);
-    await this.prisma.walletAccount.update({
-      where: { id: account.id },
-      data: {
-        locked: {
-          decrement: amountSmallest,
-        },
-        total: {
-          decrement: amountSmallest,
-        },
       },
     });
     
