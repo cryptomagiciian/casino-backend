@@ -180,6 +180,7 @@ export const DiamondHands: React.FC = () => {
             safeCount: safeCount
           };
           
+          console.log('🎯 Sending resolve params:', resolveParams);
           const resolved = await resolveBet(betId, resolveParams);
           await refreshBalance();
           

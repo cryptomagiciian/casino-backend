@@ -120,10 +120,14 @@ export const WalletBalanceDropdown: React.FC<WalletBalanceDropdownProps> = ({
 
   const getTotalBalance = () => {
     if (displayCurrency === 'usd') {
-      return wallets.reduce((sum, wallet) => {
+      const total = wallets.reduce((sum, wallet) => {
         const balance = parseFloat(wallet.available);
-        return sum + convertToUsd(balance, wallet.currency);
+        const usdValue = convertToUsd(balance, wallet.currency);
+        console.log(`💰 Balance calc: ${balance} ${wallet.currency} = $${usdValue} USD`);
+        return sum + usdValue;
       }, 0);
+      console.log(`💰 Total balance calculated: $${total.toFixed(2)}`);
+      return total;
     } else {
       return wallets.reduce((sum, wallet) => sum + parseFloat(wallet.available), 0);
     }
