@@ -93,10 +93,10 @@ class ApiService {
     return this.request(endpoint);
   }
 
-  async faucet(currency: string, amount: string) {
+  async faucet(currency: string) {
     return this.request('/wallets/faucet', {
       method: 'POST',
-      body: JSON.stringify({ currency, amount }),
+      body: JSON.stringify({ currency }),
     });
   }
 

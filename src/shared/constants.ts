@@ -114,12 +114,11 @@ export type LedgerType = typeof LEDGER_TYPES[keyof typeof LEDGER_TYPES];
 // Default house edge in basis points (200 = 2%)
 export const DEFAULT_HOUSE_EDGE_BPS = 200;
 
-// Faucet daily limits (in smallest currency units)
-// Increased for testing - users can get lots of demo funds!
-export const FAUCET_DAILY_LIMITS = {
-  [CURRENCIES.BTC]: 1000000, // 0.01 BTC
-  [CURRENCIES.ETH]: 10000000000000000000n, // 10 ETH
-  [CURRENCIES.SOL]: 10000000000, // 10 SOL
-  [CURRENCIES.USDC]: 100000000000, // 100,000 USDC (100K per day!)
-  [CURRENCIES.USDT]: 100000000000, // 100,000 USDT
+// Testnet faucet amounts (for testing only)
+export const TESTNET_FAUCET_AMOUNTS = {
+  [CURRENCIES.BTC]: 0.001, // 0.001 BTC
+  [CURRENCIES.ETH]: 0.01, // 0.01 ETH
+  [CURRENCIES.SOL]: 0.1, // 0.1 SOL
+  [CURRENCIES.USDC]: 10, // 10 USDC
+  [CURRENCIES.USDT]: 10, // 10 USDT
 } as const;

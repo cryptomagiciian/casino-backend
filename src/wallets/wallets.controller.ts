@@ -3,7 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiPropert
 import { IsString, IsIn } from 'class-validator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WalletsService } from './wallets.service';
-import { FaucetRequest, WalletBalance } from '../shared/types';
+import { WalletBalance } from '../shared/types';
 import { Currency } from '../shared/constants';
 
 export class FaucetDto {
@@ -11,10 +11,6 @@ export class FaucetDto {
   @IsString()
   @IsIn(['BTC', 'ETH', 'SOL', 'USDC', 'USDT'])
   currency: Currency;
-
-  @ApiProperty({ description: 'Amount to request', example: '1000' })
-  @IsString()
-  amount: string;
 }
 
 @ApiTags('Wallets')

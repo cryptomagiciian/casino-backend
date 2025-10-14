@@ -129,17 +129,10 @@ export function generateIdempotencyKey(): string {
 }
 
 /**
- * Check if demo mode is enabled
+ * Check if testnet mode is enabled
  */
-export function isDemoMode(): boolean {
-  return process.env.DEMO_MODE === 'true';
-}
-
-/**
- * Check if demo only mode is enabled
- */
-export function isDemoOnly(): boolean {
-  return process.env.DEMO_ONLY === 'true';
+export function isTestnetMode(): boolean {
+  return process.env.NETWORK === 'testnet';
 }
 
 /**

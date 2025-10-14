@@ -29,7 +29,7 @@ export const TestnetFaucet: React.FC<TestnetFaucetProps> = ({ className = '' }) 
       setLoading(true);
       setMessage(null);
       
-      const result = await apiService.faucet(currency, amount);
+      const result = await apiService.faucet(currency);
       setMessage(`✅ Received ${amount} ${currency} from testnet faucet!`);
       
       // Clear message after 5 seconds

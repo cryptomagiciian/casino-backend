@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { LedgerService } from '../ledger/ledger.service';
-import { Currency, CURRENCIES, FAUCET_DAILY_LIMITS } from '../shared/constants';
-import { WalletBalance, FaucetRequest } from '../shared/types';
-import { fromSmallestUnits, toSmallestUnits, isDemoMode } from '../shared/utils';
+import { Currency, CURRENCIES, TESTNET_FAUCET_AMOUNTS } from '../shared/constants';
+import { WalletBalance } from '../shared/types';
+import { fromSmallestUnits, toSmallestUnits } from '../shared/utils';
 
 @Injectable()
 export class WalletsService {
@@ -100,23 +100,15 @@ export class WalletsService {
   }
 
   /**
-   * Get testnet faucet for demo mode (testnet only)
+   * Get testnet faucet for testing (testnet only)
    */
   async getTestnetFaucet(userId: string, currency: Currency, network: 'testnet' = 'testnet') {
     if (network !== 'testnet') {
       throw new BadRequestException('Faucet is only available on testnet');
     }
 
-    // Small testnet amounts for testing
-    const testnetAmounts = {
-      BTC: 0.001,
-      ETH: 0.01,
-      SOL: 0.1,
-      USDC: 10,
-      USDT: 10,
-    };
-
-    const amount = testnetAmounts[currency];
+    // Get testnet amount from constants
+    const amount = TESTNET_FAUCET_AMOUNTS[currency];
     const amountSmallest = toSmallestUnits(amount.toString(), currency);
 
     // Get or create testnet account

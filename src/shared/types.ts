@@ -17,10 +17,6 @@ export interface WalletBalance {
   total: string;
 }
 
-export interface FaucetRequest {
-  currency: Currency;
-  amount: string;
-}
 
 // Bet types
 export interface BetPreview {
