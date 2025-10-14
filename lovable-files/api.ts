@@ -86,10 +86,8 @@ class ApiService {
 
   // Wallet endpoints
   async getWalletBalances(network: 'mainnet' | 'testnet' = 'mainnet', detailed = false) {
-    // SIMPLIFIED DEMO/LIVE DETECTION - Only check localStorage to avoid caching issues
+    // FORCE TESTNET FOR DEMO MODE - Bypass all detection logic
     const isDemoMode = localStorage.getItem('casino-demo-mode') === 'true';
-    
-    // Use testnet for demo mode, mainnet for live mode
     const actualNetwork = isDemoMode ? 'testnet' : 'mainnet';
     
     const params = new URLSearchParams();
@@ -101,6 +99,16 @@ class ApiService {
     console.log('🧪 API DEBUG: Using actual network:', actualNetwork);
     console.log('🧪 API DEBUG: Final endpoint:', endpoint);
     console.log('🧪 API DEBUG: localStorage value:', localStorage.getItem('casino-demo-mode'));
+    return this.request(endpoint);
+  }
+
+  // Alternative method to force testnet balances
+  async getTestnetBalances(detailed = false) {
+    const params = new URLSearchParams();
+    if (detailed) params.append('detailed', 'true');
+    params.append('network', 'testnet');
+    const endpoint = `/wallets?${params.toString()}`;
+    console.log('🧪 API DEBUG: getTestnetBalances - forcing testnet network');
     return this.request(endpoint);
   }
 
