@@ -147,6 +147,19 @@ export const DepositForm: React.FC<DepositFormProps> = ({ onDepositCreated }) =>
             </a>
           </div>
 
+          {deposit.solanaInstructions && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Solana Account Instructions
+              </label>
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+                <div className="text-sm text-blue-800 whitespace-pre-line">
+                  {deposit.solanaInstructions}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
             <div className="flex">
               <div className="flex-shrink-0">

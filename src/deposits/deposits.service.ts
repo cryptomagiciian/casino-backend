@@ -95,6 +95,10 @@ export class DepositsService {
     // Generate blockchain explorer URL
     const explorerUrl = this.walletService.getExplorerUrl(currency, depositWalletAddress, network);
 
+    // Get Solana initialization instructions if needed
+    const solanaInstructions = currency === 'SOL' ? 
+      this.walletService.getSolanaInitializationInstructions(depositWalletAddress, network) : null;
+
     return {
       id: deposit.id,
       currency: deposit.currency as Currency,
@@ -111,6 +115,7 @@ export class DepositsService {
       explorerUrl,
       createdAt: deposit.createdAt.toISOString(),
       completedAt: deposit.completedAt?.toISOString(),
+      solanaInstructions,
     };
   }
 

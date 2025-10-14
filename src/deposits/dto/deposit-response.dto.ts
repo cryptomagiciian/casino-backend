@@ -45,4 +45,7 @@ export class DepositResponseDto {
 
   @ApiProperty({ description: 'Deposit completion timestamp', example: '2025-01-15T10:35:00Z', required: false })
   completedAt?: string;
+
+  @ApiProperty({ description: 'Solana account initialization instructions (for SOL deposits only)', example: 'Solana Account Initialization: 1. The address is valid but needs to be initialized...', required: false })
+  solanaInstructions?: string;
 }

@@ -97,7 +97,27 @@ export class WalletService {
     // Generate keypair from the hash (32 bytes for Solana)
     const keypair = Keypair.fromSeed(seedHash.slice(0, 32));
     
+    // For Solana, the address is valid but needs to be initialized on-chain
+    // This happens automatically when the first transaction is sent to it
+    // The address will show "Account does not exist" until it receives funds
+    
     return keypair.publicKey.toString();
+  }
+
+  /**
+   * Get Solana account initialization instructions
+   */
+  getSolanaInitializationInstructions(address: string, network: 'mainnet' | 'testnet'): string {
+    const networkName = network === 'testnet' ? 'devnet' : 'mainnet';
+    return `Solana Account Initialization:
+
+1. The address ${address} is valid but needs to be initialized
+2. Send a small amount (0.001 SOL) to initialize the account
+3. After initialization, the account will appear on Solana Explorer
+4. Network: ${networkName}
+5. Explorer: https://explorer.solana.com/address/${address}?cluster=${networkName}
+
+Note: This is normal for Solana - accounts are created when first funded.`;
   }
 
   /**
