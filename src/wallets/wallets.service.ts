@@ -201,6 +201,45 @@ export class WalletsService {
   }
 
   /**
+   * Get detailed wallet balances with USD values
+   */
+  async getDetailedWalletBalances(userId: string) {
+    const balances = await this.getWalletBalances(userId);
+    
+    // For now, we'll use simple USD conversion rates
+    // In a real implementation, you'd fetch these from a price API
+    const usdRates: Record<Currency, number> = {
+      BTC: 45000,
+      ETH: 2500,
+      SOL: 100,
+      USDC: 1,
+      USDT: 1,
+    };
+
+    const detailedBalances = balances.map(balance => {
+      const balanceFloat = parseFloat(balance.balance);
+      const usdValue = balanceFloat * (usdRates[balance.currency] || 1);
+      
+      return {
+        currency: balance.currency,
+        available: balance.balance,
+        locked: '0.00', // For now, no locked funds
+        total: balance.balance,
+        usdValue: usdValue.toFixed(2),
+      };
+    });
+
+    const totalUsdValue = detailedBalances.reduce((sum, balance) => {
+      return sum + parseFloat(balance.usdValue);
+    }, 0);
+
+    return {
+      balances: detailedBalances,
+      totalUsdValue: totalUsdValue.toFixed(2),
+    };
+  }
+
+  /**
    * Get ledger entries for a user's wallet
    */
   async getLedgerEntries(

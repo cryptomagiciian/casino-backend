@@ -1,9 +1,12 @@
-import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { GamesService } from './games.service';
 import { BetPreview, BetPlaceRequest } from '../shared/types';
 import { Game } from '../shared/constants';
+import { GameSearchQueryDto } from './dto/game-search.dto';
+import { GameSearchResponseDto } from './dto/game-search-response.dto';
 
 export class BetPreviewDto {
   game: Game;
@@ -22,6 +25,14 @@ export class GamesController {
   @ApiResponse({ status: 200, description: 'Games retrieved successfully' })
   async getGames() {
     return this.gamesService.getGames();
+  }
+
+  @Get('search')
+  @UseGuards(ThrottlerGuard)
+  @ApiOperation({ summary: 'Search games' })
+  @ApiResponse({ status: 200, description: 'Game search results', type: GameSearchResponseDto })
+  async searchGames(@Query() query: GameSearchQueryDto) {
+    return this.gamesService.searchGames(query.q || '', parseInt(query.limit || '10'));
   }
 
   @Get(':game')

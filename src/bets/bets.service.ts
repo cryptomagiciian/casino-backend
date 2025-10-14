@@ -6,6 +6,7 @@ import { GamesService } from '../games/games.service';
 import { BetPreview, BetPlaceRequest, BetResult } from '../shared/types';
 import { Currency, Game } from '../shared/constants';
 import { generateClientSeed, generateRng, toSmallestUnits, fromSmallestUnits } from '../shared/utils';
+import { BetFiltersDto } from './dto/bet-filters.dto';
 
 @Injectable()
 export class BetsService {
@@ -311,6 +312,75 @@ export class BetsService {
   }
 
   /**
+   * Get user bets with filters
+   */
+  async getUserBetsWithFilters(userId: string, filters: BetFiltersDto) {
+    const where: any = { userId };
+
+    // Apply filters
+    if (filters.game) {
+      where.game = filters.game;
+    }
+
+    if (filters.status) {
+      if (filters.status === 'won') {
+        where.outcome = 'win';
+        where.resultMultiplier = { gt: 0 };
+      } else if (filters.status === 'lost') {
+        where.outcome = 'lose';
+        where.resultMultiplier = 0;
+      } else if (filters.status === 'pending') {
+        where.resolvedAt = null;
+      }
+    }
+
+    if (filters.currency) {
+      where.currency = filters.currency;
+    }
+
+    if (filters.startDate || filters.endDate) {
+      where.createdAt = {};
+      if (filters.startDate) {
+        where.createdAt.gte = new Date(filters.startDate);
+      }
+      if (filters.endDate) {
+        where.createdAt.lte = new Date(filters.endDate);
+      }
+    }
+
+    const limit = parseInt(filters.limit || '50');
+    const offset = parseInt(filters.offset || '0');
+
+    const [bets, total] = await Promise.all([
+      this.prisma.bet.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: offset,
+      }),
+      this.prisma.bet.count({
+        where,
+      }),
+    ]);
+
+    return {
+      bets: bets.map(bet => ({
+        id: bet.id,
+        game: bet.game as Game,
+        currency: bet.currency as Currency,
+        stake: fromSmallestUnits(bet.stake, bet.currency as Currency),
+        potentialPayout: fromSmallestUnits(bet.potentialPayout, bet.currency as Currency),
+        outcome: bet.outcome,
+        resultMultiplier: bet.resultMultiplier,
+        status: bet.status,
+        createdAt: bet.createdAt,
+        resolvedAt: bet.resolvedAt,
+      })),
+      total,
+    };
+  }
+
+  /**
    * Generate Pump or Dump outcome with configurable house edge
    */
   private generatePumpOrDumpOutcome(rng: number, params?: any) {
@@ -459,5 +529,80 @@ export class BetsService {
       default:
         throw new BadRequestException(`Unknown game: ${game}`);
     }
+  }
+
+  /**
+   * Get recent wins across all users for live wins feed
+   */
+  async getLiveWins(limit: number = 20) {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    
+    const wins = await this.prisma.bet.findMany({
+      where: {
+        outcome: 'win',
+        resultMultiplier: { gt: 0 },
+        resolvedAt: { gte: twentyFourHoursAgo },
+      },
+      include: {
+        user: {
+          select: {
+            handle: true,
+          },
+        },
+      },
+      orderBy: {
+        resolvedAt: 'desc',
+      },
+      take: limit,
+    });
+
+    return {
+      wins: wins.map(win => ({
+        id: win.id,
+        username: win.user.handle,
+        game: this.formatGameName(win.game),
+        gameSlug: this.getGameSlug(win.game),
+        amount: fromSmallestUnits(win.stake, win.currency as Currency).toString(),
+        multiplier: win.resultMultiplier,
+        payout: fromSmallestUnits(
+          BigInt(Math.floor(parseFloat(fromSmallestUnits(win.stake, win.currency as Currency)) * win.resultMultiplier)),
+          win.currency as Currency
+        ).toString(),
+        currency: win.currency,
+        timestamp: win.resolvedAt.toISOString(),
+      })),
+    };
+  }
+
+  private formatGameName(game: string): string {
+    const gameNames: Record<string, string> = {
+      'pump_or_dump': 'Pump or Dump',
+      'candle_flip': 'Candle Flip',
+      'support_or_resistance': 'Support or Resistance',
+      'bull_vs_bear_battle': 'Bull vs Bear',
+      'leverage_ladder': 'Leverage Ladder',
+      'stop_loss_roulette': 'Stop Loss Roulette',
+      'freeze_the_bag': 'Freeze the Bag',
+      'to_the_moon': 'To the Moon',
+      'diamond_hands': 'Diamond Hands',
+      'crypto_slots': 'Crypto Slots',
+    };
+    return gameNames[game] || game;
+  }
+
+  private getGameSlug(game: string): string {
+    const gameSlugs: Record<string, string> = {
+      'pump_or_dump': 'pump-or-dump',
+      'candle_flip': 'candle-flip',
+      'support_or_resistance': 'support-or-resistance',
+      'bull_vs_bear_battle': 'bull-vs-bear',
+      'leverage_ladder': 'leverage-ladder',
+      'stop_loss_roulette': 'bullet-bet',
+      'freeze_the_bag': 'freeze-the-bag',
+      'to_the_moon': 'to-the-moon',
+      'diamond_hands': 'diamond-hands',
+      'crypto_slots': 'crypto-slots',
+    };
+    return gameSlugs[game] || game;
   }
 }

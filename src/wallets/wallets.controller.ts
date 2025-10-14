@@ -26,8 +26,15 @@ export class WalletsController {
 
   @Get()
   @ApiOperation({ summary: 'Get all wallet balances' })
+  @ApiQuery({ name: 'detailed', required: false, description: 'Include detailed balance information' })
   @ApiResponse({ status: 200, description: 'Wallet balances retrieved successfully' })
-  async getBalances(@Request() req: { user: { sub: string } }): Promise<WalletBalance[]> {
+  async getBalances(
+    @Request() req: { user: { sub: string } },
+    @Query('detailed') detailed?: string,
+  ): Promise<WalletBalance[] | any> {
+    if (detailed === 'true') {
+      return this.walletsService.getDetailedWalletBalances(req.user.sub);
+    }
     return this.walletsService.getWalletBalances(req.user.sub);
   }
 

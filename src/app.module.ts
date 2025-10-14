@@ -16,6 +16,7 @@ import { DepositsModule } from './deposits/deposits.module';
 import { WithdrawalsModule } from './withdrawals/withdrawals.module';
 import { LeaderboardModule } from './leaderboard/leaderboard.module';
 import { HealthModule } from './health/health.module';
+import { PricesModule } from './prices/prices.module';
 
 @Module({
   imports: [
@@ -25,8 +26,24 @@ import { HealthModule } from './health/health.module';
     }),
     ThrottlerModule.forRoot([
       {
+        name: 'default',
         ttl: parseInt(process.env.THROTTLE_TTL || '60') * 1000,
         limit: parseInt(process.env.THROTTLE_LIMIT || '100'),
+      },
+      {
+        name: 'crypto-prices',
+        ttl: 60 * 1000, // 1 minute
+        limit: 1, // 1 request per minute per IP
+      },
+      {
+        name: 'live-wins',
+        ttl: 60 * 1000, // 1 minute
+        limit: 10, // 10 requests per minute per IP
+      },
+      {
+        name: 'game-search',
+        ttl: 60 * 1000, // 1 minute
+        limit: 30, // 30 requests per minute per IP
       },
     ]),
     CacheModule.register({
@@ -56,6 +73,7 @@ import { HealthModule } from './health/health.module';
     WithdrawalsModule,
     LeaderboardModule,
     HealthModule,
+    PricesModule,
   ],
 })
 export class AppModule {}

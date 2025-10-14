@@ -1,9 +1,13 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Request, Query, UseInterceptors } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiProperty } from '@nestjs/swagger';
 import { IsString, IsOptional, IsIn } from 'class-validator';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { BetsService } from './bets.service';
 import { BetPreview, BetPlaceRequest } from '../shared/types';
+import { LiveWinsQueryDto } from './dto/live-wins.dto';
+import { LiveWinsResponseDto } from './dto/live-wins-response.dto';
+import { BetFiltersDto } from './dto/bet-filters.dto';
 
 export class BetPreviewDto {
   @ApiProperty({ description: 'Game to play', example: 'candle-flip' })
@@ -126,13 +130,20 @@ export class BetsController {
   @Get()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get user bets' })
+  @ApiOperation({ summary: 'Get user bets with optional filters' })
   @ApiResponse({ status: 200, description: 'User bets retrieved successfully' })
   async getUserBets(
     @Request() req: { user: { sub: string } },
-    @Query('limit') limit?: number,
-    @Query('offset') offset?: number,
+    @Query() filters: BetFiltersDto,
   ) {
-    return this.betsService.getUserBets(req.user.sub, limit || 50, offset || 0);
+    return this.betsService.getUserBetsWithFilters(req.user.sub, filters);
+  }
+
+  @Get('live-wins')
+  @UseGuards(ThrottlerGuard)
+  @ApiOperation({ summary: 'Get recent wins across all users' })
+  @ApiResponse({ status: 200, description: 'Recent wins retrieved successfully', type: LiveWinsResponseDto })
+  async getLiveWins(@Query() query: LiveWinsQueryDto) {
+    return this.betsService.getLiveWins(parseInt(query.limit || '20'));
   }
 }

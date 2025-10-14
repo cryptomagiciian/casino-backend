@@ -136,6 +136,61 @@ export class GamesService {
   }
 
   /**
+   * Search games by name, description, or type
+   */
+  async searchGames(query: string, limit: number = 10) {
+    if (!query || query.trim().length === 0) {
+      return { results: [] };
+    }
+
+    const searchTerm = query.toLowerCase().trim();
+    const allGames = Object.entries(GAME_CONFIGS);
+    
+    const results = allGames
+      .filter(([id, config]) => {
+        const name = config.name.toLowerCase();
+        const description = config.description.toLowerCase();
+        const type = config.type?.toLowerCase() || '';
+        const slug = this.getGameSlug(id);
+        
+        return (
+          name.includes(searchTerm) ||
+          description.includes(searchTerm) ||
+          type.includes(searchTerm) ||
+          slug.includes(searchTerm) ||
+          id.toLowerCase().includes(searchTerm)
+        );
+      })
+      .slice(0, limit)
+      .map(([id, config]) => ({
+        slug: this.getGameSlug(id),
+        name: config.name,
+        type: config.type || 'prediction',
+        description: config.description,
+        minBet: '1.00',
+        maxBet: '10000.00',
+      }));
+
+    return { results };
+  }
+
+  private getGameSlug(gameId: string): string {
+    const gameSlugs: Record<string, string> = {
+      'pump_or_dump': 'pump-or-dump',
+      'candle_flip': 'candle-flip',
+      'support_or_resistance': 'support-or-resistance',
+      'bull_vs_bear_battle': 'bull-vs-bear',
+      'leverage_ladder': 'leverage-ladder',
+      'stop_loss_roulette': 'bullet-bet',
+      'freeze_the_bag': 'freeze-the-bag',
+      'to_the_moon': 'to-the-moon',
+      'diamond_hands': 'diamond-hands',
+      'crypto_slots': 'crypto-slots',
+    };
+    return gameSlugs[gameId] || gameId;
+  }
+
+  /**
    * Update game configuration (admin only)
    */
   async updateGameConfig(game: Game, houseEdgeBps?: number, params?: any) {
