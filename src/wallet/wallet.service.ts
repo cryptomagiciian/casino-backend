@@ -6,7 +6,7 @@ import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import * as bip39 from 'bip39';
 import { Currency } from '../shared/constants';
 
-// Initialize bitcoinjs-lib with secp256k1
+// Initialize bitcoinjs-lib with secp256k1 for version 7.x
 bitcoin.initEccLib(ecc);
 
 @Injectable()
@@ -55,8 +55,8 @@ export class WalletService {
     
     const networkConfig = network === 'testnet' ? bitcoin.networks.testnet : bitcoin.networks.bitcoin;
     
-    // Generate HD wallet using BIP32Factory
-    const root = bitcoin.BIP32Factory(ecc).fromSeed(seedBuffer, networkConfig);
+    // Generate HD wallet using the correct API for bitcoinjs-lib v7.x
+    const root = bitcoin.bip32.fromSeed(seedBuffer, networkConfig);
     const child = root.derivePath("m/84'/0'/0'/0/0"); // Native SegWit (Bech32)
     
     const { address } = bitcoin.payments.p2wpkh({
