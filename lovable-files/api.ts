@@ -1,5 +1,5 @@
 const API_BASE_URL = 'https://casino-backend-production-8186.up.railway.app/api/v1';
-const API_VERSION = 'v-demo-fix-6'; // Version bump to force cache refresh
+const API_VERSION = 'v-demo-fix-7'; // Version bump to force cache refresh
 
 class ApiService {
   private baseURL: string;
@@ -87,7 +87,7 @@ class ApiService {
   }
 
   // Wallet endpoints
-  async getWalletBalances(network: 'mainnet' | 'testnet' = 'mainnet', detailed = false) {
+  async getWalletBalances(detailed = false) {
     // SIMPLE DEMO MODE DETECTION - Just check localStorage
     const isDemoMode = localStorage.getItem('casino-demo-mode') === 'true';
     const actualNetwork = isDemoMode ? 'testnet' : 'mainnet';
@@ -96,7 +96,7 @@ class ApiService {
     if (detailed) params.append('detailed', 'true');
     params.append('network', actualNetwork);
     const endpoint = `/wallets?${params.toString()}`;
-    console.log('🧪 API DEBUG: getWalletBalances called with network:', network);
+    console.log('🧪 API DEBUG: getWalletBalances called (no network param)');
     console.log('🧪 API DEBUG: Demo mode detected:', isDemoMode);
     console.log('🧪 API DEBUG: Using actual network:', actualNetwork);
     console.log('🧪 API DEBUG: Final endpoint:', endpoint);
