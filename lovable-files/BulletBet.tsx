@@ -165,8 +165,8 @@ export const BulletBet: React.FC = () => {
               // Resolve bet
               resolveBet(bet.id)
                 .then(async (resolved) => {
-                  // Use client-side determination
-                  const won = !hitBullet;
+                  // Backend result is the source of truth
+                  const won = resolved.outcome === 'win';
                   
                   // Reveal the selected chamber
                   setChambers(prev => prev.map((chamber, i) => ({

@@ -95,7 +95,7 @@ export const BullVsBear: React.FC = () => {
             
             resolveBet(bet.id)
               .then(async (resolved) => {
-                const won = resolved.resultMultiplier > 0;
+                const won = resolved.outcome === 'win';
                 const winningSide = won ? side : (side === 'bull' ? 'bear' : 'bull');
                 
                 const finalPos = winningSide === 'bull' ? 90 : 10;

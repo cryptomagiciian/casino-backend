@@ -51,7 +51,7 @@ export const CandleFlip: React.FC = () => {
             .then(async (resolved) => {
               await fetchBalances();
               
-              const won = resolved.resultMultiplier > 0;
+              const won = resolved.outcome === 'win';
               const actualColor = resolved.outcome as 'red' | 'green';
               
               setCandleColor(actualColor);

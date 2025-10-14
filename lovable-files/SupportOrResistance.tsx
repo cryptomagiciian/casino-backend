@@ -151,7 +151,7 @@ export const SupportOrResistance: React.FC = () => {
           // Resolve bet with error handling
           resolveBet(bet.id)
             .then(async (resolved) => {
-              const won = resolved.resultMultiplier > 0;
+              const won = resolved.outcome === 'win';
               const actualOutcome = won ? prediction : (prediction === 'break' ? 'reject' : 'break');
               
               let finalPrice: number;

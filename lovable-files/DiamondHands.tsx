@@ -139,17 +139,16 @@ export const DiamondHands: React.FC = () => {
     }
   };
 
-  const revealTile = (index: number) => {
+  const revealTile = async (index: number) => {
     if (!isPlaying || grid[index] !== 'hidden' || result) return;
 
     const newGrid = [...grid];
     
-    // Check if this tile has an actual mine
+    // Check if this tile has an actual mine (frontend logic)
     if (minePositions.includes(index)) {
-      // Hit a mine!
+      // Hit a mine according to frontend logic
       newGrid[index] = 'mine';
       setGrid(newGrid);
-      setResult(`💣 BOOM! Hit mine after ${safeCount} safe picks. Lost $${stake} USD!`);
       setIsPlaying(false);
 
       // Reveal all mines
@@ -160,11 +159,33 @@ export const DiamondHands: React.FC = () => {
         setGrid(finalGrid);
       }, 500);
 
-      // Resolve bet as loss
+      // CRITICAL: Get the ACTUAL result from backend FIRST (backend uses provably fair RNG)
       if (betId) {
-        resolveBet(betId).then(() => refreshBalance()).catch(err => {
+        try {
+          const resolved = await resolveBet(betId);
+          await refreshBalance();
+          
+          // Backend result is the source of truth
+          const won = resolved.outcome === 'win';
+          
+          console.log('🎲 Backend RNG result:', {
+            outcome: resolved.outcome,
+            won,
+            resultMultiplier: resolved.resultMultiplier,
+            frontendMineHit: true,
+            safeCount
+          });
+          
+          // Set result based on backend outcome
+          if (won) {
+            setResult(`💎 LUCKY ESCAPE! Hit mine but backend says WIN! ${resolved.resultMultiplier?.toFixed(2)}×`);
+          } else {
+            setResult(`💣 BOOM! Hit mine after ${safeCount} safe picks. Lost $${stake} USD!`);
+          }
+        } catch (err) {
           console.error('Bet resolution failed:', err);
-        });
+          setResult(`💣 BOOM! Hit mine after ${safeCount} safe picks. Lost $${stake} USD!`);
+        }
       }
     } else {
       // Safe tile!
