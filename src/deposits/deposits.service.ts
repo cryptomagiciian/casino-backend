@@ -7,6 +7,7 @@ import { CreateDepositDto } from './dto/create-deposit.dto';
 import { DepositResponseDto } from './dto/deposit-response.dto';
 import { Currency } from '../shared/constants';
 import { toSmallestUnits, fromSmallestUnits, generateId } from '../shared/utils';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class DepositsService {
@@ -251,5 +252,57 @@ export class DepositsService {
         bank_transfer: 0.01, // 1% for bank transfers
       },
     };
+  }
+
+  /**
+   * Manually confirm a deposit (for testing purposes)
+   */
+  async confirmDeposit(userId: string, depositId: string): Promise<DepositResponseDto> {
+    const deposit = await this.prisma.deposit.findFirst({
+      where: {
+        id: depositId,
+        userId,
+        status: 'PENDING',
+      },
+    });
+
+    if (!deposit) {
+      throw new BadRequestException('Deposit not found or already processed');
+    }
+
+    // Update deposit status to completed
+    await this.prisma.deposit.update({
+      where: { id: depositId },
+      data: {
+        status: 'COMPLETED',
+        completedAt: new Date(),
+        currentConfirmations: deposit.requiredConfirmations,
+        transactionHash: deposit.transactionHash || this.generateMockTxHash(),
+      },
+    });
+
+    // Credit user's wallet
+    await this.ledgerService.createUserTransaction({
+      userId: deposit.userId,
+      type: 'DEPOSIT',
+      currency: deposit.currency as Currency,
+      amount: fromSmallestUnits(deposit.amount, deposit.currency as Currency),
+      description: `Deposit ${depositId} confirmed`,
+      refId: depositId,
+      meta: {
+        depositId,
+        walletAddress: deposit.walletAddress,
+        confirmedAt: new Date(),
+      },
+    });
+
+    this.logger.log(`Manually confirmed deposit ${depositId}: ${fromSmallestUnits(deposit.amount, deposit.currency as Currency)} ${deposit.currency}`);
+
+    // Return updated deposit
+    return this.getDeposit(userId, depositId);
+  }
+
+  private generateMockTxHash(): string {
+    return crypto.randomBytes(32).toString('hex');
   }
 }

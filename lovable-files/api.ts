@@ -205,6 +205,12 @@ class ApiService {
     return this.request(`/deposits/limits/${currency}`);
   }
 
+  async confirmDeposit(depositId: string) {
+    return this.request(`/deposits/${depositId}/confirm`, {
+      method: 'POST',
+    });
+  }
+
   // Web3 Withdrawal endpoints
   async createWithdrawal(data: {
     currency: string;

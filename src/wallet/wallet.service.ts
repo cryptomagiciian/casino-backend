@@ -5,6 +5,7 @@ import * as ecc from 'tiny-secp256k1';
 import * as ethers from 'ethers';
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import * as bip39 from 'bip39';
+import * as crypto from 'crypto';
 import { Currency } from '../shared/constants';
 
 // Initialize bitcoinjs-lib with secp256k1 for version 7.x
@@ -53,14 +54,14 @@ export class WalletService {
    * Generate Bitcoin address
    */
   private generateBitcoinAddress(userId: string, network: 'mainnet' | 'testnet'): string {
-    const seed = `${this.masterSeed}-${userId}-${Date.now()}`;
-    const mnemonic = bip39.entropyToMnemonic(seed.slice(0, 32));
-    const seedBuffer = bip39.mnemonicToSeedSync(mnemonic);
+    // Create a deterministic seed from master seed + user ID
+    const seedString = `${this.masterSeed}-${userId}-btc`;
+    const seedHash = crypto.createHash('sha256').update(seedString).digest();
     
     const networkConfig = network === 'testnet' ? bitcoin.networks.testnet : bitcoin.networks.bitcoin;
     
     // Generate HD wallet using separate bip32 package for bitcoinjs-lib v7.x
-    const root = bip32.fromSeed(seedBuffer, networkConfig);
+    const root = bip32.fromSeed(seedHash, networkConfig);
     const child = root.derivePath("m/84'/0'/0'/0/0"); // Native SegWit (Bech32)
     
     const { address } = bitcoin.payments.p2wpkh({
@@ -75,12 +76,12 @@ export class WalletService {
    * Generate Ethereum address
    */
   private generateEthereumAddress(userId: string, network: 'mainnet' | 'testnet'): string {
-    const seed = `${this.masterSeed}-${userId}-${Date.now()}`;
-    const mnemonic = bip39.entropyToMnemonic(seed.slice(0, 32));
-    const seedBuffer = bip39.mnemonicToSeedSync(mnemonic);
+    // Create a deterministic seed from master seed + user ID
+    const seedString = `${this.masterSeed}-${userId}-eth`;
+    const seedHash = crypto.createHash('sha256').update(seedString).digest();
     
     // Generate HD wallet using modern ethers API
-    const wallet = ethers.HDNodeWallet.fromSeed(seedBuffer).derivePath("m/44'/60'/0'/0/0");
+    const wallet = ethers.HDNodeWallet.fromSeed(seedHash).derivePath("m/44'/60'/0'/0/0");
     
     return wallet.address;
   }
@@ -89,12 +90,12 @@ export class WalletService {
    * Generate Solana address
    */
   private generateSolanaAddress(userId: string, network: 'mainnet' | 'testnet'): string {
-    const seed = `${this.masterSeed}-${userId}-${Date.now()}`;
-    const mnemonic = bip39.entropyToMnemonic(seed.slice(0, 32));
-    const seedBuffer = bip39.mnemonicToSeedSync(mnemonic);
+    // Create a deterministic seed from master seed + user ID
+    const seedString = `${this.masterSeed}-${userId}-sol`;
+    const seedHash = crypto.createHash('sha256').update(seedString).digest();
     
-    // Generate keypair from seed
-    const keypair = Keypair.fromSeed(seedBuffer.slice(0, 32));
+    // Generate keypair from the hash (32 bytes for Solana)
+    const keypair = Keypair.fromSeed(seedHash.slice(0, 32));
     
     return keypair.publicKey.toString();
   }

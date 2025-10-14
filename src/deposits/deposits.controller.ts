@@ -60,6 +60,17 @@ export class DepositsController {
     return this.depositsService.getDepositLimits(currency);
   }
 
+  @Post(':id/confirm')
+  @ApiOperation({ summary: 'Manually confirm a deposit (for testing)' })
+  @ApiParam({ name: 'id', description: 'Deposit ID' })
+  @ApiResponse({ status: 200, description: 'Deposit confirmed successfully', type: DepositResponseDto })
+  async confirmDeposit(
+    @Request() req: { user: { sub: string } },
+    @Param('id') id: string,
+  ): Promise<DepositResponseDto> {
+    return this.depositsService.confirmDeposit(req.user.sub, id);
+  }
+
   @Post('webhook')
   @ApiOperation({ summary: 'Webhook endpoint for deposit confirmations' })
   @ApiResponse({ status: 200, description: 'Webhook processed successfully' })
