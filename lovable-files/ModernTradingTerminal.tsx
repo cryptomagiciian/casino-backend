@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ModernTradingChart } from './ModernTradingChart';
+import { LiveStreamingChart } from './LiveStreamingChart';
 import { apiService } from './api';
 import { useAuth } from './useAuth';
 import { useWallet } from './useWallet';
@@ -389,7 +389,7 @@ export const ModernTradingTerminal: React.FC<ModernTradingTerminalProps> = ({
 
           {/* Chart */}
           <div className="flex-1 relative">
-            <ModernTradingChart
+            <LiveStreamingChart
               symbol={selectedSymbol}
               timeframe={selectedTimeframe}
               onPriceUpdate={handlePriceUpdate}
