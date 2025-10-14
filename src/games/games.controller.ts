@@ -20,19 +20,19 @@ export class BetPreviewDto {
 export class GamesController {
   constructor(private gamesService: GamesService) {}
 
-  @Get()
-  @ApiOperation({ summary: 'Get all available games' })
-  @ApiResponse({ status: 200, description: 'Games retrieved successfully' })
-  async getGames() {
-    return this.gamesService.getGames();
-  }
-
   @Get('search')
   @UseGuards(ThrottlerGuard)
   @ApiOperation({ summary: 'Search games' })
   @ApiResponse({ status: 200, description: 'Game search results', type: GameSearchResponseDto })
   async searchGames(@Query() query: GameSearchQueryDto) {
     return this.gamesService.searchGames(query.q || '', parseInt(query.limit || '10'));
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'Get all available games' })
+  @ApiResponse({ status: 200, description: 'Games retrieved successfully' })
+  async getGames() {
+    return this.gamesService.getGames();
   }
 
   @Get(':game')

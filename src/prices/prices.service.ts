@@ -16,88 +16,89 @@ export class PricesService {
     }
 
     try {
-      // Fetch from CoinGecko API using built-in fetch
-      const url = new URL('https://api.coingecko.com/api/v3/simple/price');
-      url.searchParams.set('ids', 'bitcoin,ethereum,solana,usd-coin,tether,pepe,dogecoin,shiba-inu,dogwifcoin,bonk');
-      url.searchParams.set('vs_currencies', 'usd');
-      url.searchParams.set('include_24hr_change', 'true');
-
-      const response = await fetch(url.toString());
+      // Fetch from Gate.io API using built-in fetch
+      const response = await fetch('https://api.gateio.ws/api/v4/spot/tickers');
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json() as any;
+      const data = await response.json() as any[];
       
+      // Create a map of Gate.io ticker symbols to our desired format
+      const tickerMap: Record<string, any> = {};
+      data.forEach((ticker: any) => {
+        tickerMap[ticker.currency_pair] = ticker;
+      });
+
       const prices = [
         {
           symbol: 'BTC',
           name: 'Bitcoin',
-          price: data.bitcoin?.usd?.toString() || '0',
-          change24h: data.bitcoin?.usd_24h_change || 0,
+          price: tickerMap['BTC_USDT']?.last || '45000.00',
+          change24h: tickerMap['BTC_USDT']?.change_percentage ? parseFloat(tickerMap['BTC_USDT'].change_percentage) : 0,
           icon: 'btc',
         },
         {
           symbol: 'ETH',
           name: 'Ethereum',
-          price: data.ethereum?.usd?.toString() || '0',
-          change24h: data.ethereum?.usd_24h_change || 0,
+          price: tickerMap['ETH_USDT']?.last || '2500.00',
+          change24h: tickerMap['ETH_USDT']?.change_percentage ? parseFloat(tickerMap['ETH_USDT'].change_percentage) : 0,
           icon: 'eth',
         },
         {
           symbol: 'SOL',
           name: 'Solana',
-          price: data.solana?.usd?.toString() || '0',
-          change24h: data.solana?.usd_24h_change || 0,
+          price: tickerMap['SOL_USDT']?.last || '100.00',
+          change24h: tickerMap['SOL_USDT']?.change_percentage ? parseFloat(tickerMap['SOL_USDT'].change_percentage) : 0,
           icon: 'sol',
         },
         {
           symbol: 'USDC',
           name: 'USD Coin',
-          price: data['usd-coin']?.usd?.toString() || '1.00',
-          change24h: data['usd-coin']?.usd_24h_change || 0,
+          price: tickerMap['USDC_USDT']?.last || '1.00',
+          change24h: tickerMap['USDC_USDT']?.change_percentage ? parseFloat(tickerMap['USDC_USDT'].change_percentage) : 0,
           icon: 'usdc',
         },
         {
           symbol: 'USDT',
           name: 'Tether',
-          price: data.tether?.usd?.toString() || '1.00',
-          change24h: data.tether?.usd_24h_change || 0,
+          price: '1.00',
+          change24h: 0,
           icon: 'usdt',
         },
         {
           symbol: 'PEPE',
           name: 'Pepe',
-          price: data.pepe?.usd?.toString() || '0',
-          change24h: data.pepe?.usd_24h_change || 0,
+          price: tickerMap['PEPE_USDT']?.last || '0.00000123',
+          change24h: tickerMap['PEPE_USDT']?.change_percentage ? parseFloat(tickerMap['PEPE_USDT'].change_percentage) : 0,
           icon: 'pepe',
         },
         {
           symbol: 'DOGE',
           name: 'Dogecoin',
-          price: data.dogecoin?.usd?.toString() || '0',
-          change24h: data.dogecoin?.usd_24h_change || 0,
+          price: tickerMap['DOGE_USDT']?.last || '0.1500',
+          change24h: tickerMap['DOGE_USDT']?.change_percentage ? parseFloat(tickerMap['DOGE_USDT'].change_percentage) : 0,
           icon: 'doge',
         },
         {
           symbol: 'SHIB',
           name: 'Shiba Inu',
-          price: data['shiba-inu']?.usd?.toString() || '0',
-          change24h: data['shiba-inu']?.usd_24h_change || 0,
+          price: tickerMap['SHIB_USDT']?.last || '0.00000800',
+          change24h: tickerMap['SHIB_USDT']?.change_percentage ? parseFloat(tickerMap['SHIB_USDT'].change_percentage) : 0,
           icon: 'shib',
         },
         {
           symbol: 'WIF',
-          name: 'Dogwifcoin',
-          price: data.dogwifcoin?.usd?.toString() || '0',
-          change24h: data.dogwifcoin?.usd_24h_change || 0,
+          name: 'Dogwifhat',
+          price: tickerMap['WIF_USDT']?.last || '2.5000',
+          change24h: tickerMap['WIF_USDT']?.change_percentage ? parseFloat(tickerMap['WIF_USDT'].change_percentage) : 0,
           icon: 'wif',
         },
         {
           symbol: 'BONK',
           name: 'Bonk',
-          price: data.bonk?.usd?.toString() || '0',
-          change24h: data.bonk?.usd_24h_change || 0,
+          price: tickerMap['BONK_USDT']?.last || '0.00002000',
+          change24h: tickerMap['BONK_USDT']?.change_percentage ? parseFloat(tickerMap['BONK_USDT'].change_percentage) : 0,
           icon: 'bonk',
         },
       ];
