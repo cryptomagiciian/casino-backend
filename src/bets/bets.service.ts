@@ -113,7 +113,12 @@ export class BetsService {
       const rng = await generateRng(fairnessSeed.serverSeed, bet.clientSeed, bet.nonce);
 
       // Generate game outcome
-      const outcome = this.generateGameOutcome(bet.game as Game, rng, { ...(bet.params as any || {}), ...(resolveParams || {}) });
+      const mergedParams = { ...(bet.params as any || {}), ...(resolveParams || {}) };
+      console.log(`🎲 RESOLVE DEBUG: Bet ${betId}, Game: ${bet.game}`);
+      console.log(`🎲 RESOLVE DEBUG: Original bet.params:`, bet.params);
+      console.log(`🎲 RESOLVE DEBUG: resolveParams:`, resolveParams);
+      console.log(`🎲 RESOLVE DEBUG: Merged params:`, mergedParams);
+      const outcome = this.generateGameOutcome(bet.game as Game, rng, mergedParams);
 
       if (!outcome || typeof outcome.multiplier === 'undefined') {
         console.error(`Invalid game outcome for game ${bet.game}:`, outcome);
