@@ -1,6 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
 import { CryptoPricesResponseDto } from './dto/crypto-prices-response.dto';
 
 @Injectable()
@@ -9,7 +7,7 @@ export class PricesService {
   private priceCache: { data: CryptoPricesResponseDto; timestamp: number } | null = null;
   private readonly CACHE_DURATION = 60 * 1000; // 60 seconds
 
-  constructor(private readonly httpService: HttpService) {}
+  constructor() {}
 
   async getCryptoPrices(): Promise<CryptoPricesResponseDto> {
     // Check cache first
@@ -18,18 +16,18 @@ export class PricesService {
     }
 
     try {
-      // Fetch from CoinGecko API
-      const response = await firstValueFrom(
-        this.httpService.get('https://api.coingecko.com/api/v3/simple/price', {
-          params: {
-            ids: 'bitcoin,ethereum,solana,usd-coin,tether,pepe,dogecoin,shiba-inu,dogwifcoin,bonk',
-            vs_currencies: 'usd',
-            include_24hr_change: true,
-          },
-        }),
-      );
+      // Fetch from CoinGecko API using built-in fetch
+      const url = new URL('https://api.coingecko.com/api/v3/simple/price');
+      url.searchParams.set('ids', 'bitcoin,ethereum,solana,usd-coin,tether,pepe,dogecoin,shiba-inu,dogwifcoin,bonk');
+      url.searchParams.set('vs_currencies', 'usd');
+      url.searchParams.set('include_24hr_change', 'true');
 
-      const data = response.data as any;
+      const response = await fetch(url.toString());
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json() as any;
       
       const prices = [
         {
