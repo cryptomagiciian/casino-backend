@@ -100,8 +100,26 @@ export const LiveStreamingChart: React.FC<LiveStreamingChartProps> = ({
   // Handle WebSocket errors
   const handleWebSocketError = useCallback((error: Error) => {
     console.error('WebSocket error:', error);
-    setError(`Connection error: ${error.message}`);
-  }, []);
+    setError(`WebSocket connection failed: ${error.message}. Falling back to REST API updates.`);
+    
+    // Fallback to periodic REST API updates if WebSocket fails
+    const fallbackInterval = setInterval(async () => {
+      try {
+        const data = await apiService.getCandlestickData(symbol, timeframe, 100);
+        if (data && Array.isArray(data) && data.length > 0) {
+          setCandlesticks(data);
+          const latestPrice = data[data.length - 1].close;
+          setCurrentPrice(latestPrice);
+          onPriceUpdate?.(latestPrice);
+        }
+      } catch (err) {
+        console.error('Fallback API error:', err);
+      }
+    }, 5000); // Update every 5 seconds as fallback
+
+    // Clean up fallback interval when component unmounts
+    return () => clearInterval(fallbackInterval);
+  }, [symbol, timeframe, onPriceUpdate]);
 
   // Initialize WebSocket connection
   useEffect(() => {

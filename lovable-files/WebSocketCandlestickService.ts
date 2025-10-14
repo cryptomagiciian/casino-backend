@@ -54,6 +54,7 @@ export class WebSocketCandlestickService {
       this.ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
+          console.log('📨 WebSocket message received:', data);
           this.handleMessage(data);
         } catch (error) {
           console.error('Failed to parse WebSocket message:', error);
@@ -80,31 +81,71 @@ export class WebSocketCandlestickService {
   private subscribeToCandlesticks(): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 
+    // Gate.io WebSocket API format for candlesticks
     const subscription = {
-      id: Date.now(),
-      method: 'trades.subscribe',
-      params: [`${this.symbol}_USDT`]
+      time: Math.floor(Date.now() / 1000),
+      channel: 'spot.candlesticks',
+      event: 'subscribe',
+      payload: [this.timeframe, `${this.symbol}_USDT`]
     };
 
     this.ws.send(JSON.stringify(subscription));
-    console.log(`📊 Subscribed to ${this.symbol}_USDT trades for ${this.timeframe} timeframe`);
+    console.log(`📊 Subscribed to ${this.symbol}_USDT candlesticks for ${this.timeframe} timeframe`);
   }
 
   private handleMessage(data: any): void {
-    if (data.method === 'trades.update' && data.params) {
-      const trades = data.params[1];
-      if (Array.isArray(trades)) {
-        trades.forEach(trade => this.processTrade(trade));
-      }
-    } else if (data.method === 'trades.subscribe' && data.result) {
-      console.log(`✅ Successfully subscribed to ${this.symbol}_USDT trades`);
+    if (data.channel === 'spot.candlesticks' && data.event === 'update') {
+      // Handle candlestick updates from Gate.io
+      this.processCandlestickUpdate(data);
+    } else if (data.channel === 'spot.candlesticks' && data.event === 'subscribe' && data.result) {
+      console.log(`✅ Successfully subscribed to ${this.symbol}_USDT candlesticks`);
     } else if (data.error) {
       console.error('WebSocket subscription error:', data.error);
       this.onError?.(new Error(`Subscription failed: ${data.error.message || 'Unknown error'}`));
     }
   }
 
+  private processCandlestickUpdate(data: any): void {
+    // Gate.io candlestick data format: [timestamp, volume, close, high, low, open]
+    const candlestickData = data.result;
+    if (!candlestickData || !Array.isArray(candlestickData)) return;
+
+    candlestickData.forEach((candle: any) => {
+      if (Array.isArray(candle) && candle.length >= 6) {
+        const candlestick: CandlestickData = {
+          timestamp: parseInt(candle[0]) * 1000, // Convert to milliseconds
+          volume: parseFloat(candle[1]),
+          close: parseFloat(candle[2]),
+          high: parseFloat(candle[3]),
+          low: parseFloat(candle[4]),
+          open: parseFloat(candle[5])
+        };
+
+        // Check if this is a new candle (different timestamp)
+        if (this.lastCandleTime !== candlestick.timestamp) {
+          // Save previous candle if it exists
+          if (this.currentCandle) {
+            this.onNewCandle(this.currentCandle);
+          }
+
+          // Set new current candle
+          this.currentCandle = candlestick;
+          this.lastCandleTime = candlestick.timestamp;
+        } else if (this.currentCandle) {
+          // Update current candle with latest data
+          this.currentCandle = candlestick;
+        }
+
+        // Notify of update
+        if (this.currentCandle) {
+          this.onCandlestickUpdate(this.currentCandle);
+        }
+      }
+    });
+  }
+
   private processTrade(trade: any): void {
+    // This method is kept for potential future use with trade data
     const price = parseFloat(trade.price);
     const volume = parseFloat(trade.amount);
     const timestamp = parseInt(trade.time) * 1000; // Convert to milliseconds
