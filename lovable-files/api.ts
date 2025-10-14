@@ -1,5 +1,5 @@
 const API_BASE_URL = 'https://casino-backend-production-8186.up.railway.app/api/v1';
-const API_VERSION = 'v-auth-persistence-fix'; // Fixed authentication persistence
+const API_VERSION = 'v-realtime-trading-optimized'; // Real-time trading optimizations
 
 class ApiService {
   private baseURL: string;

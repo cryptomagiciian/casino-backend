@@ -12,7 +12,7 @@ export interface CandlestickData {
 @Injectable()
 export class CandlestickService {
   private readonly logger = new Logger(CandlestickService.name);
-  private readonly CACHE_DURATION = 30 * 1000; // 30 seconds cache
+  private readonly CACHE_DURATION = 5 * 1000; // 5 seconds cache for real-time trading
   private candlestickCache: Map<string, { data: CandlestickData[]; timestamp: number }> = new Map();
 
   constructor() {}
@@ -37,10 +37,22 @@ export class CandlestickService {
       // Convert timeframe to Gate.io format
       const gateTimeframe = this.convertTimeframe(timeframe);
       
-      // Fetch from Gate.io API
+      // Fetch from Gate.io API with timeout for faster responses
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+      
       const response = await fetch(
-        `https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=${symbol}_USDT&interval=${gateTimeframe}&limit=${limit}`
+        `https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=${symbol}_USDT&interval=${gateTimeframe}&limit=${limit}`,
+        { 
+          signal: controller.signal,
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'Casino-Trading-Terminal/1.0'
+          }
+        }
       );
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
