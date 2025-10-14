@@ -5,7 +5,7 @@ import { LedgerService } from '../ledger/ledger.service';
 import { CommittedMarkService } from './committed-mark.service';
 import { ImpactFeeService } from './impact-fee.service';
 import { OpenOrderDto, CloseOrderDto, OrderResponseDto, PositionSide } from './dto/order.dto';
-import { Currency } from '@prisma/client';
+import { Currency } from '../shared/constants';
 
 @Injectable()
 export class OrderService {
@@ -52,7 +52,8 @@ export class OrderService {
 
       // Check if user has sufficient balance
       const quoteCurrency = symbol.quote as Currency;
-      const availableBalance = await this.walletsService.getAvailableBalance(userId, quoteCurrency);
+      const walletBalance = await this.walletsService.getWalletBalance(userId, quoteCurrency);
+      const availableBalance = parseFloat(walletBalance.available);
       
       if (availableBalance < orderData.collateral + fees.totalFee) {
         throw new BadRequestException('Insufficient balance for position and fees');
@@ -80,22 +81,22 @@ export class OrderService {
       await this.walletsService.lockFunds(userId, quoteCurrency, fees.totalFee.toString(), `fee-${position.id}`);
 
       // Record fees in ledger
-      await this.ledgerService.createUserTransaction(
+      await this.ledgerService.createUserTransaction({
         userId,
-        quoteCurrency,
-        -fees.openFee,
-        'FUTURES_OPEN_FEE',
-        position.id,
-      );
+        currency: quoteCurrency,
+        amount: (-fees.openFee).toString(),
+        type: 'FUTURES_OPEN_FEE',
+        refId: position.id,
+      });
 
       if (fees.impactFee > 0) {
-        await this.ledgerService.createUserTransaction(
+        await this.ledgerService.createUserTransaction({
           userId,
-          quoteCurrency,
-          -fees.impactFee,
-          'FUTURES_IMPACT_FEE',
-          position.id,
-        );
+          currency: quoteCurrency,
+          amount: (-fees.impactFee).toString(),
+          type: 'FUTURES_IMPACT_FEE',
+          refId: position.id,
+        });
       }
 
       // Record futures transaction
@@ -208,24 +209,24 @@ export class OrderService {
 
       // Record close fee
       if (closeFee > 0) {
-        await this.ledgerService.createUserTransaction(
+        await this.ledgerService.createUserTransaction({
           userId,
-          quoteCurrency,
-          -closeFee,
-          'FUTURES_CLOSE_FEE',
-          position.id,
-        );
+          currency: quoteCurrency,
+          amount: (-closeFee).toString(),
+          type: 'FUTURES_CLOSE_FEE',
+          refId: position.id,
+        });
       }
 
       // Record PnL
       if (pnl !== 0) {
-        await this.ledgerService.createUserTransaction(
+        await this.ledgerService.createUserTransaction({
           userId,
-          quoteCurrency,
-          pnl,
-          pnl > 0 ? 'FUTURES_PNL_WIN' : 'FUTURES_PNL_LOSS',
-          position.id,
-        );
+          currency: quoteCurrency,
+          amount: pnl.toString(),
+          type: pnl > 0 ? 'FUTURES_PNL_WIN' : 'FUTURES_PNL_LOSS',
+          refId: position.id,
+        });
       }
 
       // Record futures transactions

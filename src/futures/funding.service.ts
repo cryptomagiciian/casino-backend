@@ -105,13 +105,13 @@ export class FundingService {
       }
 
       // Record in ledger
-      await this.ledgerService.createUserTransaction(
-        position.userId,
-        quoteCurrency,
-        fundingPayment,
-        'FUTURES_FUNDING',
-        position.id,
-      );
+      await this.ledgerService.createUserTransaction({
+        userId: position.userId,
+        currency: quoteCurrency,
+        amount: fundingPayment.toString(),
+        type: 'FUTURES_FUNDING',
+        refId: position.id,
+      });
 
       // Record futures transaction
       await this.prisma.futuresTx.create({

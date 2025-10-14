@@ -31,7 +31,7 @@ export class CommittedMarkService {
       }
 
       // Calculate the deterministic delta using TURBOWAVE algorithm
-      const delta = this.calculateDelta(round.serverSeed, symbolId, timestamp, round.intervalMs);
+      const delta = await this.calculateDelta(round.serverSeed, symbolId, timestamp, round.intervalMs);
       
       // Apply delta to baseline price
       const committedMark = baselinePrice + delta;
@@ -81,12 +81,12 @@ export class CommittedMarkService {
   /**
    * Calculate deterministic delta using TURBOWAVE algorithm
    */
-  private calculateDelta(
+  private async calculateDelta(
     serverSeed: string,
     symbolId: string,
     timestamp: Date,
     intervalMs: number
-  ): number {
+  ): Promise<number> {
     // Calculate tick index based on timestamp and interval
     const roundStart = new Date(timestamp);
     roundStart.setUTCHours(0, 0, 0, 0); // Round to start of day
@@ -115,7 +115,7 @@ export class CommittedMarkService {
     const deltaBps = (u - 0.5) * 2 * sigmaBps;
     
     // Convert to price delta
-    const baselinePrice = this.getBaselinePrice(symbolId); // This should be cached
+    const baselinePrice = await this.getBaselinePrice(symbolId);
     const delta = baselinePrice * (deltaBps / 10000);
     
     return delta;
@@ -172,6 +172,6 @@ export class CommittedMarkService {
       throw new Error('No trading round found for the given server seed and timestamp');
     }
 
-    return this.calculateDelta(serverSeed, symbolId, timestamp, round.intervalMs);
+    return await this.calculateDelta(serverSeed, symbolId, timestamp, round.intervalMs);
   }
 }

@@ -70,13 +70,13 @@ export class BorrowService {
       );
 
       // Record in ledger
-      await this.ledgerService.createUserTransaction(
-        position.userId,
-        quoteCurrency,
-        -borrowFee,
-        'FUTURES_BORROW_FEE',
-        position.id,
-      );
+      await this.ledgerService.createUserTransaction({
+        userId: position.userId,
+        currency: quoteCurrency,
+        amount: (-borrowFee).toString(),
+        type: 'FUTURES_BORROW_FEE',
+        refId: position.id,
+      });
 
       // Record futures transaction
       await this.prisma.futuresTx.create({

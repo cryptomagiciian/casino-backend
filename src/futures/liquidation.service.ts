@@ -147,23 +147,23 @@ export class LiquidationService {
 
       // Record liquidation fee
       if (liquidationFee > 0) {
-        await this.ledgerService.createUserTransaction(
-          position.userId,
-          quoteCurrency,
-          -liquidationFee,
-          'FUTURES_LIQUIDATION_FEE',
-          position.id,
-        );
+        await this.ledgerService.createUserTransaction({
+          userId: position.userId,
+          currency: quoteCurrency,
+          amount: (-liquidationFee).toString(),
+          type: 'FUTURES_LIQUIDATION_FEE',
+          refId: position.id,
+        });
       }
 
       // Record liquidation PnL (always negative)
-      await this.ledgerService.createUserTransaction(
-        position.userId,
-        quoteCurrency,
-        pnl,
-        'FUTURES_LIQUIDATION_LOSS',
-        position.id,
-      );
+      await this.ledgerService.createUserTransaction({
+        userId: position.userId,
+        currency: quoteCurrency,
+        amount: pnl.toString(),
+        type: 'FUTURES_LIQUIDATION_LOSS',
+        refId: position.id,
+      });
 
       // Record futures transactions
       await this.prisma.futuresTx.createMany({
