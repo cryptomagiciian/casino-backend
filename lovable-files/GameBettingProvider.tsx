@@ -133,13 +133,18 @@ export const GameBettingProvider: React.FC<{ children: ReactNode }> = ({ childre
     try {
       const targetCurrency = currency || bettingCurrency;
       // First read from global cache
-      let amount = getAvailableBalance(targetCurrency);
-      if (!amount || Number.isNaN(amount)) {
+      let cryptoAmount = getAvailableBalance(targetCurrency);
+      if (!cryptoAmount || Number.isNaN(cryptoAmount)) {
         // Force refresh, then read again
         await refreshBalances();
-        amount = getAvailableBalance(targetCurrency);
+        cryptoAmount = getAvailableBalance(targetCurrency);
       }
-      return amount || 0;
+      
+      // Convert crypto amount to USD for comparison with USD stakes
+      const usdAmount = convertToUsd(cryptoAmount, targetCurrency);
+      console.log(`💰 Balance check: ${cryptoAmount} ${targetCurrency} = $${usdAmount} USD`);
+      
+      return usdAmount || 0;
     } catch (err) {
       console.error('Failed to get balance:', err);
       return 0;

@@ -22,7 +22,7 @@ export const BullVsBear: React.FC = () => {
   const [intensity, setIntensity] = useState(0);
   const { placeBet, resolveBet, getBalance, isBetting, error } = useBetting();
   const { network } = useNetwork();
-  const { bettingCurrency, displayCurrency, formatBalance } = useCurrency();
+  const { bettingCurrency, displayCurrency, formatBalance, convertToUsd } = useCurrency();
   const { getAvailableBalance } = useBalance();
   const [balance, setBalance] = useState<number>(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -34,15 +34,17 @@ export const BullVsBear: React.FC = () => {
 
   // Sync with global balance changes
   useEffect(() => {
-    const currentBalance = getAvailableBalance(bettingCurrency);
+    const cryptoBalance = getAvailableBalance(bettingCurrency);
+    const currentBalance = convertToUsd(cryptoBalance, bettingCurrency);
     setBalance(currentBalance);
   }, [bettingCurrency]); // Remove getAvailableBalance from dependencies to prevent render loop
 
   const refreshBalance = async () => {
     try {
       // Use global balance context for immediate balance access
-      const currentBalance = getAvailableBalance(bettingCurrency);
-      setBalance(currentBalance);
+      const cryptoBalance = getAvailableBalance(bettingCurrency);
+    const currentBalance = convertToUsd(cryptoBalance, bettingCurrency);
+    setBalance(currentBalance);
     } catch (error) {
       console.error('Failed to refresh balance:', error);
     }
