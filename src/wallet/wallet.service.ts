@@ -1,9 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as bitcoin from 'bitcoinjs-lib';
+import * as ecc from 'tiny-secp256k1';
 import * as ethers from 'ethers';
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import * as bip39 from 'bip39';
 import { Currency } from '../shared/constants';
+
+// Initialize bitcoinjs-lib with secp256k1
+bitcoin.initEccLib(ecc);
 
 @Injectable()
 export class WalletService {
@@ -51,8 +55,8 @@ export class WalletService {
     
     const networkConfig = network === 'testnet' ? bitcoin.networks.testnet : bitcoin.networks.bitcoin;
     
-    // Generate HD wallet
-    const root = bitcoin.bip32.fromSeed(seedBuffer, networkConfig);
+    // Generate HD wallet using BIP32Factory
+    const root = bitcoin.BIP32Factory(ecc).fromSeed(seedBuffer, networkConfig);
     const child = root.derivePath("m/84'/0'/0'/0/0"); // Native SegWit (Bech32)
     
     const { address } = bitcoin.payments.p2wpkh({
@@ -71,11 +75,10 @@ export class WalletService {
     const mnemonic = bip39.entropyToMnemonic(seed.slice(0, 32));
     const seedBuffer = bip39.mnemonicToSeedSync(mnemonic);
     
-    // Generate HD wallet
-    const hdNode = ethers.utils.HDNode.fromSeed(seedBuffer);
-    const child = hdNode.derivePath("m/44'/60'/0'/0/0");
+    // Generate HD wallet using modern ethers API
+    const wallet = ethers.HDNodeWallet.fromSeed(seedBuffer).derivePath("m/44'/60'/0'/0/0");
     
-    return child.address;
+    return wallet.address;
   }
 
   /**
@@ -126,7 +129,7 @@ export class WalletService {
   }
 
   private validateEthereumAddress(address: string): boolean {
-    return ethers.utils.isAddress(address);
+    return ethers.isAddress(address);
   }
 
   private validateSolanaAddress(address: string): boolean {
