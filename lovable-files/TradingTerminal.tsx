@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from './api';
-import { ProfessionalTradingInterface } from './ProfessionalTradingInterface';
+import { DexinoTradingInterface } from './DexinoTradingInterface';
 
 interface FuturesSymbol {
   id: string;
@@ -170,7 +170,7 @@ export const TradingTerminal: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      <ProfessionalTradingInterface symbolId={selectedSymbol || 'BTC'} />
+      <DexinoTradingInterface />
     </div>
   );
 };
