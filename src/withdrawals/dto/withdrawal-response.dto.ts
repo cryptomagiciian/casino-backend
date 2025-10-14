@@ -19,6 +19,9 @@ export class WithdrawalResponseDto {
   @ApiProperty({ description: 'Destination wallet address', example: '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa' })
   walletAddress: string;
 
+  @ApiProperty({ description: 'Withdrawal method', example: 'crypto' })
+  withdrawalMethod: string;
+
   @ApiProperty({ description: 'Blockchain network', example: 'mainnet' })
   network: string;
 

@@ -10,6 +10,9 @@ export class DepositResponseDto {
   @ApiProperty({ description: 'Amount deposited', example: '0.001' })
   amount: string;
 
+  @ApiProperty({ description: 'Payment method', example: 'crypto' })
+  paymentMethod: string;
+
   @ApiProperty({ description: 'Blockchain network', example: 'mainnet' })
   network: string;
 
