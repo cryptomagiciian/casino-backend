@@ -13,14 +13,15 @@ export class WalletsService {
   ) {}
 
   /**
-   * Get or create wallet account for user and currency
+   * Get or create wallet account for user, currency, and network
    */
-  async getOrCreateAccount(userId: string, currency: Currency) {
+  async getOrCreateAccount(userId: string, currency: Currency, network: 'mainnet' | 'testnet' = 'mainnet') {
     let account = await this.prisma.walletAccount.findUnique({
       where: {
-        userId_currency: {
+        userId_currency_network: {
           userId,
           currency,
+          network,
         },
       },
     });
@@ -30,6 +31,7 @@ export class WalletsService {
         data: {
           userId,
           currency,
+          network,
           available: 0n,
           locked: 0n,
         },
@@ -40,10 +42,10 @@ export class WalletsService {
   }
 
   /**
-   * Get wallet balance for a specific currency
+   * Get wallet balance for a specific currency and network
    */
-  async getWalletBalance(userId: string, currency: Currency): Promise<WalletBalance> {
-    const account = await this.getOrCreateAccount(userId, currency);
+  async getWalletBalance(userId: string, currency: Currency, network: 'mainnet' | 'testnet' = 'mainnet'): Promise<WalletBalance> {
+    const account = await this.getOrCreateAccount(userId, currency, network);
     
     return {
       currency,
@@ -54,11 +56,11 @@ export class WalletsService {
   }
 
   /**
-   * Get all wallet balances for a user
+   * Get all wallet balances for a user on a specific network
    */
-  async getWalletBalances(userId: string): Promise<WalletBalance[]> {
+  async getWalletBalances(userId: string, network: 'mainnet' | 'testnet' = 'mainnet'): Promise<WalletBalance[]> {
     const accounts = await this.prisma.walletAccount.findMany({
-      where: { userId },
+      where: { userId, network },
     });
 
     const balances: WalletBalance[] = [];
@@ -81,10 +83,10 @@ export class WalletsService {
   }
 
   /**
-   * Get balance for specific currency
+   * Get balance for specific currency and network
    */
-  async getBalance(userId: string, currency: Currency): Promise<WalletBalance> {
-    const account = await this.getOrCreateAccount(userId, currency);
+  async getBalance(userId: string, currency: Currency, network: 'mainnet' | 'testnet' = 'mainnet'): Promise<WalletBalance> {
+    const account = await this.getOrCreateAccount(userId, currency, network);
     const available = await this.ledgerService.getAccountBalanceByCurrency(account.id, currency);
     const locked = account.locked;
     const total = available + locked;
@@ -98,69 +100,52 @@ export class WalletsService {
   }
 
   /**
-   * Faucet functionality for demo mode
+   * Get testnet faucet for demo mode (testnet only)
    */
-  async faucet(userId: string, request: FaucetRequest) {
-    if (!isDemoMode()) {
-      throw new BadRequestException('Faucet is only available in demo mode');
+  async getTestnetFaucet(userId: string, currency: Currency, network: 'testnet' = 'testnet') {
+    if (network !== 'testnet') {
+      throw new BadRequestException('Faucet is only available on testnet');
     }
 
-    const { currency, amount } = request;
+    // Small testnet amounts for testing
+    const testnetAmounts = {
+      BTC: 0.001,
+      ETH: 0.01,
+      SOL: 0.1,
+      USDC: 10,
+      USDT: 10,
+    };
+
+    const amount = testnetAmounts[currency];
     const amountSmallest = toSmallestUnits(amount, currency);
 
-    // Check daily limit
-    const dailyLimit = BigInt(FAUCET_DAILY_LIMITS[currency]);
-    if (amountSmallest > dailyLimit) {
-      throw new BadRequestException(`Amount exceeds daily faucet limit for ${currency}`);
-    }
+    // Get or create testnet account
+    const account = await this.getOrCreateAccount(userId, currency, 'testnet');
 
-    // Check if user has already used faucet today
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const todayFaucetUsage = await this.prisma.ledgerEntry.aggregate({
-      where: {
-        account: {
-          userId,
-          currency,
-        },
-        type: 'FAUCET',
-        createdAt: {
-          gte: today,
-        },
-      },
-      _sum: { amount: true },
-    });
-
-    const usedToday = todayFaucetUsage._sum.amount || 0n;
-    if (usedToday + amountSmallest > dailyLimit) {
-      throw new BadRequestException(`Daily faucet limit exceeded for ${currency}`);
-    }
-
-    // Get or create account
-    const account = await this.getOrCreateAccount(userId, currency);
-
-    // Credit faucet amount
-    await this.ledgerService.createEntry({
-      accountId: account.id,
+    // Credit testnet faucet amount
+    await this.ledgerService.createUserTransaction({
+      userId,
       amount,
       currency,
       type: 'FAUCET',
-      meta: { faucet: true, dailyLimit: dailyLimit.toString() },
+      network: 'testnet',
+      description: `Testnet faucet: ${amount} ${currency}`,
+      meta: { faucet: true, network: 'testnet', testnet: true },
     });
 
     return {
       currency,
       amount,
-      message: `Successfully credited ${amount} ${currency} from faucet`,
+      network: 'testnet',
+      message: `Successfully credited ${amount} ${currency} from testnet faucet`,
     };
   }
 
   /**
    * Lock funds for betting
    */
-  async lockFunds(userId: string, currency: Currency, amount: string, refId: string) {
-    const account = await this.getOrCreateAccount(userId, currency);
+  async lockFunds(userId: string, currency: Currency, amount: string, refId: string, network: 'mainnet' | 'testnet' = 'mainnet') {
+    const account = await this.getOrCreateAccount(userId, currency, network);
     
     // Lock funds in ledger
     await this.ledgerService.lockFunds(account.id, amount, currency, refId);
@@ -182,8 +167,8 @@ export class WalletsService {
   /**
    * Release locked funds
    */
-  async releaseFunds(userId: string, currency: Currency, amount: string, refId: string) {
-    const account = await this.getOrCreateAccount(userId, currency);
+  async releaseFunds(userId: string, currency: Currency, amount: string, refId: string, network: 'mainnet' | 'testnet' = 'mainnet') {
+    const account = await this.getOrCreateAccount(userId, currency, network);
     
     // Release funds in ledger
     await this.ledgerService.releaseFunds(account.id, amount, currency, refId);
@@ -205,8 +190,8 @@ export class WalletsService {
   /**
    * Credit winnings
    */
-  async creditWinnings(userId: string, currency: Currency, amount: string, refId: string) {
-    const account = await this.getOrCreateAccount(userId, currency);
+  async creditWinnings(userId: string, currency: Currency, amount: string, refId: string, network: 'mainnet' | 'testnet' = 'mainnet') {
+    const account = await this.getOrCreateAccount(userId, currency, network);
     
     // Credit winnings in ledger
     await this.ledgerService.creditWinnings(account.id, amount, currency, refId);
@@ -217,8 +202,8 @@ export class WalletsService {
   /**
    * Get detailed wallet balances with USD values
    */
-  async getDetailedWalletBalances(userId: string) {
-    const balances = await this.getWalletBalances(userId);
+  async getDetailedWalletBalances(userId: string, network: 'mainnet' | 'testnet' = 'mainnet') {
+    const balances = await this.getWalletBalances(userId, network);
     
     // For now, we'll use simple USD conversion rates
     // In a real implementation, you'd fetch these from a price API

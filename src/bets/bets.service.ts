@@ -44,8 +44,8 @@ export class BetsService {
     // Use provided client seed or generate one
     const finalClientSeed = clientSeed || generateClientSeed();
 
-    // Lock funds
-    await this.walletsService.lockFunds(userId, currency, stake, 'bet_placement');
+    // Lock funds (default to mainnet for now, will be updated when frontend passes network)
+    await this.walletsService.lockFunds(userId, currency, stake, 'bet_placement', 'mainnet');
 
     // Create bet record
     const bet = await this.prisma.bet.create({
@@ -149,6 +149,7 @@ export class BetsService {
           bet.currency as Currency,
           payout.toString(),
           betId,
+          'mainnet', // TODO: Get network from bet metadata
         );
       }
 
@@ -158,6 +159,7 @@ export class BetsService {
         bet.currency as Currency,
         fromSmallestUnits(bet.stake, bet.currency as Currency),
         betId,
+        'mainnet', // TODO: Get network from bet metadata
       );
 
       return {
@@ -224,6 +226,7 @@ export class BetsService {
       bet.currency as Currency,
       payout.toString(),
       betId,
+      'mainnet', // TODO: Get network from bet metadata
     );
 
     // Release locked funds
@@ -232,6 +235,7 @@ export class BetsService {
       bet.currency as Currency,
       fromSmallestUnits(bet.stake, bet.currency as Currency),
       betId,
+      'mainnet', // TODO: Get network from bet metadata
     );
 
     return {

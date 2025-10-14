@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from './api';
 import { notificationService } from './NotificationService';
+import { useNetwork } from './NetworkContext';
 
 interface WalletBalanceProps {
   className?: string;
@@ -11,6 +12,7 @@ export const WalletBalance: React.FC<WalletBalanceProps> = ({
   className = '', 
   position = 'top-right' 
 }) => {
+  const { network } = useNetwork();
   const [balances, setBalances] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -18,8 +20,8 @@ export const WalletBalance: React.FC<WalletBalanceProps> = ({
   const fetchBalances = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Fetching wallet balances...');
-      const wallets = await apiService.getWalletBalances();
+      console.log(`🔄 Fetching wallet balances for ${network}...`);
+      const wallets = await apiService.getWalletBalances(network);
       console.log('💰 Wallet data received:', wallets);
       
       // Convert to a simple balance object
@@ -64,7 +66,7 @@ export const WalletBalance: React.FC<WalletBalanceProps> = ({
       clearInterval(interval);
       unsubscribe();
     };
-  }, []);
+  }, [network]); // Re-fetch when network changes
 
   const getPositionClasses = () => {
     switch (position) {
@@ -118,8 +120,17 @@ export const WalletBalance: React.FC<WalletBalanceProps> = ({
     <div className={`fixed ${getPositionClasses()} z-50 ${className}`}>
       <div className="bg-gray-800/90 backdrop-blur-sm border border-purple-500/50 rounded-lg p-3 shadow-lg hover:bg-gray-700/90 transition-all duration-200">
         <div className="flex items-center space-x-2 mb-2">
-          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+          <div className={`w-2 h-2 rounded-full animate-pulse ${
+            network === 'mainnet' ? 'bg-green-400' : 'bg-orange-400'
+          }`}></div>
           <span className="text-gray-300 text-sm font-medium">Wallet</span>
+          <span className={`text-xs px-2 py-0.5 rounded ${
+            network === 'mainnet' 
+              ? 'bg-green-600/20 text-green-400' 
+              : 'bg-orange-600/20 text-orange-400'
+          }`}>
+            {network === 'mainnet' ? 'LIVE' : 'DEMO'}
+          </span>
           <button 
             onClick={fetchBalances}
             className="text-gray-400 hover:text-gray-300 text-xs"

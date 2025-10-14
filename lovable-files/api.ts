@@ -85,8 +85,11 @@ class ApiService {
   }
 
   // Wallet endpoints
-  async getWalletBalances(detailed = false) {
-    const endpoint = detailed ? '/wallets?detailed=true' : '/wallets';
+  async getWalletBalances(network: 'mainnet' | 'testnet' = 'mainnet', detailed = false) {
+    const params = new URLSearchParams();
+    if (detailed) params.append('detailed', 'true');
+    params.append('network', network);
+    const endpoint = `/wallets?${params.toString()}`;
     return this.request(endpoint);
   }
 

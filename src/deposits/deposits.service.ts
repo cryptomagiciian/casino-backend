@@ -229,6 +229,7 @@ export class DepositsService {
     });
 
     // Credit user's wallet
+    const network = deposit.meta?.network || 'mainnet';
     await this.ledgerService.createUserTransaction({
       userId: deposit.userId,
       type: 'DEPOSIT',
@@ -236,9 +237,11 @@ export class DepositsService {
       amount: fromSmallestUnits(deposit.amount, deposit.currency as Currency),
       description: `Deposit ${deposit.id}`,
       refId: deposit.id,
+      network,
       meta: {
         paymentMethod: deposit.paymentMethod,
         transactionHash: deposit.transactionHash,
+        network,
       },
     });
 
@@ -287,6 +290,7 @@ export class DepositsService {
     });
 
     // Credit user's wallet
+    const network = deposit.meta?.network || 'mainnet';
     await this.ledgerService.createUserTransaction({
       userId: deposit.userId,
       type: 'DEPOSIT',
@@ -294,10 +298,12 @@ export class DepositsService {
       amount: fromSmallestUnits(deposit.amount, deposit.currency as Currency),
       description: `Deposit ${depositId} confirmed`,
       refId: depositId,
+      network,
       meta: {
         depositId,
         walletAddress: deposit.walletAddress,
         confirmedAt: new Date(),
+        network,
       },
     });
 

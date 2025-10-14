@@ -20,6 +20,7 @@ export interface LedgerTransactionData {
   description?: string;
   refId?: string;
   meta?: any;
+  network?: 'mainnet' | 'testnet';
 }
 
 @Injectable()
@@ -48,12 +49,15 @@ export class LedgerService {
    * Create a transaction for a user (automatically gets account)
    */
   async createUserTransaction(data: LedgerTransactionData) {
+    const network = data.network || 'mainnet';
+    
     // Get or create the wallet account
     let account = await this.prisma.walletAccount.findUnique({
       where: {
-        userId_currency: {
+        userId_currency_network: {
           userId: data.userId,
           currency: data.currency,
+          network,
         },
       },
     });
@@ -63,6 +67,7 @@ export class LedgerService {
         data: {
           userId: data.userId,
           currency: data.currency,
+          network,
           available: 0n,
           locked: 0n,
         },

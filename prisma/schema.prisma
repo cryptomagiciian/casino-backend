@@ -47,6 +47,7 @@ model WalletAccount {
   id        String   @id @default(cuid())
   userId    String
   currency  String   // 'BTC', 'ETH', 'SOL', 'USDC', 'USDT'
+  network   String   @default("mainnet") // 'mainnet' or 'testnet'
   available BigInt   @default(0) // in smallest units
   locked    BigInt   @default(0) // in smallest units
   createdAt DateTime @default(now())
@@ -55,7 +56,7 @@ model WalletAccount {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   ledgerEntries LedgerEntry[]
 
-  @@unique([userId, currency])
+  @@unique([userId, currency, network])
   @@map("wallet_accounts")
 }
 

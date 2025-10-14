@@ -27,37 +27,43 @@ export class WalletsController {
   @Get()
   @ApiOperation({ summary: 'Get all wallet balances' })
   @ApiQuery({ name: 'detailed', required: false, description: 'Include detailed balance information' })
+  @ApiQuery({ name: 'network', required: false, description: 'Network to get balances for (mainnet/testnet)', enum: ['mainnet', 'testnet'] })
   @ApiResponse({ status: 200, description: 'Wallet balances retrieved successfully' })
   async getBalances(
     @Request() req: { user: { sub: string } },
     @Query('detailed') detailed?: string,
+    @Query('network') network?: 'mainnet' | 'testnet',
   ): Promise<WalletBalance[] | any> {
+    const targetNetwork = network || 'mainnet';
     if (detailed === 'true') {
-      return this.walletsService.getDetailedWalletBalances(req.user.sub);
+      return this.walletsService.getDetailedWalletBalances(req.user.sub, targetNetwork);
     }
-    return this.walletsService.getWalletBalances(req.user.sub);
+    return this.walletsService.getWalletBalances(req.user.sub, targetNetwork);
   }
 
   @Get('balance')
   @ApiOperation({ summary: 'Get balance for specific currency' })
   @ApiQuery({ name: 'currency', description: 'Currency to get balance for' })
+  @ApiQuery({ name: 'network', required: false, description: 'Network to get balance for (mainnet/testnet)', enum: ['mainnet', 'testnet'] })
   @ApiResponse({ status: 200, description: 'Balance retrieved successfully' })
   async getBalance(
     @Request() req: { user: { sub: string } },
     @Query('currency') currency: Currency,
+    @Query('network') network?: 'mainnet' | 'testnet',
   ): Promise<WalletBalance> {
-    return this.walletsService.getBalance(req.user.sub, currency);
+    const targetNetwork = network || 'mainnet';
+    return this.walletsService.getBalance(req.user.sub, currency, targetNetwork);
   }
 
   @Post('faucet')
-  @ApiOperation({ summary: 'Get demo funds from faucet (demo mode only)' })
+  @ApiOperation({ summary: 'Get testnet funds from faucet (testnet only)' })
   @ApiResponse({ status: 200, description: 'Funds credited successfully' })
   @ApiResponse({ status: 400, description: 'Faucet not available or limit exceeded' })
   async faucet(
     @Request() req: { user: { sub: string } },
     @Body() faucetDto: FaucetDto,
   ) {
-    return this.walletsService.faucet(req.user.sub, faucetDto);
+    return this.walletsService.getTestnetFaucet(req.user.sub, faucetDto.currency, 'testnet');
   }
 
   @Get('ledger')
