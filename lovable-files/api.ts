@@ -85,8 +85,9 @@ class ApiService {
   }
 
   // Wallet endpoints
-  async getWalletBalances() {
-    return this.request('/wallets');
+  async getWalletBalances(detailed = false) {
+    const endpoint = detailed ? '/wallets?detailed=true' : '/wallets';
+    return this.request(endpoint);
   }
 
   async faucet(currency: string, amount: string) {
@@ -99,6 +100,10 @@ class ApiService {
   // Games endpoints
   async getGames() {
     return this.request('/games');
+  }
+
+  async searchGames(query: string, limit = 10) {
+    return this.request(`/games/search?q=${encodeURIComponent(query)}&limit=${limit}`);
   }
 
   async previewBet(data: any) {
@@ -128,8 +133,32 @@ class ApiService {
     });
   }
 
-  async getUserBets(limit = 50, offset = 0) {
-    return this.request(`/bets?limit=${limit}&offset=${offset}`);
+  async getUserBets(filters: {
+    game?: string;
+    status?: 'won' | 'lost' | 'pending';
+    currency?: string;
+    startDate?: string;
+    endDate?: string;
+    limit?: number;
+    offset?: number;
+  } = {}) {
+    const params = new URLSearchParams();
+    
+    if (filters.game) params.append('game', filters.game);
+    if (filters.status) params.append('status', filters.status);
+    if (filters.currency) params.append('currency', filters.currency);
+    if (filters.startDate) params.append('startDate', filters.startDate);
+    if (filters.endDate) params.append('endDate', filters.endDate);
+    if (filters.limit) params.append('limit', filters.limit.toString());
+    if (filters.offset) params.append('offset', filters.offset.toString());
+    
+    const queryString = params.toString();
+    const endpoint = queryString ? `/bets?${queryString}` : '/bets';
+    return this.request(endpoint);
+  }
+
+  async getLiveWins(limit = 20) {
+    return this.request(`/bets/live-wins?limit=${limit}`);
   }
 
   // Fairness endpoints
@@ -142,6 +171,11 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  }
+
+  // Prices endpoints
+  async getCryptoPrices() {
+    return this.request('/prices/crypto');
   }
 }
 

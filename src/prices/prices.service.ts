@@ -101,6 +101,62 @@ export class PricesService {
           change24h: tickerMap['BONK_USDT']?.change_percentage ? parseFloat(tickerMap['BONK_USDT'].change_percentage) : 0,
           icon: 'bonk',
         },
+        {
+          symbol: 'ASTER',
+          name: 'Aster',
+          price: tickerMap['ASTER_USDT']?.last || '0.0001',
+          change24h: tickerMap['ASTER_USDT']?.change_percentage ? parseFloat(tickerMap['ASTER_USDT'].change_percentage) : 0,
+          icon: 'aster',
+        },
+        {
+          symbol: 'COAI',
+          name: 'CoAI',
+          price: tickerMap['COAI_USDT']?.last || '0.01',
+          change24h: tickerMap['COAI_USDT']?.change_percentage ? parseFloat(tickerMap['COAI_USDT'].change_percentage) : 0,
+          icon: 'coai',
+        },
+        {
+          symbol: 'SUI',
+          name: 'Sui',
+          price: tickerMap['SUI_USDT']?.last || '1.50',
+          change24h: tickerMap['SUI_USDT']?.change_percentage ? parseFloat(tickerMap['SUI_USDT'].change_percentage) : 0,
+          icon: 'sui',
+        },
+        {
+          symbol: 'USELESS',
+          name: 'Useless',
+          price: tickerMap['USELESS_USDT']?.last || '0.000001',
+          change24h: tickerMap['USELESS_USDT']?.change_percentage ? parseFloat(tickerMap['USELESS_USDT'].change_percentage) : 0,
+          icon: 'useless',
+        },
+        {
+          symbol: 'TROLL',
+          name: 'Troll',
+          price: tickerMap['TROLL_USDT']?.last || '0.0001',
+          change24h: tickerMap['TROLL_USDT']?.change_percentage ? parseFloat(tickerMap['TROLL_USDT'].change_percentage) : 0,
+          icon: 'troll',
+        },
+        {
+          symbol: 'PUMPFUN',
+          name: 'PumpFun',
+          price: tickerMap['PUMPFUN_USDT']?.last || '0.0001',
+          change24h: tickerMap['PUMPFUN_USDT']?.change_percentage ? parseFloat(tickerMap['PUMPFUN_USDT'].change_percentage) : 0,
+          icon: 'pumpfun',
+        },
+        {
+          symbol: '4',
+          name: '4',
+          price: tickerMap['4_USDT']?.last || '0.01',
+          change24h: tickerMap['4_USDT']?.change_percentage ? parseFloat(tickerMap['4_USDT'].change_percentage) : 0,
+          icon: '4',
+        },
+        {
+          symbol: 'BNB',
+          name: 'Binance Coin',
+          price: tickerMap['BNB_USDT']?.last || '300.00',
+          change24h: tickerMap['BNB_USDT']?.change_percentage ? parseFloat(tickerMap['BNB_USDT'].change_percentage) : 0,
+          icon: 'bnb',
+        },
       ];
 
       const result = { prices };
