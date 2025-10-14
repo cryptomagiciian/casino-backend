@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { CacheModule } from '@nestjs/cache-manager';
+import { ScheduleModule } from '@nestjs/schedule';
 // import { LoggerModule } from 'nestjs-pino';
 
 import { PrismaModule } from './prisma/prisma.module';
@@ -17,6 +18,8 @@ import { WithdrawalsModule } from './withdrawals/withdrawals.module';
 import { LeaderboardModule } from './leaderboard/leaderboard.module';
 import { HealthModule } from './health/health.module';
 import { PricesModule } from './prices/prices.module';
+import { WalletModule } from './wallet/wallet.module';
+import { BlockchainModule } from './blockchain/blockchain.module';
 
 @Module({
   imports: [
@@ -50,6 +53,7 @@ import { PricesModule } from './prices/prices.module';
       isGlobal: true,
       store: 'memory',
     }),
+    ScheduleModule.forRoot(),
     // LoggerModule.forRoot({
     //   pinoHttp: {
     //     level: process.env.LOG_LEVEL || 'info',
@@ -74,6 +78,8 @@ import { PricesModule } from './prices/prices.module';
     LeaderboardModule,
     HealthModule,
     PricesModule,
+    WalletModule,
+    BlockchainModule,
   ],
 })
 export class AppModule {}

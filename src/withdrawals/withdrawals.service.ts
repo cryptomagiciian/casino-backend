@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException, Logger, ForbiddenEx
 import { PrismaService } from '../prisma/prisma.service';
 import { LedgerService } from '../ledger/ledger.service';
 import { WalletsService } from '../wallets/wallets.service';
+import { WalletService } from '../wallet/wallet.service';
 import { CreateWithdrawalDto } from './dto/create-withdrawal.dto';
 import { WithdrawalResponseDto } from './dto/withdrawal-response.dto';
 import { Currency } from '../shared/constants';
@@ -43,6 +44,7 @@ export class WithdrawalsService {
     private prisma: PrismaService,
     private ledgerService: LedgerService,
     private walletsService: WalletsService,
+    private walletService: WalletService,
   ) {}
 
   async createWithdrawal(userId: string, createWithdrawalDto: CreateWithdrawalDto): Promise<WithdrawalResponseDto> {
@@ -59,7 +61,9 @@ export class WithdrawalsService {
     await this.checkDailyWithdrawalLimit(userId, currency, amount);
 
     // Validate wallet address format
-    this.validateWalletAddress(currency, walletAddress);
+    if (!this.walletService.validateAddress(currency, walletAddress, network)) {
+      throw new BadRequestException(`Invalid ${currency} address format`);
+    }
 
     // Check user balance
     const userBalance = await this.walletsService.getWalletBalance(userId, currency);
@@ -119,7 +123,7 @@ export class WithdrawalsService {
     await this.processWithdrawal(withdrawalId);
 
     // Generate blockchain explorer URL
-    const explorerUrl = this.generateExplorerUrl(currency, walletAddress, network);
+    const explorerUrl = this.walletService.getExplorerUrl(currency, walletAddress, network);
 
     return {
       id: withdrawal.id,
@@ -182,7 +186,7 @@ export class WithdrawalsService {
     }
 
     // Generate explorer URL for existing withdrawal
-    const explorerUrl = this.generateExplorerUrl(withdrawal.currency as Currency, withdrawal.walletAddress, 'mainnet'); // Default to mainnet for existing withdrawals
+    const explorerUrl = this.walletService.getExplorerUrl(withdrawal.currency as Currency, withdrawal.walletAddress, 'mainnet'); // Default to mainnet for existing withdrawals
 
     return {
       id: withdrawal.id,
@@ -265,20 +269,6 @@ export class WithdrawalsService {
     }
   }
 
-  private validateWalletAddress(currency: Currency, address: string): void {
-    const validators = {
-      BTC: (addr: string) => /^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$|^bc1[a-z0-9]{39,59}$/.test(addr),
-      ETH: (addr: string) => /^0x[a-fA-F0-9]{40}$/.test(addr),
-      SOL: (addr: string) => /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(addr),
-      USDC: (addr: string) => /^0x[a-fA-F0-9]{40}$/.test(addr),
-      USDT: (addr: string) => /^0x[a-fA-F0-9]{40}$/.test(addr),
-    };
-
-    const validator = validators[currency];
-    if (!validator(address)) {
-      throw new BadRequestException(`Invalid ${currency} wallet address format`);
-    }
-  }
 
   private async performSecurityChecks(userId: string, twoFactorCode?: string, withdrawalPassword?: string): Promise<void> {
     // In a real implementation, you would:

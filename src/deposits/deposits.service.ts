@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException, Logger } from '@nes
 import { PrismaService } from '../prisma/prisma.service';
 import { LedgerService } from '../ledger/ledger.service';
 import { WalletsService } from '../wallets/wallets.service';
+import { WalletService } from '../wallet/wallet.service';
 import { CreateDepositDto } from './dto/create-deposit.dto';
 import { DepositResponseDto } from './dto/deposit-response.dto';
 import { Currency } from '../shared/constants';
@@ -42,6 +43,7 @@ export class DepositsService {
     private prisma: PrismaService,
     private ledgerService: LedgerService,
     private walletsService: WalletsService,
+    private walletService: WalletService,
   ) {}
 
   async createDeposit(userId: string, createDepositDto: CreateDepositDto): Promise<DepositResponseDto> {
@@ -58,7 +60,7 @@ export class DepositsService {
     const depositId = generateId('dep');
 
     // Generate unique wallet address for this deposit
-    const depositWalletAddress = await this.generateWalletAddress(currency, network);
+    const depositWalletAddress = await this.walletService.generateDepositAddress(userId, currency, network);
 
     // Create deposit record
     const deposit = await this.prisma.deposit.create({
@@ -79,10 +81,10 @@ export class DepositsService {
     this.logger.log(`Created Web3 deposit ${depositId} for user ${userId}: ${amount} ${currency} on ${network}`);
 
     // Generate QR code data for easy scanning
-    const qrCodeData = this.generateQrCodeData(currency, depositWalletAddress, amount);
+    const qrCodeData = this.walletService.generateQrCodeData(currency, depositWalletAddress, amount);
 
     // Generate blockchain explorer URL
-    const explorerUrl = this.generateExplorerUrl(currency, depositWalletAddress, network);
+    const explorerUrl = this.walletService.getExplorerUrl(currency, depositWalletAddress, network);
 
     return {
       id: deposit.id,
@@ -144,8 +146,8 @@ export class DepositsService {
     }
 
     // Generate QR code data and explorer URL for existing deposit
-    const qrCodeData = this.generateQrCodeData(deposit.currency as Currency, deposit.walletAddress, parseFloat(fromSmallestUnits(deposit.amount, deposit.currency as Currency)));
-    const explorerUrl = this.generateExplorerUrl(deposit.currency as Currency, deposit.walletAddress, 'mainnet'); // Default to mainnet for existing deposits
+    const qrCodeData = this.walletService.generateQrCodeData(deposit.currency as Currency, deposit.walletAddress, parseFloat(fromSmallestUnits(deposit.amount, deposit.currency as Currency)));
+    const explorerUrl = this.walletService.getExplorerUrl(deposit.currency as Currency, deposit.walletAddress, 'mainnet'); // Default to mainnet for existing deposits
 
     return {
       id: deposit.id,
@@ -229,94 +231,6 @@ export class DepositsService {
     this.logger.log(`Completed deposit ${depositId}: ${fromSmallestUnits(deposit.amount, deposit.currency as Currency)} ${deposit.currency}`);
   }
 
-  private async generateWalletAddress(currency: Currency, network: 'mainnet' | 'testnet'): Promise<string> {
-    // In a real Web3 implementation, this would integrate with:
-    // - Bitcoin: HD wallet generation, BIP32/BIP44
-    // - Ethereum: Web3.js, ethers.js, or HD wallet
-    // - Solana: @solana/web3.js, HD wallet
-    // - USDC/USDT: Ethereum network (ERC-20 tokens)
-    
-    // For demo purposes, generate realistic-looking addresses
-    const addressGenerators = {
-      BTC: (net: string) => {
-        // Bitcoin addresses: Legacy (1...), SegWit (3...), Bech32 (bc1...)
-        const prefixes = net === 'testnet' ? ['m', 'n', '2', 'tb1'] : ['1', '3', 'bc1'];
-        const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-        const randomPart = Math.random().toString(36).substring(2, 34);
-        return `${prefix}${randomPart}`;
-      },
-      ETH: (net: string) => {
-        // Ethereum addresses: 0x + 40 hex characters
-        const randomHex = Array.from({length: 40}, () => 
-          Math.floor(Math.random() * 16).toString(16)
-        ).join('');
-        return `0x${randomHex}`;
-      },
-      SOL: (net: string) => {
-        // Solana addresses: Base58 encoded, 32-44 characters
-        const chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-        const length = 32 + Math.floor(Math.random() * 12);
-        return Array.from({length}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-      },
-      USDC: (net: string) => {
-        // USDC is ERC-20 token on Ethereum
-        const randomHex = Array.from({length: 40}, () => 
-          Math.floor(Math.random() * 16).toString(16)
-        ).join('');
-        return `0x${randomHex}`;
-      },
-      USDT: (net: string) => {
-        // USDT is ERC-20 token on Ethereum
-        const randomHex = Array.from({length: 40}, () => 
-          Math.floor(Math.random() * 16).toString(16)
-        ).join('');
-        return `0x${randomHex}`;
-      },
-    };
-
-    return addressGenerators[currency](network);
-  }
-
-  private generateQrCodeData(currency: Currency, address: string, amount: number): string {
-    const schemes = {
-      BTC: 'bitcoin',
-      ETH: 'ethereum',
-      SOL: 'solana',
-      USDC: 'ethereum',
-      USDT: 'ethereum',
-    };
-
-    const scheme = schemes[currency];
-    return `${scheme}:${address}?amount=${amount}`;
-  }
-
-  private generateExplorerUrl(currency: Currency, address: string, network: 'mainnet' | 'testnet'): string {
-    const explorers = {
-      BTC: {
-        mainnet: 'https://blockstream.info/address',
-        testnet: 'https://blockstream.info/testnet/address',
-      },
-      ETH: {
-        mainnet: 'https://etherscan.io/address',
-        testnet: 'https://sepolia.etherscan.io/address',
-      },
-      SOL: {
-        mainnet: 'https://explorer.solana.com/address',
-        testnet: 'https://explorer.solana.com/address?cluster=testnet',
-      },
-      USDC: {
-        mainnet: 'https://etherscan.io/token/0xa0b86a33e6ba0e0e5c4b8b8b8b8b8b8b8b8b8b8b?a=',
-        testnet: 'https://sepolia.etherscan.io/token/0xa0b86a33e6ba0e0e5c4b8b8b8b8b8b8b8b8b8b8b8b?a=',
-      },
-      USDT: {
-        mainnet: 'https://etherscan.io/token/0xdac17f958d2ee523a2206206994597c13d831ec7?a=',
-        testnet: 'https://sepolia.etherscan.io/token/0xdac17f958d2ee523a2206206994597c13d831ec7?a=',
-      },
-    };
-
-    const explorer = explorers[currency][network];
-    return `${explorer}/${address}`;
-  }
 
   async getDepositLimits(currency: Currency) {
     return {
