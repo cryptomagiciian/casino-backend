@@ -176,12 +176,17 @@ export class WalletsService {
   async lockFunds(userId: string, currency: Currency, amount: string, refId: string, network: 'mainnet' | 'testnet' = 'mainnet') {
     const account = await this.getOrCreateAccount(userId, currency, network);
     
+    console.log(`💰 LOCK FUNDS: User ${userId}, Currency ${currency}, Amount ${amount}, RefId ${refId}, Network ${network}`);
+    console.log(`💰 Account before lock: Available ${account.available}, Locked ${account.locked}`);
+    
     // Lock funds in ledger
     await this.ledgerService.lockFunds(account.id, amount, currency, refId);
     
     // Update both available and locked amounts in account
     const amountSmallest = toSmallestUnits(amount, currency);
-    await this.prisma.walletAccount.update({
+    console.log(`💰 Locking ${amountSmallest} funds`);
+    
+    const updatedAccount = await this.prisma.walletAccount.update({
       where: { id: account.id },
       data: {
         available: {
@@ -193,6 +198,7 @@ export class WalletsService {
       },
     });
 
+    console.log(`💰 Account after lock: Available ${updatedAccount.available}, Locked ${updatedAccount.locked}`);
     return { success: true };
   }
 
@@ -251,12 +257,17 @@ export class WalletsService {
   async processBetLoss(userId: string, currency: Currency, amount: string, refId: string, network: 'mainnet' | 'testnet' = 'mainnet') {
     const account = await this.getOrCreateAccount(userId, currency, network);
     
+    console.log(`💰 PROCESS BET LOSS: User ${userId}, Currency ${currency}, Amount ${amount}, RefId ${refId}, Network ${network}`);
+    console.log(`💰 Account before loss: Available ${account.available}, Locked ${account.locked}`);
+    
     // Record the loss in ledger
     await this.ledgerService.releaseFunds(account.id, amount, currency, refId);
     
     // Only decrement locked funds, don't increment available (funds are lost)
     const amountSmallest = toSmallestUnits(amount, currency);
-    await this.prisma.walletAccount.update({
+    console.log(`💰 Deducting ${amountSmallest} from locked funds`);
+    
+    const updatedAccount = await this.prisma.walletAccount.update({
       where: { id: account.id },
       data: {
         locked: {
@@ -264,6 +275,8 @@ export class WalletsService {
         },
       },
     });
+    
+    console.log(`💰 Account after loss: Available ${updatedAccount.available}, Locked ${updatedAccount.locked}`);
     
     return { success: true };
   }
