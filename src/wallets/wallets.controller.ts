@@ -1,10 +1,11 @@
-import { Controller, Get, Post, Body, UseGuards, Request, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Request, Query, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiProperty } from '@nestjs/swagger';
 import { IsString, IsIn } from 'class-validator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WalletsService } from './wallets.service';
 import { WalletBalance } from '../shared/types';
 import { Currency } from '../shared/constants';
+import { ClearDemoFundsDto } from './dto/clear-demo-funds.dto';
 
 export class FaucetDto {
   @ApiProperty({ description: 'Currency to request', example: 'USDC' })
@@ -80,5 +81,19 @@ export class WalletsController {
       limit || 50,
       offset || 0,
     );
+  }
+
+  @Post('clear-demo-funds')
+  @ApiOperation({ summary: 'Clear old demo funds (for testing)' })
+  @ApiResponse({ status: 200, description: 'Demo funds cleared successfully' })
+  @ApiResponse({ status: 400, description: 'Confirmation required' })
+  async clearDemoFunds(
+    @Request() req: { user: { sub: string } },
+    @Body() clearDto: ClearDemoFundsDto,
+  ) {
+    if (!clearDto.confirm) {
+      throw new BadRequestException('Confirmation required to clear demo funds');
+    }
+    return this.walletsService.clearDemoFunds(req.user.sub);
   }
 }

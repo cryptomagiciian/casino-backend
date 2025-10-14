@@ -45,6 +45,25 @@ export const TestWalletAPI: React.FC = () => {
     }
   };
 
+  const clearDemoFunds = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('🧪 Clearing demo funds...');
+      const result = await apiService.clearDemoFunds();
+      console.log('🧪 Clear Demo Funds Response:', result);
+      
+      // Refresh balances after clearing
+      setTimeout(() => testAPI(), 1000);
+    } catch (err: any) {
+      console.error('🧪 Clear Demo Funds Error:', err);
+      setError(err.message || 'Clear Demo Funds Error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="bg-gray-800 border border-gray-600 rounded-lg p-4 mb-4">
       <h3 className="text-white font-semibold mb-4">🧪 Wallet API Test</h3>
@@ -67,6 +86,14 @@ export const TestWalletAPI: React.FC = () => {
             {loading ? 'Testing...' : 'Test Faucet'}
           </button>
         )}
+        
+        <button
+          onClick={clearDemoFunds}
+          disabled={loading}
+          className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded"
+        >
+          {loading ? 'Clearing...' : 'Clear Demo Funds'}
+        </button>
       </div>
 
       {error && (

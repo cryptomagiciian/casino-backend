@@ -100,6 +100,13 @@ class ApiService {
     });
   }
 
+  async clearDemoFunds() {
+    return this.request('/wallets/clear-demo-funds', {
+      method: 'POST',
+      body: JSON.stringify({ confirm: true }),
+    });
+  }
+
   // Games endpoints
   async getGames() {
     return this.request('/games');

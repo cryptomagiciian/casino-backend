@@ -134,6 +134,38 @@ export class WalletsService {
   }
 
   /**
+   * Clear old demo funds (for testing)
+   */
+  async clearDemoFunds(userId: string) {
+    // Reset all wallet accounts for this user to 0 balance
+    const result = await this.prisma.walletAccount.updateMany({
+      where: { userId },
+      data: {
+        available: 0n,
+        locked: 0n,
+      },
+    });
+
+    // Clear old faucet ledger entries
+    const ledgerResult = await this.prisma.ledgerEntry.deleteMany({
+      where: {
+        account: { userId },
+        type: 'FAUCET',
+        meta: {
+          path: ['faucet'],
+          equals: true,
+        },
+      },
+    });
+
+    return {
+      message: 'Demo funds cleared successfully',
+      accountsReset: result.count,
+      ledgerEntriesCleared: ledgerResult.count,
+    };
+  }
+
+  /**
    * Lock funds for betting
    */
   async lockFunds(userId: string, currency: Currency, amount: string, refId: string, network: 'mainnet' | 'testnet' = 'mainnet') {
