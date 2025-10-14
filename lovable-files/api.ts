@@ -122,7 +122,7 @@ class ApiService {
       domIndicator: document.querySelector('[data-demo-mode="true"]') !== null,
       bodyClass: document.body.classList.contains('demo-mode'),
       demoToggle: document.querySelector('.demo.active, [data-demo="true"]') !== null,
-      demoText: document.querySelector('*:contains("Demo")') !== null,
+      demoText: Array.from(document.querySelectorAll('*')).some(el => el.textContent?.includes('Demo')),
       demoButton: document.querySelector('[class*="demo"][class*="active"], [class*="demo"][class*="selected"]') !== null,
       orangeIndicator: document.querySelector('.text-orange-500, .bg-orange-500, [style*="orange"]') !== null
     });
