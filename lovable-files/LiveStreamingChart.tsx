@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { WebSocketCandlestickService } from './WebSocketCandlestickService';
-import { apiService } from './api';
 
 interface CandlestickData {
   timestamp: number;
@@ -39,26 +38,13 @@ export const LiveStreamingChart: React.FC<LiveStreamingChartProps> = ({
   const [zoom, setZoom] = useState<number>(1);
   const [pan, setPan] = useState<number>(0);
 
-  // Load initial historical data
-  const loadInitialData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await apiService.getCandlestickData(symbol, timeframe, 100);
-      
-      if (data && Array.isArray(data) && data.length > 0) {
-        setCandlesticks(data);
-        const latestPrice = data[data.length - 1].close;
-        setCurrentPrice(latestPrice);
-        onPriceUpdate?.(latestPrice);
-        setError(null);
-      }
-    } catch (err) {
-      console.error('Failed to load initial data:', err);
-      setError('Failed to load chart data');
-    } finally {
-      setLoading(false);
-    }
-  }, [symbol, timeframe, onPriceUpdate]);
+  // Initialize with empty data - only real-time WebSocket data will be used
+  const initializeChart = useCallback(() => {
+    setCandlesticks([]);
+    setCurrentPrice(0);
+    setError(null);
+    setLoading(false);
+  }, []);
 
   // Handle WebSocket candlestick updates
   const handleCandlestickUpdate = useCallback((candlestick: CandlestickData) => {
@@ -100,31 +86,13 @@ export const LiveStreamingChart: React.FC<LiveStreamingChartProps> = ({
   // Handle WebSocket errors
   const handleWebSocketError = useCallback((error: Error) => {
     console.error('WebSocket error:', error);
-    setError(`WebSocket connection failed: ${error.message}. Falling back to REST API updates.`);
-    
-    // Fallback to periodic REST API updates if WebSocket fails
-    const fallbackInterval = setInterval(async () => {
-      try {
-        const data = await apiService.getCandlestickData(symbol, timeframe, 100);
-        if (data && Array.isArray(data) && data.length > 0) {
-          setCandlesticks(data);
-          const latestPrice = data[data.length - 1].close;
-          setCurrentPrice(latestPrice);
-          onPriceUpdate?.(latestPrice);
-        }
-      } catch (err) {
-        console.error('Fallback API error:', err);
-      }
-    }, 5000); // Update every 5 seconds as fallback
-
-    // Clean up fallback interval when component unmounts
-    return () => clearInterval(fallbackInterval);
-  }, [symbol, timeframe, onPriceUpdate]);
+    setError(`Live data connection failed: ${error.message}. Please refresh the page to reconnect.`);
+  }, []);
 
   // Initialize WebSocket connection
   useEffect(() => {
-    // Load initial data first
-    loadInitialData();
+    // Initialize chart with empty data
+    initializeChart();
     
     // Create WebSocket service
     wsServiceRef.current = new WebSocketCandlestickService({
@@ -152,7 +120,7 @@ export const LiveStreamingChart: React.FC<LiveStreamingChartProps> = ({
         wsServiceRef.current = null;
       }
     };
-  }, [symbol, timeframe, loadInitialData, handleCandlestickUpdate, handleNewCandle, handleWebSocketError]);
+  }, [symbol, timeframe, initializeChart, handleCandlestickUpdate, handleNewCandle, handleWebSocketError]);
 
   // Update WebSocket when symbol or timeframe changes
   useEffect(() => {
@@ -401,7 +369,8 @@ export const LiveStreamingChart: React.FC<LiveStreamingChartProps> = ({
       <div className="w-full h-full flex items-center justify-center bg-black">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-2 border-blue-500 border-t-transparent mx-auto mb-4"></div>
-          <div className="text-gray-400 text-lg">Loading live chart...</div>
+          <div className="text-gray-400 text-lg">Connecting to live data...</div>
+          <div className="text-gray-500 text-sm mt-2">Establishing real-time WebSocket connection</div>
         </div>
       </div>
     );
@@ -412,12 +381,16 @@ export const LiveStreamingChart: React.FC<LiveStreamingChartProps> = ({
       <div className="w-full h-full flex items-center justify-center bg-black">
         <div className="text-center text-red-400">
           <div className="text-2xl mb-4">⚠️</div>
-          <div className="text-lg">{error}</div>
+          <div className="text-lg font-semibold mb-2">Live Data Connection Failed</div>
+          <div className="text-sm text-gray-400 mb-4">{error}</div>
+          <div className="text-xs text-gray-500 mb-4">
+            Real-time data is required for trading. Please refresh to reconnect.
+          </div>
           <button 
             onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
           >
-            Retry
+            Reconnect to Live Data
           </button>
         </div>
       </div>
