@@ -106,11 +106,35 @@ export class WebSocketCandlestickService {
   }
 
   private processCandlestickUpdate(data: any): void {
+    console.log('🔍 Processing candlestick update:', data);
+    
     // Gate.io candlestick data format: [timestamp, volume, close, high, low, open]
     const candlestickData = data.result;
-    if (!candlestickData || !Array.isArray(candlestickData)) return;
+    console.log('📊 Candlestick data:', candlestickData);
+    
+    if (!candlestickData) {
+      console.warn('⚠️ No candlestick data in result');
+      return;
+    }
 
-    candlestickData.forEach((candle: any) => {
+    // Handle different data structures
+    let candles: any[] = [];
+    
+    if (Array.isArray(candlestickData)) {
+      candles = candlestickData;
+    } else if (candlestickData.c && Array.isArray(candlestickData.c)) {
+      // Handle object with candlestick array
+      candles = candlestickData.c;
+    } else if (typeof candlestickData === 'object') {
+      // Handle single candlestick object
+      candles = [candlestickData];
+    }
+
+    console.log('🕯️ Processing candles:', candles);
+
+    candles.forEach((candle: any, index: number) => {
+      console.log(`🕯️ Processing candle ${index}:`, candle);
+      
       if (Array.isArray(candle) && candle.length >= 6) {
         const candlestick: CandlestickData = {
           timestamp: parseInt(candle[0]) * 1000, // Convert to milliseconds
@@ -121,25 +145,33 @@ export class WebSocketCandlestickService {
           open: parseFloat(candle[5])
         };
 
+        console.log('✅ Parsed candlestick:', candlestick);
+
         // Check if this is a new candle (different timestamp)
         if (this.lastCandleTime !== candlestick.timestamp) {
           // Save previous candle if it exists
           if (this.currentCandle) {
+            console.log('🔄 Creating new candle, saving previous:', this.currentCandle);
             this.onNewCandle(this.currentCandle);
           }
 
           // Set new current candle
           this.currentCandle = candlestick;
           this.lastCandleTime = candlestick.timestamp;
+          console.log('🆕 New candle created:', candlestick);
         } else if (this.currentCandle) {
           // Update current candle with latest data
+          console.log('🔄 Updating current candle:', candlestick);
           this.currentCandle = candlestick;
         }
 
         // Notify of update
         if (this.currentCandle) {
+          console.log('📡 Notifying candlestick update:', this.currentCandle);
           this.onCandlestickUpdate(this.currentCandle);
         }
+      } else {
+        console.warn('⚠️ Invalid candle format:', candle);
       }
     });
   }

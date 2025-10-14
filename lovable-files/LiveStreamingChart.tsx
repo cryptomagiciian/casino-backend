@@ -48,6 +48,8 @@ export const LiveStreamingChart: React.FC<LiveStreamingChartProps> = ({
 
   // Handle WebSocket candlestick updates
   const handleCandlestickUpdate = useCallback((candlestick: CandlestickData) => {
+    console.log('📈 Chart received candlestick update:', candlestick);
+    
     setCandlesticks(prev => {
       const newCandlesticks = [...prev];
       
@@ -58,14 +60,18 @@ export const LiveStreamingChart: React.FC<LiveStreamingChartProps> = ({
       
       if (existingIndex >= 0) {
         // Update existing candle
+        console.log('🔄 Updating existing candle at index:', existingIndex);
         newCandlesticks[existingIndex] = candlestick;
       } else {
         // Add new candle (shouldn't happen in normal flow)
+        console.log('➕ Adding new candle to chart');
         newCandlesticks.push(candlestick);
       }
       
       // Keep only last 100 candles for performance
-      return newCandlesticks.slice(-100);
+      const result = newCandlesticks.slice(-100);
+      console.log('📊 Total candles in chart:', result.length);
+      return result;
     });
     
     setCurrentPrice(candlestick.close);
@@ -74,10 +80,14 @@ export const LiveStreamingChart: React.FC<LiveStreamingChartProps> = ({
 
   // Handle new candle creation
   const handleNewCandle = useCallback((candlestick: CandlestickData) => {
+    console.log('🕯️ Chart received new candle:', candlestick);
+    
     setCandlesticks(prev => {
       const newCandlesticks = [...prev, candlestick];
       // Keep only last 100 candles for performance
-      return newCandlesticks.slice(-100);
+      const result = newCandlesticks.slice(-100);
+      console.log('📊 Total candles after new candle:', result.length);
+      return result;
     });
     
     console.log(`🕯️ New candle created: ${symbol} ${timeframe} at ${new Date(candlestick.timestamp).toLocaleTimeString()}`);
@@ -147,7 +157,19 @@ export const LiveStreamingChart: React.FC<LiveStreamingChartProps> = ({
   // Render chart with smooth updates
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || candlesticks.length === 0) return;
+    console.log('🎨 Chart render effect - candlesticks:', candlesticks.length, 'canvas:', !!canvas);
+    
+    if (!canvas) {
+      console.warn('⚠️ No canvas element found');
+      return;
+    }
+    
+    if (candlesticks.length === 0) {
+      console.warn('⚠️ No candlesticks to render');
+      return;
+    }
+    
+    console.log('🎨 Rendering chart with', candlesticks.length, 'candlesticks');
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
