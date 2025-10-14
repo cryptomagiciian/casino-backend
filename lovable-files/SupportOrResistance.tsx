@@ -149,7 +149,7 @@ export const SupportOrResistance: React.FC = () => {
           if (intervalRef.current) clearInterval(intervalRef.current);
           
           // Resolve bet with error handling
-          apiService.resolveBet(bet.id)
+          resolveBet(bet.id)
             .then(async (resolved) => {
               const won = resolved.resultMultiplier > 0;
               const actualOutcome = won ? prediction : (prediction === 'break' ? 'reject' : 'break');
@@ -180,13 +180,13 @@ export const SupportOrResistance: React.FC = () => {
               }
               
               setPrice(finalPrice);
-              await fetchBalances();
+              await refreshBalance();
               setResult(won ? '🎉 YOU WON! 2.0×' : '💥 YOU LOST!');
               setPriceMoving(false);
             })
             .catch(async (error) => {
               console.error('Bet resolution failed:', error);
-              await fetchBalances();
+              await refreshBalance();
               setResult('❌ Error: ' + error.message);
               setPriceMoving(false);
             })

@@ -162,7 +162,7 @@ export const DiamondHands: React.FC = () => {
 
       // Resolve bet as loss
       if (betId) {
-        apiService.resolveBet(betId).then(() => fetchBalances()).catch(err => {
+        resolveBet(betId).then(() => refreshBalance()).catch(err => {
           console.error('Bet resolution failed:', err);
         });
       }
@@ -183,7 +183,7 @@ export const DiamondHands: React.FC = () => {
         setIsPlaying(false);
         
         if (betId) {
-          apiService.cashoutBet(betId, newMultiplier).then(() => fetchBalances()).catch(err => {
+          cashoutBet(betId, newMultiplier).then(() => refreshBalance()).catch(err => {
             console.error('Cashout failed:', err);
           });
         }
@@ -197,8 +197,8 @@ export const DiamondHands: React.FC = () => {
     setIsPlaying(false);
     
     try {
-      await apiService.cashoutBet(betId, multiplier);
-      await fetchBalances();
+      await cashoutBet(betId, multiplier);
+      await refreshBalance();
       setResult(`💰 CASHED OUT! Won ${getPotentialWin()} {displayCurrency === 'usd' ? 'USD' : bettingCurrency} (${multiplier.toFixed(2)}×)`);
       
       // Reveal all mines

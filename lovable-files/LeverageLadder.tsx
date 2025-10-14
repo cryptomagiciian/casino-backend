@@ -160,7 +160,7 @@ export const LeverageLadder: React.FC = () => {
       
       // Resolve bet as loss
       if (betId) {
-        apiService.resolveBet(betId).then(() => fetchBalances());
+        resolveBet(betId).then(() => refreshBalance());
       }
     } else {
       setCurrentLevel(nextLevel);
@@ -188,8 +188,8 @@ export const LeverageLadder: React.FC = () => {
 
     try {
       // Send current multiplier to backend
-      await apiService.cashoutBet(betId, multiplier);
-      await fetchBalances();
+      await cashoutBet(betId, multiplier);
+      await refreshBalance();
       setResult(`🎉 CASHED OUT! ${multiplier.toFixed(2)}× WIN!`);
     } catch (error) {
       console.error('Cashout failed:', error);

@@ -93,7 +93,7 @@ export const BullVsBear: React.FC = () => {
           if (steps >= targetSteps) {
             if (intervalRef.current) clearInterval(intervalRef.current);
             
-            apiService.resolveBet(bet.id)
+            resolveBet(bet.id)
               .then(async (resolved) => {
                 const won = resolved.resultMultiplier > 0;
                 const winningSide = won ? side : (side === 'bull' ? 'bear' : 'bull');
@@ -101,13 +101,13 @@ export const BullVsBear: React.FC = () => {
                 const finalPos = winningSide === 'bull' ? 90 : 10;
                 setBarPosition(finalPos);
                 
-                await fetchBalances();
+                await refreshBalance();
                 setResult(won ? `🎉 ${side.toUpperCase()} WINS! ${multiplier}×` : `💥 ${winningSide.toUpperCase()} WINS!`);
                 setIsPlaying(false);
               })
               .catch(async (error) => {
                 console.error('Bet resolution failed:', error);
-                await fetchBalances();
+                await refreshBalance();
                 setResult('❌ Error: ' + error.message);
                 setIsPlaying(false);
               });

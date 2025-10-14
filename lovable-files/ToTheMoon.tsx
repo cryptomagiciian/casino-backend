@@ -209,8 +209,8 @@ export const ToTheMoon: React.FC = () => {
       setCanCashout(false);
       
       try {
-        await apiService.cashoutBet(betId, multiplier);
-        await fetchBalances();
+        await cashoutBet(betId, multiplier);
+        await refreshBalance();
       } catch (error) {
         console.error('Cashout failed:', error);
         alert('Cashout failed: ' + (error as Error).message);

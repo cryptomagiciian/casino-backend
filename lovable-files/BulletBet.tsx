@@ -146,7 +146,7 @@ export const BulletBet: React.FC = () => {
             setIsSpinning(false);
             
             setTimeout(() => {
-              fetchBalances();
+              refreshBalance();
             }, 500);
           } else {
             // Normal outcome - pointer lands on a chamber
@@ -163,7 +163,7 @@ export const BulletBet: React.FC = () => {
               const hitBullet = newChambers[finalChamber].isBullet;
               
               // Resolve bet
-              apiService.resolveBet(bet.id)
+              resolveBet(bet.id)
                 .then(async (resolved) => {
                   // Use client-side determination
                   const won = !hitBullet;
@@ -174,7 +174,7 @@ export const BulletBet: React.FC = () => {
                     revealed: i === finalChamber,
                   })));
                   
-                  await fetchBalances();
+                  await refreshBalance();
                   
                   if (won) {
                     setResult(`💎 SURVIVED! Won ${getMultiplier(bulletCount)}× (${displayCurrency === 'usd' ? 'USD' : bettingCurrency})`);
@@ -186,7 +186,7 @@ export const BulletBet: React.FC = () => {
                 })
                 .catch(async (error) => {
                   console.error('Bet resolution failed:', error);
-                  await fetchBalances();
+                  await refreshBalance();
                   setResult('❌ Error: ' + error.message);
                   setIsSpinning(false);
                 });

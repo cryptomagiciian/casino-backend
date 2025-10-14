@@ -257,9 +257,9 @@ export function CryptoSlots() {
           const { multiplier, message } = calculatePayout(outcome);
 
           // Resolve bet
-          apiService.resolveBet(bet.id)
+          resolveBet(bet.id)
             .then(async () => {
-              await fetchBalances();
+              await refreshBalance();
               setResult(message);
               
               if (multiplier > 0) {
@@ -271,7 +271,7 @@ export function CryptoSlots() {
             })
             .catch(async (error) => {
               console.error('Bet resolution failed:', error);
-              await fetchBalances();
+              await refreshBalance();
               setResult('❌ Spin failed: ' + error.message);
               setIsSpinning(false);
             });
