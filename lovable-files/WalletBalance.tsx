@@ -27,7 +27,7 @@ export const WalletBalance: React.FC<WalletBalanceProps> = ({
       // Convert to a simple balance object
       const balanceObj: Record<string, number> = {};
       wallets.forEach(wallet => {
-        balanceObj[wallet.currency] = parseFloat(wallet.balance);
+        balanceObj[wallet.currency] = parseFloat(wallet.available);
       });
       
       console.log('💰 Processed balances:', balanceObj);
