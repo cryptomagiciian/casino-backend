@@ -117,7 +117,7 @@ export class WalletsService {
     };
 
     const amount = testnetAmounts[currency];
-    const amountSmallest = toSmallestUnits(amount, currency);
+    const amountSmallest = toSmallestUnits(amount.toString(), currency);
 
     // Get or create testnet account
     const account = await this.getOrCreateAccount(userId, currency, 'testnet');
@@ -125,7 +125,7 @@ export class WalletsService {
     // Credit testnet faucet amount
     await this.ledgerService.createUserTransaction({
       userId,
-      amount,
+      amount: amount.toString(),
       currency,
       type: 'FAUCET',
       network: 'testnet',

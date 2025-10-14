@@ -229,7 +229,7 @@ export class DepositsService {
     });
 
     // Credit user's wallet
-    const network = deposit.meta?.network || 'mainnet';
+    const network = (deposit.meta as any)?.network || 'mainnet';
     await this.ledgerService.createUserTransaction({
       userId: deposit.userId,
       type: 'DEPOSIT',
@@ -290,7 +290,7 @@ export class DepositsService {
     });
 
     // Credit user's wallet
-    const network = deposit.meta?.network || 'mainnet';
+    const network = (deposit.meta as any)?.network || 'mainnet';
     await this.ledgerService.createUserTransaction({
       userId: deposit.userId,
       type: 'DEPOSIT',
