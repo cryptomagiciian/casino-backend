@@ -38,12 +38,43 @@ export const ProfessionalTradingInterface: React.FC<ProfessionalTradingInterface
   const [candlestickData, setCandlestickData] = useState<CandlestickData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Generate realistic candlestick data
-  const generateCandlestickData = useCallback((symbol: string, tf: string): CandlestickData[] => {
+  // Fetch live data from Gate.io API
+  const fetchLiveData = useCallback(async (symbol: string, tf: string) => {
+    try {
+      // Convert timeframe to Gate.io format
+      const gateTimeframe = tf === '5s' ? '5s' : tf === '15s' ? '15s' : tf === '30s' ? '30s' : tf === '1m' ? '1m' : tf === '5m' ? '5m' : '15m';
+      
+      // Fetch candlestick data from Gate.io
+      const response = await fetch(`https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=${symbol}_USDT&interval=${gateTimeframe}&limit=100`);
+      const data = await response.json();
+      
+      if (data && Array.isArray(data)) {
+        const candlesticks: CandlestickData[] = data.map((candle: any) => ({
+          timestamp: parseInt(candle[0]) * 1000, // Convert to milliseconds
+          open: parseFloat(candle[2]),
+          high: parseFloat(candle[3]),
+          low: parseFloat(candle[4]),
+          close: parseFloat(candle[5]),
+          volume: parseFloat(candle[6]),
+        }));
+        
+        return candlesticks;
+      }
+      
+      // Fallback to mock data if API fails
+      return generateMockData(symbol, tf);
+    } catch (error) {
+      console.error('Failed to fetch live data:', error);
+      return generateMockData(symbol, tf);
+    }
+  }, []);
+
+  // Generate mock data as fallback
+  const generateMockData = useCallback((symbol: string, tf: string): CandlestickData[] => {
     const data: CandlestickData[] = [];
     const now = Date.now();
     const basePrice = symbol === 'BTC' ? 112537 : symbol === 'ETH' ? 3000 : symbol === 'SOL' ? 100 : 1;
-    const volatility = 0.001; // Lower volatility for more realistic movement
+    const volatility = 0.001;
     
     let currentPrice = basePrice;
     const intervalMs = tf === '5s' ? 5000 : tf === '15s' ? 15000 : tf === '30s' ? 30000 : tf === '1m' ? 60000 : tf === '5m' ? 300000 : 900000;
@@ -51,7 +82,6 @@ export const ProfessionalTradingInterface: React.FC<ProfessionalTradingInterface
     for (let i = 0; i < 50; i++) {
       const timestamp = now - (50 - i) * intervalMs;
       
-      // Generate realistic OHLC data
       const change = (Math.random() - 0.5) * volatility * currentPrice;
       const open = currentPrice;
       const close = open + change;
@@ -76,27 +106,31 @@ export const ProfessionalTradingInterface: React.FC<ProfessionalTradingInterface
 
   // Load initial data
   useEffect(() => {
-    setLoading(true);
-    try {
-      const priceData = generateCandlestickData(symbolId, timeframe);
-      setCandlestickData(priceData);
-      
-      const latest = priceData[priceData.length - 1];
-      setCurrentPrice(latest.close);
-      setHighPrice(Math.max(...priceData.map(d => d.high)));
-      setLowPrice(Math.min(...priceData.map(d => d.low)));
-      
-      const previous = priceData[priceData.length - 2];
-      const change = latest.close - previous.close;
-      const changePercent = (change / previous.close) * 100;
-      setPriceChange(change);
-      setPriceChangePercent(changePercent);
-      
-      setLoading(false);
-    } catch (err) {
-      setLoading(false);
-    }
-  }, [symbolId, timeframe, generateCandlestickData]);
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const priceData = await fetchLiveData(symbolId, timeframe);
+        setCandlestickData(priceData);
+        
+        const latest = priceData[priceData.length - 1];
+        setCurrentPrice(latest.close);
+        setHighPrice(Math.max(...priceData.map(d => d.high)));
+        setLowPrice(Math.min(...priceData.map(d => d.low)));
+        
+        const previous = priceData[priceData.length - 2];
+        const change = latest.close - previous.close;
+        const changePercent = (change / previous.close) * 100;
+        setPriceChange(change);
+        setPriceChangePercent(changePercent);
+        
+        setLoading(false);
+      } catch (err) {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
+  }, [symbolId, timeframe, fetchLiveData]);
 
   // Draw chart with world map background
   const drawChart = useCallback(() => {
@@ -115,18 +149,37 @@ export const ProfessionalTradingInterface: React.FC<ProfessionalTradingInterface
     // Clear canvas
     ctx.clearRect(0, 0, rect.width, rect.height);
 
-    // Draw world map background (simplified dots pattern)
+    // Draw world map background
     ctx.fillStyle = '#1a1a1a';
     ctx.fillRect(0, 0, rect.width, rect.height);
     
-    // Draw subtle world map dots
+    // Draw world map pattern (subtle dots)
     ctx.fillStyle = '#2a2a2a';
-    for (let x = 0; x < rect.width; x += 40) {
-      for (let y = 0; y < rect.height; y += 40) {
+    for (let x = 0; x < rect.width; x += 30) {
+      for (let y = 0; y < rect.height; y += 30) {
         ctx.beginPath();
-        ctx.arc(x, y, 1, 0, 2 * Math.PI);
+        ctx.arc(x, y, 0.5, 0, 2 * Math.PI);
         ctx.fill();
       }
+    }
+    
+    // Add some world map-like patterns
+    ctx.strokeStyle = '#333333';
+    ctx.lineWidth = 0.5;
+    
+    // Draw subtle grid lines
+    for (let x = 0; x < rect.width; x += 60) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, rect.height);
+      ctx.stroke();
+    }
+    
+    for (let y = 0; y < rect.height; y += 60) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(rect.width, y);
+      ctx.stroke();
     }
 
     // Chart dimensions
@@ -255,61 +308,33 @@ export const ProfessionalTradingInterface: React.FC<ProfessionalTradingInterface
 
   // Real-time updates
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCandlestickData(prev => {
-        const newData = [...prev];
-        const lastCandle = newData[newData.length - 1];
-        const now = Date.now();
-        
-        // Add new candle based on timeframe
-        const intervalMs = timeframe === '5s' ? 5000 : timeframe === '15s' ? 15000 : timeframe === '30s' ? 30000 : timeframe === '1m' ? 60000 : timeframe === '5m' ? 300000 : 900000;
-        
-        if (now - lastCandle.timestamp >= intervalMs) {
-          const change = (Math.random() - 0.5) * 0.001 * lastCandle.close;
-          const newClose = lastCandle.close + change;
-          const newHigh = Math.max(lastCandle.close, newClose) * (1 + Math.random() * 0.0005);
-          const newLow = Math.min(lastCandle.close, newClose) * (1 - Math.random() * 0.0005);
+    const interval = setInterval(async () => {
+      try {
+        // Fetch fresh data from Gate.io API
+        const freshData = await fetchLiveData(symbolId, timeframe);
+        if (freshData && freshData.length > 0) {
+          setCandlestickData(freshData);
           
-          newData.push({
-            timestamp: now,
-            open: lastCandle.close,
-            high: Number(newHigh.toFixed(2)),
-            low: Number(newLow.toFixed(2)),
-            close: Number(newClose.toFixed(2)),
-            volume: Math.random() * 1000000 + 100000,
-          });
+          const latest = freshData[freshData.length - 1];
+          setCurrentPrice(latest.close);
+          setHighPrice(Math.max(...freshData.map(d => d.high)));
+          setLowPrice(Math.min(...freshData.map(d => d.low)));
           
-          // Keep only last 50 candles
-          if (newData.length > 50) {
-            newData.shift();
+          if (freshData.length > 1) {
+            const previous = freshData[freshData.length - 2];
+            const change = latest.close - previous.close;
+            const changePercent = (change / previous.close) * 100;
+            setPriceChange(change);
+            setPriceChangePercent(changePercent);
           }
-        } else {
-          // Update current candle
-          const change = (Math.random() - 0.5) * 0.0005 * lastCandle.close;
-          const newClose = lastCandle.close + change;
-          const newHigh = Math.max(lastCandle.high, newClose);
-          const newLow = Math.min(lastCandle.low, newClose);
-          
-          newData[newData.length - 1] = {
-            ...lastCandle,
-            high: Number(newHigh.toFixed(2)),
-            low: Number(newLow.toFixed(2)),
-            close: Number(newClose.toFixed(2)),
-          };
         }
-        
-        // Update current price and high/low
-        const latest = newData[newData.length - 1];
-        setCurrentPrice(latest.close);
-        setHighPrice(Math.max(...newData.map(d => d.high)));
-        setLowPrice(Math.min(...newData.map(d => d.low)));
-        
-        return newData;
-      });
-    }, 1000);
+      } catch (error) {
+        console.error('Failed to update live data:', error);
+      }
+    }, 5000); // Update every 5 seconds
 
     return () => clearInterval(interval);
-  }, [timeframe]);
+  }, [symbolId, timeframe, fetchLiveData]);
 
   // Place trade
   const handlePlaceTrade = async () => {
