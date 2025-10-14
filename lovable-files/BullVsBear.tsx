@@ -144,7 +144,7 @@ export const BullVsBear: React.FC = () => {
         <div className="flex items-center justify-between">
           <span className="text-gray-400">Balance:</span>
           <span className="font-mono font-bold text-green-400">
-            {formatBalance(balance, bettingCurrency)}
+            ${balance.toFixed(2)} USD
           </span>
         </div>
         <div className="flex items-center justify-between text-xs text-gray-500 mt-1">

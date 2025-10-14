@@ -4,6 +4,9 @@ import { useNetwork } from './NetworkContext';
 import { useCurrency } from './CurrencySelector';
 import { useBalance } from './BalanceContext';
 import { WalletBalance } from './WalletBalance';
+import LadderScene, { LadderSceneRef } from './components/games/leverage/LadderScene';
+import Controls from './components/games/leverage/Controls';
+import { sfxManager } from './lib/sfx/SFXManager';
 
 // Generate 100 levels with exponential growth
 // Formula: multiplier = 1.15^level (exponential curve)
@@ -34,11 +37,14 @@ export const LeverageLadder: React.FC = () => {
   const [betId, setBetId] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [bustLevel, setBustLevel] = useState<number | null>(null);
-  const { placeBet, resolveBet, getBalance, isBetting, error } = useBetting();
+  const { placeBet, resolveBet, cashoutBet, getBalance, isBetting, error } = useBetting();
   const { network } = useNetwork();
   const { bettingCurrency, displayCurrency, formatBalance, convertToUsd } = useCurrency();
   const { getAvailableBalance } = useBalance();
   const [balance, setBalance] = useState<number>(0);
+  
+  // Scene ref for animations
+  const sceneRef = useRef<LadderSceneRef>(null);
 
   // Auto-scroll to current level
   // Refresh balance when network or currency changes
@@ -149,10 +155,13 @@ export const LeverageLadder: React.FC = () => {
     }
   };
 
-  const climbUp = () => {
-    if (!isPlaying || currentLevel >= 100) return;
+  const climbUp = async () => {
+    if (!isPlaying || currentLevel >= 100 || !betId) return;
 
     const nextLevel = currentLevel + 1;
+    
+    // Play climb attempt sound
+    sfxManager.play('climb_success', 0.5);
     
     // Check if busted
     if (nextLevel >= (bustLevel || 101)) {
@@ -160,24 +169,44 @@ export const LeverageLadder: React.FC = () => {
       setResult('💥 LIQUIDATED! You lost everything!');
       setIsPlaying(false);
       
-      // Resolve bet as loss
+      // Play liquidation sound and animation
+      sfxManager.play('liquidation_thunder', 0.8);
+      sceneRef.current?.animateLiquidation();
+      
+      // Resolve bet as loss - send the actual game outcome
       if (betId) {
-        resolveBet(betId).then(() => refreshBalance());
+        const resolveParams = {
+          frontendOutcome: 'lose', // Player hit liquidation level
+          frontendMultiplier: 0,   // No payout for liquidation
+          liquidationLevel: nextLevel,
+          bustLevel: bustLevel
+        };
+        
+        console.log('🎯 Sending liquidation resolve params:', resolveParams);
+        resolveBet(betId, resolveParams).then(() => refreshBalance());
       }
     } else {
       setCurrentLevel(nextLevel);
       
+      // Play success animation
+      sceneRef.current?.animateAdvance();
+      
       // Give feedback at milestones
       if (nextLevel === 10) {
         console.log('🎯 Nice! Level 10 reached - 4× multiplier');
+        sfxManager.play('milestone_reached', 0.7);
       } else if (nextLevel === 25) {
         console.log('🔥 Amazing! Level 25 - 33× multiplier!');
+        sfxManager.play('milestone_reached', 0.7);
       } else if (nextLevel === 50) {
         console.log('💎 INSANE! Level 50 - 1,084× multiplier!!');
+        sfxManager.play('milestone_reached', 0.7);
       } else if (nextLevel === 75) {
         console.log('🚀 LEGENDARY! Level 75 - 37K× multiplier!!!');
+        sfxManager.play('milestone_reached', 0.7);
       } else if (nextLevel === 100) {
         console.log('👑 GODLIKE! MAX LEVEL 100 - 1.17M× MULTIPLIER!!!!');
+        sfxManager.play('milestone_reached', 0.7);
       }
     }
   };
@@ -189,6 +218,10 @@ export const LeverageLadder: React.FC = () => {
     const multiplier = LADDER_RUNGS[currentLevel - 1].multiplier;
 
     try {
+      // Play cashout sound and animation
+      sfxManager.play('cashout_chime', 0.8);
+      sceneRef.current?.animateCashout();
+      
       // Send current multiplier to backend
       await cashoutBet(betId, multiplier);
       await refreshBalance();
@@ -208,15 +241,26 @@ export const LeverageLadder: React.FC = () => {
     setBustLevel(null);
   };
 
+  // Calculate current multiplier and potential win
+  const currentMultiplier = currentLevel === 0 ? 1.0 : LADDER_RUNGS[currentLevel - 1].multiplier;
+  const potentialWin = parseFloat(stake) * currentMultiplier;
+  
+  // Calculate risk level (0-100) based on current level
+  const riskLevel = Math.min(95, currentLevel * 2 + Math.random() * 10);
+  
+  // Calculate next level success probability
+  const nextLevelProb = Math.max(5, 100 - riskLevel);
+
   return (
     <div className="bg-gradient-to-br from-purple-900 via-indigo-900 to-black rounded-lg p-6 border-2 border-indigo-500 shadow-2xl relative">
       <WalletBalance position="top-right" />
+      
       {/* Balance Display */}
       <div className="mb-4 p-3 bg-gray-800/50 rounded-lg border border-gray-600">
         <div className="flex items-center justify-between">
           <span className="text-gray-400">Balance:</span>
           <span className="font-mono font-bold text-green-400">
-            {formatBalance(balance, bettingCurrency)}
+            ${balance.toFixed(2)} USD
           </span>
         </div>
         <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
@@ -226,154 +270,77 @@ export const LeverageLadder: React.FC = () => {
       </div>
       
       <h2 className="text-3xl font-bold text-indigo-400 mb-2">🪜 LEVERAGE LADDER</h2>
-      <p className="text-gray-300 mb-4">Climb for higher multipliers! Cash out before liquidation!</p>
+      <p className="text-gray-300 mb-4">Climb the neon ladder! Cash out before liquidation!</p>
 
-      {/* Ladder Visual - Scrollable */}
-      <div className="bg-black rounded-lg p-4 mb-4 border border-indigo-700 relative h-96 overflow-y-auto">
-        <div className="flex flex-col-reverse gap-2">
-          {LADDER_RUNGS.map((rung, index) => {
-            const isActive = currentLevel === rung.level;
-            const isPassed = currentLevel > rung.level;
-            const isBust = bustLevel === rung.level && currentLevel >= rung.level;
-            const isMilestone = rung.level % 10 === 0;
-            const isUltraRare = rung.level > 80;
-            
-            return (
-              <div 
-                key={rung.level}
-                id={`level-${rung.level}`}
-                className={`relative flex items-center justify-between p-3 rounded-lg border-2 transition-all ${
-                  isBust 
-                    ? 'bg-red-900 border-red-500 animate-pulse' 
-                    : isActive 
-                      ? 'bg-gradient-to-r from-yellow-600 to-yellow-500 border-yellow-400 shadow-lg shadow-yellow-500/50 animate-pulse' 
-                      : isPassed 
-                        ? 'bg-green-800 border-green-500' 
-                        : isUltraRare
-                          ? 'bg-purple-900 border-purple-500'
-                          : isMilestone
-                            ? 'bg-gray-700 border-indigo-500'
-                            : 'bg-gray-800 border-gray-600'
-                } ${isActive ? 'scale-105' : ''}`}
-              >
-                <span className={`font-bold ${
-                  isUltraRare ? 'text-purple-300 text-lg' : isMilestone ? 'text-indigo-300 text-lg' : 'text-white'
-                }`}>
-                  {isUltraRare && '👑'} Lvl {rung.level} {isMilestone && rung.level !== 100 && '🎯'}
-                </span>
-                <span className={`font-bold ${
-                  isBust 
-                    ? 'text-red-400 text-2xl' 
-                    : isActive 
-                      ? 'text-yellow-300 text-2xl' 
-                      : isPassed 
-                        ? 'text-green-400 text-xl' 
-                        : isUltraRare
-                          ? 'text-purple-400 text-lg'
-                          : isMilestone
-                            ? 'text-indigo-400'
-                            : 'text-gray-500 text-sm'
-                }`}>
-                  {isBust ? '💀 ' : ''}{rung.label}
-                </span>
-                
-                {isActive && (
-                  <div className="absolute -right-2 top-1/2 transform -translate-y-1/2 text-3xl animate-bounce">
-                    👤
-                  </div>
-                )}
-              </div>
-            );
-          })}
+      {/* Main Game Area */}
+      <div className="space-y-4">
+        {/* Ladder Scene - PixiJS Canvas */}
+        <div className="bg-black rounded-lg border border-indigo-700 overflow-hidden" 
+             style={{ height: '56vh', minHeight: '400px' }}>
+          <LadderScene
+            ref={sceneRef}
+            currentLevel={currentLevel}
+            multiplier={currentMultiplier}
+            risk={riskLevel}
+            milestones={[2, 5, 10]}
+            onMilestoneReached={(milestone) => {
+              console.log(`🎯 Milestone reached: ${milestone}×`);
+            }}
+          />
         </div>
+
+        {/* Controls */}
+        {isPlaying && !result && (
+          <Controls
+            currentLevel={currentLevel}
+            multiplier={currentMultiplier}
+            potentialWin={potentialWin}
+            risk={riskLevel}
+            nextLevelProb={nextLevelProb}
+            isClimbing={isBetting}
+            canCashOut={currentLevel > 0}
+            onClimb={climbUp}
+            onCashOut={cashOut}
+          />
+        )}
+
+        {/* Result Display */}
+        {result && (
+          <div className={`text-center text-3xl font-bold mb-4 animate-bounce ${
+            result.includes('WON') || result.includes('CASHED') ? 'text-green-400' : 'text-red-400'
+          }`}>
+            {result}
+          </div>
+        )}
+
+        {/* Start Game / Reset */}
+        {!isPlaying && (
+          <div className="space-y-4">
+            {!result && (
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Stake (USD):
+                </label>
+                <input
+                  type="number"
+                  value={stake}
+                  onChange={(e) => setStake(e.target.value)}
+                  step="0.01"
+                  min="0.01"
+                  className="w-full px-3 py-2 bg-gray-700 border border-indigo-600 rounded text-white focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            )}
+
+            <button
+              onClick={result ? resetGame : startGame}
+              className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-lg font-bold text-xl transition-all transform hover:scale-105 shadow-lg"
+            >
+              {result ? '🔄 New Climb' : '🚀 START CLIMBING'}
+            </button>
+          </div>
+        )}
       </div>
-
-      {/* Result Display */}
-      {result && (
-        <div className={`text-center text-3xl font-bold mb-4 animate-bounce ${
-          result.includes('WON') || result.includes('CASHED') ? 'text-green-400' : 'text-red-400'
-        }`}>
-          {result}
-        </div>
-      )}
-
-      {!isPlaying && !result && (
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Stake (USD):
-            </label>
-            <input
-              type="number"
-              value={stake}
-              onChange={(e) => setStake(e.target.value)}
-              step="0.01"
-              min="0.01"
-              className="w-full px-3 py-2 bg-gray-700 border border-indigo-600 rounded text-white focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-
-          <button
-            onClick={startGame}
-            className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-lg font-bold text-xl transition-all transform hover:scale-105 shadow-lg"
-          >
-            🚀 START CLIMBING
-          </button>
-        </div>
-      )}
-
-      {isPlaying && !result && (
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-gray-800 rounded p-3 border border-indigo-600 text-center">
-              <div className="text-gray-400 text-xs">Level</div>
-              <div className="text-3xl font-bold text-indigo-400">
-                {currentLevel} / 100
-              </div>
-            </div>
-            <div className="bg-gray-800 rounded p-3 border border-yellow-600 text-center">
-              <div className="text-gray-400 text-xs">Multiplier</div>
-              <div className="text-3xl font-bold text-yellow-400">
-                {currentLevel === 0 ? '1.0×' : LADDER_RUNGS[currentLevel - 1].label}
-              </div>
-            </div>
-          </div>
-
-          {currentLevel > 0 && (
-            <div className="bg-gradient-to-r from-green-900 to-emerald-900 rounded p-2 border border-green-600 text-center">
-              <div className="text-green-300 text-sm font-bold">
-                💰 Potential Win: {(parseFloat(stake) * LADDER_RUNGS[currentLevel - 1].multiplier).toFixed(2)} USD
-              </div>
-            </div>
-          )}
-
-          <div className="flex gap-3">
-            <button
-              onClick={climbUp}
-              disabled={currentLevel >= 100}
-              className="flex-1 py-4 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 disabled:from-gray-700 disabled:to-gray-600 text-white rounded-lg font-bold text-lg transition-all transform hover:scale-105 disabled:scale-100"
-            >
-              ⬆️ CLIMB {currentLevel < 100 ? `(${currentLevel + 1})` : 'MAX'}
-            </button>
-            <button
-              onClick={cashOut}
-              disabled={currentLevel === 0}
-              className="flex-1 py-4 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 disabled:from-gray-700 disabled:to-gray-600 text-white rounded-lg font-bold text-lg transition-all transform hover:scale-105 disabled:scale-100"
-            >
-              💰 CASH OUT
-            </button>
-          </div>
-        </div>
-      )}
-
-      {result && (
-        <button
-          onClick={resetGame}
-          className="w-full mt-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-colors"
-        >
-          🔄 New Climb
-        </button>
-      )}
     </div>
   );
 };
