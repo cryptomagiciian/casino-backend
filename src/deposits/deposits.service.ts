@@ -63,7 +63,7 @@ export class DepositsService {
     // Generate unique wallet address for this deposit
     // For multi-chain tokens, use the specified blockchain
     const targetCurrency = blockchain && ['USDC', 'USDT'].includes(currency) ? blockchain : currency;
-    const depositWalletAddress = await this.walletService.generateDepositAddress(userId, targetCurrency as Currency, network);
+    const depositWalletAddress = await this.walletService.generateDepositAddress(userId, targetCurrency as Currency, network, depositId);
 
     // Create deposit record
     const deposit = await this.prisma.deposit.create({

@@ -24,23 +24,31 @@ export class WalletService {
 
   /**
    * Generate a unique deposit address for a user
+   * @param userId - User ID
+   * @param currency - Currency type
+   * @param network - Network (mainnet/testnet)
+   * @param depositId - Optional deposit ID to make address unique per deposit
    */
   async generateDepositAddress(
     userId: string,
     currency: Currency,
-    network: 'mainnet' | 'testnet' = 'mainnet'
+    network: 'mainnet' | 'testnet' = 'mainnet',
+    depositId?: string
   ): Promise<string> {
     try {
+      // Use depositId if provided to make each deposit address unique
+      const uniqueId = depositId ? `${userId}-${depositId}` : userId;
+      
       switch (currency) {
         case 'BTC':
-          return this.generateBitcoinAddress(userId, network);
+          return this.generateBitcoinAddress(uniqueId, network);
         case 'ETH':
-          return this.generateEthereumAddress(userId, network);
+          return this.generateEthereumAddress(uniqueId, network);
         case 'SOL':
-          return this.generateSolanaAddress(userId, network);
+          return this.generateSolanaAddress(uniqueId, network);
         case 'USDC':
         case 'USDT':
-          return this.generateEthereumAddress(userId, network); // USDC/USDT are ERC-20 tokens
+          return this.generateEthereumAddress(uniqueId, network); // USDC/USDT are ERC-20 tokens
         default:
           throw new Error(`Unsupported currency: ${currency}`);
       }
@@ -69,6 +77,7 @@ export class WalletService {
       network: networkConfig,
     });
 
+    this.logger.debug(`Generated BTC address for ${userId} on ${network}: ${address}`);
     return address!;
   }
 
@@ -83,6 +92,7 @@ export class WalletService {
     // Generate HD wallet using modern ethers API
     const wallet = ethers.HDNodeWallet.fromSeed(seedHash).derivePath("m/44'/60'/0'/0/0");
     
+    this.logger.debug(`Generated ETH address for ${userId} on ${network}: ${wallet.address}`);
     return wallet.address;
   }
 
@@ -101,6 +111,7 @@ export class WalletService {
     // This happens automatically when the first transaction is sent to it
     // The address will show "Account does not exist" until it receives funds
     
+    this.logger.debug(`Generated SOL address for ${userId} on ${network}: ${keypair.publicKey.toString()}`);
     return keypair.publicKey.toString();
   }
 
