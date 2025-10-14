@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as bitcoin from 'bitcoinjs-lib';
+import * as bip32 from 'bip32';
 import * as ecc from 'tiny-secp256k1';
 import * as ethers from 'ethers';
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
@@ -55,8 +56,8 @@ export class WalletService {
     
     const networkConfig = network === 'testnet' ? bitcoin.networks.testnet : bitcoin.networks.bitcoin;
     
-    // Generate HD wallet using the correct API for bitcoinjs-lib v7.x
-    const root = bitcoin.bip32.fromSeed(seedBuffer, networkConfig);
+    // Generate HD wallet using separate bip32 package for bitcoinjs-lib v7.x
+    const root = bip32.fromSeed(seedBuffer, networkConfig);
     const child = root.derivePath("m/84'/0'/0'/0/0"); // Native SegWit (Bech32)
     
     const { address } = bitcoin.payments.p2wpkh({
