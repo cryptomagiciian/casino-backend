@@ -117,7 +117,7 @@ export const BulletBet: React.FC = () => {
 
     const bet = await placeBet({
         game: 'stop_loss_roulette',
-        currency: '{displayCurrency === 'usd' ? 'USD' : bettingCurrency}',
+        currency: 'USD', // Always bet in USD,
         stake,
         clientSeed: Math.random().toString(36),
         params: { riskLevel: bulletCount },
@@ -177,7 +177,7 @@ export const BulletBet: React.FC = () => {
                   await refreshBalance();
                   
                   if (won) {
-                    setResult(`💎 SURVIVED! Won ${getMultiplier(bulletCount)}× (${displayCurrency === 'usd' ? 'USD' : bettingCurrency})`);
+                    setResult(`💎 SURVIVED! Won ${getMultiplier(bulletCount)}× ($USD)`);
                   } else {
                     setResult('💀 BULLET! You lost!');
                   }
@@ -370,7 +370,7 @@ export const BulletBet: React.FC = () => {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Stake ({displayCurrency === 'usd' ? 'USD' : bettingCurrency}):
+              Stake (USD):
             </label>
             <input
               type="number"
@@ -398,7 +398,7 @@ export const BulletBet: React.FC = () => {
             onClick={spin}
             className="w-full py-4 bg-gradient-to-r from-red-600 via-orange-600 to-yellow-600 hover:from-red-500 hover:via-orange-500 hover:to-yellow-500 text-white rounded-xl font-bold text-xl transition-all transform hover:scale-105 shadow-lg shadow-red-500/50"
           >
-            🔫 PULL THE TRIGGER ({stake} {displayCurrency === 'usd' ? 'USD' : bettingCurrency})
+            🔫 PULL THE TRIGGER ({stake} USD)
           </button>
 
           <div className="space-y-2">

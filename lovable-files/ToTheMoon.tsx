@@ -124,7 +124,7 @@ export const ToTheMoon: React.FC = () => {
     const bet = await placeBet({
         game: 'to_the_moon',
         stake: parseFloat(stake),
-        currency: displayCurrency === 'usd' ? 'USD' : bettingCurrency,
+        currency: 'USD', // Always bet in USD
         prediction: { multiplier: crashPoint },
         meta: {
           network,
@@ -265,7 +265,7 @@ export const ToTheMoon: React.FC = () => {
         <div className="text-right">
           <div className="text-sm text-gray-400">Potential Win</div>
           <div className="text-lg font-bold text-green-400">
-            {displayCurrency === 'usd' ? '$' : ''}{(parseFloat(stake) * multiplier).toFixed(2)}{displayCurrency === 'crypto' ? ` ${bettingCurrency}` : ''}
+            ${(parseFloat(stake) * multiplier).toFixed(2)}
           </div>
         </div>
       </div>
@@ -494,7 +494,7 @@ export const ToTheMoon: React.FC = () => {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Stake ({displayCurrency === 'usd' ? 'USD' : bettingCurrency}):
+              Stake (USD):
             </label>
             <input
               type="number"

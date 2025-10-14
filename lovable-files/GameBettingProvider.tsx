@@ -39,27 +39,25 @@ export const GameBettingProvider: React.FC<{ children: ReactNode }> = ({ childre
       setIsBetting(true);
       setError(null);
 
-      // Use the selected betting currency
-      let actualStake = gameData.stake;
-      let actualCurrency = bettingCurrency;
-
-      // If betting in USD, convert to the selected crypto currency
-      if (gameData.currency === 'USD') {
-        actualCurrency = bettingCurrency;
-        actualStake = gameData.stake; // For stablecoins, 1 USD = 1 USDC/USDT
-      }
+      // Always place bets in USD, but use selected crypto currency for transaction
+      const usdStake = gameData.stake; // Stake is always in USD
+      const actualCurrency = bettingCurrency; // Use selected crypto currency for transaction
+      
+      // Convert USD stake to crypto amount for the transaction
+      const cryptoStake = convertUsdToCrypto(usdStake, actualCurrency);
 
       const betData = {
         game: gameData.game,
-        stake: actualStake.toString(),
-        currency: actualCurrency,
+        stake: cryptoStake.toString(), // Send crypto amount to backend
+        currency: actualCurrency, // Use crypto currency for transaction
         clientSeed: Math.random().toString(36), // Generate client seed for provably fair
         params: {
           ...gameData.prediction,
           // Store meta data in params since backend doesn't accept meta
           network,
-          originalCurrency: gameData.currency,
-          originalStake: gameData.stake,
+          usdStake: usdStake, // Store original USD amount
+          originalCurrency: 'USD', // Always USD for display
+          originalStake: usdStake,
           ...gameData.meta,
         },
       };
@@ -76,6 +74,24 @@ export const GameBettingProvider: React.FC<{ children: ReactNode }> = ({ childre
     } finally {
       setIsBetting(false);
     }
+  };
+
+  // Convert USD amount to crypto amount based on current rates
+  const convertUsdToCrypto = (usdAmount: number, cryptoCurrency: string): number => {
+    // For stablecoins, 1 USD = 1 USDC/USDT
+    if (cryptoCurrency === 'USDC' || cryptoCurrency === 'USDT') {
+      return usdAmount;
+    }
+    
+    // For other cryptos, use conversion rates (you might want to fetch these from an API)
+    const rates: Record<string, number> = {
+      BTC: 45000, // $45,000 per BTC
+      ETH: 2500,  // $2,500 per ETH
+      SOL: 100,   // $100 per SOL
+    };
+    
+    const rate = rates[cryptoCurrency] || 1;
+    return usdAmount / rate;
   };
 
   const resolveBet = async (betId: string) => {

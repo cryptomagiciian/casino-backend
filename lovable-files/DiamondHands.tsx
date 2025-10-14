@@ -125,7 +125,7 @@ export const DiamondHands: React.FC = () => {
 
     const bet = await placeBet({
         game: 'diamond_hands',
-        currency: '{displayCurrency === 'usd' ? 'USD' : bettingCurrency}',
+        currency: 'USD', // Always bet in USD
         stake,
         clientSeed: Math.random().toString(36),
         params: { mineCount: difficulty.mines },
@@ -149,7 +149,7 @@ export const DiamondHands: React.FC = () => {
       // Hit a mine!
       newGrid[index] = 'mine';
       setGrid(newGrid);
-      setResult(`💣 BOOM! Hit mine after ${safeCount} safe picks. Lost ${stake} {displayCurrency === 'usd' ? 'USD' : bettingCurrency}!`);
+      setResult(`💣 BOOM! Hit mine after ${safeCount} safe picks. Lost $${stake} USD!`);
       setIsPlaying(false);
 
       // Reveal all mines
@@ -199,7 +199,7 @@ export const DiamondHands: React.FC = () => {
     try {
       await cashoutBet(betId, multiplier);
       await refreshBalance();
-      setResult(`💰 CASHED OUT! Won ${getPotentialWin()} {displayCurrency === 'usd' ? 'USD' : bettingCurrency} (${multiplier.toFixed(2)}×)`);
+      setResult(`💰 CASHED OUT! Won $${getPotentialWin()} USD (${multiplier.toFixed(2)}×)`);
       
       // Reveal all mines
       const finalGrid = grid.map((tile, i) => 
@@ -340,7 +340,7 @@ export const DiamondHands: React.FC = () => {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Stake ({displayCurrency === 'usd' ? 'USD' : bettingCurrency}):
+              Stake (USD):
             </label>
             <input
               type="number"
@@ -399,7 +399,7 @@ export const DiamondHands: React.FC = () => {
             onClick={startGame}
             className="w-full py-4 bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white rounded-lg font-bold text-xl transition-all transform hover:scale-105 shadow-lg shadow-cyan-500/50"
           >
-            💎 START MINING ({stake} {displayCurrency === 'usd' ? 'USD' : bettingCurrency})
+            💎 START MINING (${stake} USD)
           </button>
         </div>
       )}

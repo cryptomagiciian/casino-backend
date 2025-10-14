@@ -193,7 +193,7 @@ export const PumpOrDump: React.FC = () => {
       const bet = await placeBet({
         game: 'pump_or_dump',
         stake: parseFloat(stake),
-        currency: displayCurrency === 'usd' ? 'USD' : bettingCurrency,
+        currency: 'USD', // Always bet in USD,
         prediction: { prediction, timeframe },
         meta: {
           network,
@@ -464,8 +464,8 @@ export const PumpOrDump: React.FC = () => {
         
         // Show detailed result - visual now matches backend RNG outcome
         const resultMessage = won 
-          ? `🎉 WON! Price ${isPump ? 'PUMPED ⬆️' : 'DUMPED ⬇️'} ${Math.abs(parseFloat(priceChange))}%! +${(parseFloat(stake) * (resolved.resultMultiplier || 1.88)).toFixed(2)} ${displayCurrency === 'usd' ? 'USD' : bettingCurrency}`
-          : `💥 LOST! Price ${isPump ? 'PUMPED ⬆️' : 'DUMPED ⬇️'} ${Math.abs(parseFloat(priceChange))}%. You bet ${currentPrediction.toUpperCase()}. -${stake} ${displayCurrency === 'usd' ? 'USD' : bettingCurrency}`;
+          ? `🎉 WON! Price ${isPump ? 'PUMPED ⬆️' : 'DUMPED ⬇️'} ${Math.abs(parseFloat(priceChange))}%! +${(parseFloat(stake) * (resolved.resultMultiplier || 1.88)).toFixed(2)} $USD`
+          : `💥 LOST! Price ${isPump ? 'PUMPED ⬆️' : 'DUMPED ⬇️'} ${Math.abs(parseFloat(priceChange))}%. You bet ${currentPrediction.toUpperCase()}. -${stake} $USD`;
         
         console.log('📢 Setting result:', resultMessage);
         
@@ -657,7 +657,7 @@ export const PumpOrDump: React.FC = () => {
         {/* Bet indicator */}
         {betId && !result && (
           <div className="absolute top-4 left-4 bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-bold animate-pulse border-2 border-purple-300 shadow-lg z-10">
-            🎲 {prediction.toUpperCase()} • {stake} {displayCurrency === 'usd' ? 'USD' : bettingCurrency}
+            🎲 {prediction.toUpperCase()} • {stake} USD
           </div>
         )}
 
@@ -746,7 +746,7 @@ export const PumpOrDump: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Stake ({displayCurrency === 'usd' ? 'USD' : bettingCurrency}):
+              Stake (USD):
             </label>
             <input
               type="number"
@@ -800,7 +800,7 @@ export const PumpOrDump: React.FC = () => {
             onClick={startRound}
             className="w-full py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 hover:from-purple-500 hover:via-pink-500 hover:to-red-500 text-white rounded-xl font-bold text-xl transition-all transform hover:scale-105 shadow-lg shadow-purple-500/50"
           >
-            🚀 START {timeframe}s ROUND & BET {prediction.toUpperCase()} ({stake} {displayCurrency === 'usd' ? 'USD' : bettingCurrency})
+            🚀 START {timeframe}s ROUND & BET {prediction.toUpperCase()} ({stake} USD)
           </button>
         </div>
       )}

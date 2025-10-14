@@ -105,7 +105,7 @@ export const SupportOrResistance: React.FC = () => {
 
     const bet = await placeBet({
         game: 'support_or_resistance',
-        currency: '{displayCurrency === 'usd' ? 'USD' : bettingCurrency}',
+        currency: 'USD', // Always bet in USD,
         stake,
         clientSeed: Math.random().toString(36),
         params: { prediction },
@@ -398,7 +398,7 @@ export const SupportOrResistance: React.FC = () => {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Stake ({displayCurrency === 'usd' ? 'USD' : bettingCurrency}):
+              Stake (USD):
             </label>
             <input
               type="number"
@@ -452,7 +452,7 @@ export const SupportOrResistance: React.FC = () => {
             onClick={placeBet}
             className="w-full py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 text-white rounded-xl font-bold text-xl transition-all transform hover:scale-105 shadow-lg shadow-indigo-500/50"
           >
-            🎯 PLACE BET ({stake} {displayCurrency === 'usd' ? 'USD' : bettingCurrency})
+            🎯 PLACE BET ({stake} USD)
           </button>
         </div>
       )}

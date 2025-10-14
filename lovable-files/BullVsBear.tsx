@@ -72,7 +72,7 @@ export const BullVsBear: React.FC = () => {
 
     const bet = await placeBet({
         game: 'bull_vs_bear_battle',
-        currency: '{displayCurrency === 'usd' ? 'USD' : bettingCurrency}',
+        currency: 'USD', // Always bet in USD,
         stake,
         clientSeed: Math.random().toString(36),
         params: { side, multiplier },
@@ -278,7 +278,7 @@ export const BullVsBear: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Stake ({displayCurrency === 'usd' ? 'USD' : bettingCurrency}):
+              Stake (USD):
             </label>
             <input
               type="number"
@@ -341,7 +341,7 @@ export const BullVsBear: React.FC = () => {
             onClick={placeBet}
             className="w-full py-4 bg-gradient-to-r from-green-600 via-yellow-600 to-red-600 hover:from-green-500 hover:via-yellow-500 hover:to-red-500 text-white rounded-xl font-bold text-xl transition-all transform hover:scale-105 shadow-lg shadow-yellow-500/50"
           >
-            ⚔️ START BATTLE ({stake} {displayCurrency === 'usd' ? 'USD' : bettingCurrency})
+            ⚔️ START BATTLE ({stake} USD)
           </button>
         </div>
       )}

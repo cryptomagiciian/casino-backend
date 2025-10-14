@@ -133,7 +133,7 @@ export const LeverageLadder: React.FC = () => {
 
     const bet = await placeBet({
         game: 'leverage_ladder',
-        currency: '{displayCurrency === 'usd' ? 'USD' : bettingCurrency}',
+        currency: 'USD', // Always bet in USD,
         stake,
         clientSeed: Math.random().toString(36),
         params: {},
@@ -299,7 +299,7 @@ export const LeverageLadder: React.FC = () => {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Stake ({displayCurrency === 'usd' ? 'USD' : bettingCurrency}):
+              Stake (USD):
             </label>
             <input
               type="number"
@@ -340,7 +340,7 @@ export const LeverageLadder: React.FC = () => {
           {currentLevel > 0 && (
             <div className="bg-gradient-to-r from-green-900 to-emerald-900 rounded p-2 border border-green-600 text-center">
               <div className="text-green-300 text-sm font-bold">
-                💰 Potential Win: {(parseFloat(stake) * LADDER_RUNGS[currentLevel - 1].multiplier).toFixed(2)} {displayCurrency === 'usd' ? 'USD' : bettingCurrency}
+                💰 Potential Win: {(parseFloat(stake) * LADDER_RUNGS[currentLevel - 1].multiplier).toFixed(2)} USD
               </div>
             </div>
           )}

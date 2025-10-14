@@ -218,7 +218,7 @@ export function CryptoSlots() {
 
     const bet = await placeBet({
         game: 'candle_flip',
-        currency: '{displayCurrency === 'usd' ? 'USD' : bettingCurrency}',
+        currency: 'USD', // Always bet in USD,
         stake,
         clientSeed: Math.random().toString(36),
         params: {},
@@ -339,7 +339,7 @@ export function CryptoSlots() {
           <div className="text-right">
             <div className="text-sm text-gray-400">Balance</div>
             <div className="text-2xl font-bold text-cyan-400">
-              {balances.find(b => b.currency === '{displayCurrency === 'usd' ? 'USD' : bettingCurrency}')?.balance || '0.00'} {displayCurrency === 'usd' ? 'USD' : bettingCurrency}
+              {balances.find(b => b.currency === 'USD')?.balance || '0.00'} USD
             </div>
           </div>
         </div>
@@ -396,7 +396,7 @@ export function CryptoSlots() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-cyan-300 mb-2">
-                Stake ({displayCurrency === 'usd' ? 'USD' : bettingCurrency}):
+                Stake (USD):
               </label>
               <input
                 type="number"
