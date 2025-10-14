@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../services/api';
 import { useWallet } from '../hooks/useWallet';
+import { WalletBalance } from './WalletBalance';
 
 type TileState = 'hidden' | 'safe' | 'mine';
 
@@ -188,7 +189,8 @@ export const DiamondHands: React.FC = () => {
   };
 
   return (
-    <div className="bg-gradient-to-br from-blue-900 via-purple-900 to-black rounded-lg p-6 border-2 border-cyan-500 shadow-2xl">
+    <div className="bg-gradient-to-br from-blue-900 via-purple-900 to-black rounded-lg p-6 border-2 border-cyan-500 shadow-2xl relative">
+      <WalletBalance position="top-right" />
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">

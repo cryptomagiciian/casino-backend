@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiService } from '../services/api';
 import { useWallet } from '../hooks/useWallet';
+import { WalletBalance } from './WalletBalance';
 
 const CRYPTO_ICONS = ['₿', 'Ξ', '◎', '🐕', '💎', '⚡'];
 const CHAMBERS = 6;
@@ -177,7 +178,8 @@ export const BulletBet: React.FC = () => {
   };
 
   return (
-    <div className="bg-gradient-to-br from-black via-red-950 to-black rounded-lg p-6 border-2 border-red-500 shadow-2xl">
+    <div className="bg-gradient-to-br from-black via-red-950 to-black rounded-lg p-6 border-2 border-red-500 shadow-2xl relative">
+      <WalletBalance position="top-right" />
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-orange-400 to-yellow-400">

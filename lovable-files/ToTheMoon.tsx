@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiService } from '../services/api';
 import { useWallet } from '../hooks/useWallet';
+import { WalletBalance } from './WalletBalance';
 
 export const ToTheMoon: React.FC = () => {
   const [stake, setStake] = useState('10.00');
@@ -177,7 +178,8 @@ export const ToTheMoon: React.FC = () => {
   };
 
   return (
-    <div className="bg-gradient-to-br from-black via-indigo-950 to-purple-950 rounded-lg p-6 border-2 border-indigo-500 shadow-2xl">
+    <div className="bg-gradient-to-br from-black via-indigo-950 to-purple-950 rounded-lg p-6 border-2 border-indigo-500 shadow-2xl relative">
+      <WalletBalance position="top-right" />
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
