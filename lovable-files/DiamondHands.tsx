@@ -53,6 +53,7 @@ export const DiamondHands: React.FC = () => {
   useEffect(() => {
     const cryptoBalance = getAvailableBalance(bettingCurrency);
     const currentBalance = convertToUsd(cryptoBalance, bettingCurrency);
+    console.log(`💎 Diamond Hands Balance Update: ${cryptoBalance} ${bettingCurrency} = $${currentBalance} USD`);
     setBalance(currentBalance);
   }, [bettingCurrency]); // Remove getAvailableBalance from dependencies to prevent render loop
 
@@ -60,8 +61,9 @@ export const DiamondHands: React.FC = () => {
     try {
       // Use global balance context for immediate balance access
       const cryptoBalance = getAvailableBalance(bettingCurrency);
-    const currentBalance = convertToUsd(cryptoBalance, bettingCurrency);
-    setBalance(currentBalance);
+      const currentBalance = convertToUsd(cryptoBalance, bettingCurrency);
+      console.log(`💎 Refresh Balance: ${cryptoBalance} ${bettingCurrency} = $${currentBalance} USD`);
+      setBalance(currentBalance);
     } catch (error) {
       console.error('Failed to refresh balance:', error);
     }
@@ -119,6 +121,8 @@ export const DiamondHands: React.FC = () => {
       setMinePositions(mines);
 
       // Check if user has sufficient balance
+      console.log(`💎 Balance Check: $${balance} USD vs $${parseFloat(stake)} USD stake`);
+      console.log(`💎 Sufficient funds? ${balance >= parseFloat(stake) ? 'YES' : 'NO'}`);
     if (balance < parseFloat(stake)) {
       setResult('❌ Insufficient balance!');
       setIsPlaying(false);
