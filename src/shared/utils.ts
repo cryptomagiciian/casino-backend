@@ -7,21 +7,26 @@ import { CURRENCY_DECIMALS, Currency } from './constants';
 export function fromSmallestUnits(amount: bigint, currency: Currency): string {
   const decimals = CURRENCY_DECIMALS[currency];
   const divisor = BigInt(10 ** decimals);
-  const whole = amount / divisor;
-  const remainder = amount % divisor;
+  
+  // Handle negative values properly
+  const isNegative = amount < 0n;
+  const absAmount = isNegative ? -amount : amount;
+  
+  const whole = absAmount / divisor;
+  const remainder = absAmount % divisor;
   
   if (remainder === 0n) {
-    return whole.toString();
+    return isNegative ? `-${whole.toString()}` : whole.toString();
   }
   
   const remainderStr = remainder.toString().padStart(decimals, '0');
   const trimmed = remainderStr.replace(/0+$/, '');
   
   if (trimmed === '') {
-    return whole.toString();
+    return isNegative ? `-${whole.toString()}` : whole.toString();
   }
   
-  return `${whole}.${trimmed}`;
+  return isNegative ? `-${whole}.${trimmed}` : `${whole}.${trimmed}`;
 }
 
 /**
