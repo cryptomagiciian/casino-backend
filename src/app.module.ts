@@ -36,7 +36,7 @@ import { BlockchainModule } from './blockchain/blockchain.module';
       {
         name: 'crypto-prices',
         ttl: 60 * 1000, // 1 minute
-        limit: 1, // 1 request per minute per IP
+        limit: 10, // 10 requests per minute per IP (increased for frontend polling)
       },
       {
         name: 'live-wins',
