@@ -1,5 +1,5 @@
 const API_BASE_URL = 'https://casino-backend-production-8186.up.railway.app/api/v1';
-const API_VERSION = 'v-demo-fix-4'; // Version bump to force cache refresh
+const API_VERSION = 'v-demo-fix-5'; // Version bump to force cache refresh
 
 class ApiService {
   private baseURL: string;
@@ -111,6 +111,15 @@ class ApiService {
     params.append('network', 'testnet');
     const endpoint = `/wallets?${params.toString()}`;
     console.log('🧪 API DEBUG: getTestnetBalances - forcing testnet network');
+    return this.request(endpoint);
+  }
+
+  // Emergency method - completely bypass all logic
+  async getBalancesEmergency() {
+    console.log('🚨 EMERGENCY: Using direct testnet fetch');
+    const params = new URLSearchParams();
+    params.append('network', 'testnet');
+    const endpoint = `/wallets?${params.toString()}`;
     return this.request(endpoint);
   }
 

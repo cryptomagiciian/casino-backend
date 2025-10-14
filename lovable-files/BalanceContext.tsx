@@ -33,13 +33,13 @@ export const BalanceProvider: React.FC<{ children: ReactNode }> = ({ children })
         console.log('💰 BalanceContext: New balances received:', data);
         setBalances(data);
       } catch (error) {
-        console.log('⚠️ Main method failed, trying testnet fallback...', error.message);
+        console.log('⚠️ Main method failed, trying emergency method...', error.message);
         
-        // Fallback: Force testnet if demo mode is enabled
+        // Emergency fallback: Always use testnet for demo mode
         if (localStorage.getItem('casino-demo-mode') === 'true') {
-          console.log('🔄 Using testnet fallback for demo mode...');
-          const testnetData = await apiService.getTestnetBalances();
-          console.log('💰 BalanceContext: Testnet balances received:', testnetData);
+          console.log('🚨 Using emergency testnet method...');
+          const testnetData = await apiService.getBalancesEmergency();
+          console.log('💰 BalanceContext: Emergency testnet balances received:', testnetData);
           setBalances(testnetData);
         } else {
           throw error; // Re-throw if not in demo mode
