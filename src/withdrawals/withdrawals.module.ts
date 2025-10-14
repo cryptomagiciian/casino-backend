@@ -1,12 +1,14 @@
 import { Module } from '@nestjs/common';
-import { WithdrawalsService } from './withdrawals.service';
 import { WithdrawalsController } from './withdrawals.controller';
+import { WithdrawalsService } from './withdrawals.service';
+import { PrismaModule } from '../prisma/prisma.module';
 import { LedgerModule } from '../ledger/ledger.module';
+import { WalletsModule } from '../wallets/wallets.module';
 
 @Module({
-  imports: [LedgerModule],
-  providers: [WithdrawalsService],
+  imports: [PrismaModule, LedgerModule, WalletsModule],
   controllers: [WithdrawalsController],
+  providers: [WithdrawalsService],
   exports: [WithdrawalsService],
 })
 export class WithdrawalsModule {}

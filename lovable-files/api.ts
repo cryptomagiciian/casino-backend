@@ -177,6 +177,65 @@ class ApiService {
   async getCryptoPrices() {
     return this.request('/prices/crypto');
   }
+
+  // Deposit endpoints
+  async createDeposit(data: {
+    currency: string;
+    amount: number;
+    paymentMethod: 'crypto' | 'card' | 'bank_transfer';
+    walletAddress?: string;
+    transactionHash?: string;
+  }) {
+    return this.request('/deposits', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getDeposits(limit = 50, offset = 0) {
+    return this.request(`/deposits?limit=${limit}&offset=${offset}`);
+  }
+
+  async getDeposit(depositId: string) {
+    return this.request(`/deposits/${depositId}`);
+  }
+
+  async getDepositLimits(currency: string) {
+    return this.request(`/deposits/limits/${currency}`);
+  }
+
+  // Withdrawal endpoints
+  async createWithdrawal(data: {
+    currency: string;
+    amount: number;
+    walletAddress: string;
+    withdrawalMethod: 'crypto' | 'bank_transfer';
+    twoFactorCode?: string;
+    withdrawalPassword?: string;
+  }) {
+    return this.request('/withdrawals', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getWithdrawals(limit = 50, offset = 0) {
+    return this.request(`/withdrawals?limit=${limit}&offset=${offset}`);
+  }
+
+  async getWithdrawal(withdrawalId: string) {
+    return this.request(`/withdrawals/${withdrawalId}`);
+  }
+
+  async cancelWithdrawal(withdrawalId: string) {
+    return this.request(`/withdrawals/${withdrawalId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getWithdrawalLimits(currency: string) {
+    return this.request(`/withdrawals/limits/${currency}`);
+  }
 }
 
 export const apiService = new ApiService(API_BASE_URL);

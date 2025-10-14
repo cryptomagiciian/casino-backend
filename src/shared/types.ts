@@ -118,14 +118,49 @@ export interface DiamondHandsParams {
 export interface DepositRequest {
   currency: Currency;
   amount: string;
-  provider: string;
-  txRef?: string;
+  paymentMethod: 'crypto' | 'card' | 'bank_transfer';
+  walletAddress?: string;
+  transactionHash?: string;
 }
 
 export interface WithdrawalRequest {
   currency: Currency;
   amount: string;
-  address: string;
+  walletAddress: string;
+  withdrawalMethod: 'crypto' | 'bank_transfer';
+  twoFactorCode?: string;
+  withdrawalPassword?: string;
+}
+
+export interface DepositResponse {
+  id: string;
+  currency: Currency;
+  amount: string;
+  paymentMethod: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+  walletAddress?: string;
+  transactionHash?: string;
+  confirmationUrl?: string;
+  qrCodeData?: string;
+  requiredConfirmations?: number;
+  currentConfirmations?: number;
+  createdAt: string;
+  completedAt?: string;
+}
+
+export interface WithdrawalResponse {
+  id: string;
+  currency: Currency;
+  amount: string;
+  fee: string;
+  netAmount: string;
+  walletAddress: string;
+  withdrawalMethod: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+  transactionHash?: string;
+  processingTime?: string;
+  createdAt: string;
+  completedAt?: string;
 }
 
 // Leaderboard types
