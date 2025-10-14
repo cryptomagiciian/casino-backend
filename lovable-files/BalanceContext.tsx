@@ -27,11 +27,24 @@ export const BalanceProvider: React.FC<{ children: ReactNode }> = ({ children })
       setLoading(true);
       console.log('🔄 BalanceContext: Refreshing balances...');
       
-      // Let the API service detect demo/live mode automatically
-      const data = await apiService.getWalletBalances();
-      console.log('💰 BalanceContext: New balances received:', data);
-      
-      setBalances(data);
+      // Try the main method first
+      try {
+        const data = await apiService.getWalletBalances();
+        console.log('💰 BalanceContext: New balances received:', data);
+        setBalances(data);
+      } catch (error) {
+        console.log('⚠️ Main method failed, trying testnet fallback...', error.message);
+        
+        // Fallback: Force testnet if demo mode is enabled
+        if (localStorage.getItem('casino-demo-mode') === 'true') {
+          console.log('🔄 Using testnet fallback for demo mode...');
+          const testnetData = await apiService.getTestnetBalances();
+          console.log('💰 BalanceContext: Testnet balances received:', testnetData);
+          setBalances(testnetData);
+        } else {
+          throw error; // Re-throw if not in demo mode
+        }
+      }
     } catch (error) {
       console.error('❌ BalanceContext: Failed to refresh balances:', error);
     } finally {
