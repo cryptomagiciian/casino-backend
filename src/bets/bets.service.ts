@@ -149,7 +149,7 @@ export class BetsService {
 
       // Handle funds
       if (outcome.multiplier > 0) {
-        // Credit winnings
+        // WIN: Credit winnings AND release locked funds
         await this.walletsService.creditWinnings(
           bet.userId,
           bet.currency as Currency,
@@ -157,16 +157,25 @@ export class BetsService {
           betId,
           network,
         );
+        
+        // Release locked funds back to available balance
+        await this.walletsService.releaseFunds(
+          bet.userId,
+          bet.currency as Currency,
+          fromSmallestUnits(bet.stake, bet.currency as Currency),
+          betId,
+          network,
+        );
+      } else {
+        // LOSS: Process bet loss - funds are lost, not returned
+        await this.walletsService.processBetLoss(
+          bet.userId,
+          bet.currency as Currency,
+          fromSmallestUnits(bet.stake, bet.currency as Currency),
+          betId,
+          network,
+        );
       }
-
-      // Release locked funds
-      await this.walletsService.releaseFunds(
-        bet.userId,
-        bet.currency as Currency,
-        fromSmallestUnits(bet.stake, bet.currency as Currency),
-        betId,
-        network,
-      );
 
       return {
         id: bet.id,

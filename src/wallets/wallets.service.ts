@@ -246,6 +246,29 @@ export class WalletsService {
   }
 
   /**
+   * Process bet loss - release locked funds but don't return them to available balance
+   */
+  async processBetLoss(userId: string, currency: Currency, amount: string, refId: string, network: 'mainnet' | 'testnet' = 'mainnet') {
+    const account = await this.getOrCreateAccount(userId, currency, network);
+    
+    // Record the loss in ledger
+    await this.ledgerService.releaseFunds(account.id, amount, currency, refId);
+    
+    // Only decrement locked funds, don't increment available (funds are lost)
+    const amountSmallest = toSmallestUnits(amount, currency);
+    await this.prisma.walletAccount.update({
+      where: { id: account.id },
+      data: {
+        locked: {
+          decrement: amountSmallest,
+        },
+      },
+    });
+    
+    return { success: true };
+  }
+
+  /**
    * Get detailed wallet balances with USD values
    */
   async getDetailedWalletBalances(userId: string, network: 'mainnet' | 'testnet' = 'mainnet') {
