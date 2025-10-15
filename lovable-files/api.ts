@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://www.dexinocasino.com/api/v1';
+const API_BASE_URL = 'https://casino-backend-production-8186.up.railway.app/api/v1';
 const API_VERSION = 'v-realtime-trading-optimized'; // Real-time trading optimizations
 
 class ApiService {
