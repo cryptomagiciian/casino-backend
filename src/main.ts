@@ -32,13 +32,13 @@ async function bootstrap() {
     const origin = req.headers.origin;
     console.log(`🌐 Manual CORS middleware - Origin: ${origin}`);
     
-    // Allow specific origins
-    const allowedOrigins = [
-      'https://dexinocasino.com',
-      'https://www.dexinocasino.com',
-      'http://localhost:3000',
-      'http://localhost:3001'
-    ];
+  // Allow specific origins
+  const allowedOrigins = [
+    'https://0357ec48-105d-4242-8382-10eceaae5da6.lovableproject.com',
+    'https://id-preview--0357ec48-105d-4242-8382-10eceaae5da6.lovable.app',
+    'http://localhost:3000',
+    'http://localhost:3001'
+  ];
     
     const isLovable = origin && (origin.includes('.lovable.app') || origin.includes('.lovableproject.com'));
     const isAllowed = origin && (allowedOrigins.includes(origin) || isLovable);
