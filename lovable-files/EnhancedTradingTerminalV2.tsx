@@ -114,12 +114,13 @@ export const EnhancedTradingTerminalV2: React.FC<{ className?: string }> = ({ cl
   // Load balance
   const loadBalance = useCallback(async () => {
     try {
-      const balance = await getBalance(bettingCurrency, network);
+      const balance = await getBalance(bettingCurrency);
       setAvailableBalance(balance);
+      console.log(`💰 Trading Terminal Balance: $${balance} USD (${bettingCurrency})`);
     } catch (error) {
       console.error('Failed to load balance:', error);
     }
-  }, [getBalance, bettingCurrency, network]);
+  }, [getBalance, bettingCurrency]);
 
   // Load positions from API
   const loadPositions = useCallback(async () => {
@@ -272,6 +273,11 @@ export const EnhancedTradingTerminalV2: React.FC<{ className?: string }> = ({ cl
     loadTradeHistory();
   }, [loadBalance, loadPositions, loadTradeHistory]);
 
+  // Refresh balance when network or currency changes (like Diamond Hands)
+  useEffect(() => {
+    loadBalance();
+  }, [network, bettingCurrency, loadBalance]);
+
   // Update positions with current prices and check TPSL
   useEffect(() => {
     setPositions(prev => prev.map(position => {
@@ -303,14 +309,21 @@ export const EnhancedTradingTerminalV2: React.FC<{ className?: string }> = ({ cl
     setIsTrading(true);
     try {
       const amount = parseFloat(wagerAmount);
+      
+      // Check balance using the same system as Diamond Hands
+      console.log(`💰 Trading Balance Check: $${availableBalance} USD vs $${amount} USD stake`);
+      console.log(`💰 Sufficient funds? ${availableBalance >= amount ? 'YES' : 'NO'}`);
+      
       if (amount <= 0 || amount > availableBalance) {
-        alert('Invalid amount or insufficient balance');
+        alert(`❌ Insufficient balance! You have $${availableBalance.toFixed(2)} USD but need $${amount.toFixed(2)} USD`);
+        setIsTrading(false);
         return;
       }
 
       const maxLeverage = symbolData[selectedSymbol]?.maxLeverage || 1000;
       if (leverage > maxLeverage) {
         alert(`Maximum leverage for ${selectedSymbol} is ${maxLeverage}x`);
+        setIsTrading(false);
         return;
       }
 
@@ -334,13 +347,13 @@ export const EnhancedTradingTerminalV2: React.FC<{ className?: string }> = ({ cl
         await loadPositions();
         await loadBalance();
         
-        alert(`Position opened successfully! Position ID: ${response.positionId}`);
+        alert(`✅ Position opened successfully! Position ID: ${response.positionId}`);
       } else {
-        alert(`Failed to open position: ${response.message || 'Unknown error'}`);
+        alert(`❌ Failed to open position: ${response.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Failed to place trade:', error);
-      alert(`Failed to place trade: ${error.message || 'Unknown error'}`);
+      alert(`❌ Failed to place trade: ${error.message || 'Unknown error'}`);
     } finally {
       setIsTrading(false);
     }
