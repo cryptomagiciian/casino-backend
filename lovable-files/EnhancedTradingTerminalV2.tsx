@@ -339,7 +339,8 @@ export const EnhancedTradingTerminalV2: React.FC<{ className?: string }> = ({ cl
         leverage,
         collateral: amount,
         qty: amount * leverage / currentPrice, // Convert to quantity
-        splitSize: amount // For impact fee calculation
+        splitSize: amount, // For impact fee calculation
+        network: network // Send current network (mainnet/testnet)
       });
 
       if (response.success) {
@@ -432,8 +433,12 @@ export const EnhancedTradingTerminalV2: React.FC<{ className?: string }> = ({ cl
             <div className="text-sm">
               Balance: {formatBalance(availableBalance)} {bettingCurrency}
             </div>
-            <div className="text-sm text-gray-400">
-              Network: {network}
+            <div className={`text-sm px-3 py-1 rounded font-medium ${
+              network === 'testnet' 
+                ? 'bg-green-900/30 text-green-300 border border-green-500/30' 
+                : 'bg-red-900/30 text-red-300 border border-red-500/30'
+            }`}>
+              {network === 'testnet' ? '🎮 DEMO MODE' : '💰 LIVE MODE'}
             </div>
             <div className="text-xs text-blue-300 bg-blue-900/30 px-2 py-1 rounded">
               💡 Trading requires USDC
@@ -501,7 +506,7 @@ export const EnhancedTradingTerminalV2: React.FC<{ className?: string }> = ({ cl
         {/* Order Panel - LEFT SIDE */}
         {showOrderPanel && (
           <div 
-            className="p-2 border-r border-gray-700" 
+            className="p-2 border-r border-gray-700 flex-shrink-0" 
             style={{ 
               width: '350px',
               minWidth: '350px',

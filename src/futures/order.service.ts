@@ -52,8 +52,11 @@ export class OrderService {
 
       // Check if user has sufficient balance
       const quoteCurrency = symbol.quote as Currency;
-      const walletBalance = await this.walletsService.getWalletBalance(userId, quoteCurrency);
+      const network = orderData.network || 'mainnet'; // Default to mainnet if not specified
+      this.logger.log(`Checking balance for user ${userId}, currency ${quoteCurrency}, network ${network}`);
+      const walletBalance = await this.walletsService.getWalletBalance(userId, quoteCurrency, network as 'mainnet' | 'testnet');
       const availableBalance = parseFloat(walletBalance.available);
+      this.logger.log(`Available balance: ${availableBalance}, Required: ${orderData.collateral + fees.totalFee}`);
       
       if (availableBalance < orderData.collateral + fees.totalFee) {
         throw new BadRequestException('Insufficient balance for position and fees');

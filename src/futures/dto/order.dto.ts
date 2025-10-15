@@ -37,6 +37,11 @@ export class OpenOrderDto {
   @IsNumber()
   @Min(0)
   splitSize?: number;
+
+  @ApiProperty({ description: 'Network for trading (mainnet/testnet)', required: false })
+  @IsOptional()
+  @IsString()
+  network?: string;
 }
 
 export class CloseOrderDto {
