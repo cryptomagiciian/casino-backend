@@ -435,6 +435,9 @@ export const EnhancedTradingTerminalV2: React.FC<{ className?: string }> = ({ cl
             <div className="text-sm text-gray-400">
               Network: {network}
             </div>
+            <div className="text-xs text-blue-300 bg-blue-900/30 px-2 py-1 rounded">
+              💡 Trading requires USDC
+            </div>
             {/* Toggle buttons */}
             <div className="flex space-x-2">
               <button
@@ -512,6 +515,17 @@ export const EnhancedTradingTerminalV2: React.FC<{ className?: string }> = ({ cl
                   <span className="text-sm font-medium text-blue-400">{selectedSymbol}</span>
                   {symbolData[selectedSymbol]?.isMeme && <span className="text-xs bg-purple-600 px-2 py-1 rounded">MEME</span>}
                 </div>
+              </div>
+              
+              {/* USDC Notice */}
+              <div className="mb-4 p-3 bg-blue-900/30 border border-blue-500/30 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                  <span className="text-sm text-blue-300 font-medium">USDC Required</span>
+                </div>
+                <p className="text-xs text-blue-200 mt-1">
+                  All leverage trades require USDC as collateral. Get USDC from the faucet in Demo mode.
+                </p>
               </div>
               
               <div className="space-y-4">
