@@ -163,10 +163,10 @@ export class FuturesService {
       { base: 'ETH', quote: 'USDC', maxLeverage: 1000 },
       { base: 'SOL', quote: 'USDC', maxLeverage: 1000 },
       { base: 'BNB', quote: 'USDC', maxLeverage: 1000 },
-      { base: 'ASTER', quote: 'USDC', maxLeverage: 1000 },
     ];
 
     const memeSymbols = [
+      { base: 'ASTER', quote: 'USDC', maxLeverage: 10 },
       { base: 'COAI', quote: 'USDC', maxLeverage: 10 },
       { base: 'SUI', quote: 'USDC', maxLeverage: 10 },
       { base: 'USELESS', quote: 'USDC', maxLeverage: 10 },
