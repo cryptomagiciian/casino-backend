@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, UseGuards, Request, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { FuturesService } from './futures.service';
@@ -44,6 +44,10 @@ export class FuturesController {
   @ApiResponse({ status: 201, description: 'Position opened successfully', type: OrderResponseDto })
   @ApiResponse({ status: 400, description: 'Invalid order data' })
   async openOrder(@Request() req: any, @Body() orderData: OpenOrderDto): Promise<OrderResponseDto> {
+    console.log('🔐 Futures Controller - User from JWT:', req.user);
+    if (!req.user || !req.user.id) {
+      throw new BadRequestException('User authentication failed - no user ID found');
+    }
     return this.orderService.openPosition(req.user.id, orderData);
   }
 
