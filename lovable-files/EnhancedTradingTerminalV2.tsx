@@ -92,6 +92,13 @@ export const EnhancedTradingTerminalV2: React.FC<{ className?: string }> = ({ cl
   // Positions and history
   const [positions, setPositions] = useState<Position[]>([]);
   const [tradeHistory, setTradeHistory] = useState<TradeHistory[]>([]);
+  const [chartLines, setChartLines] = useState<Array<{
+    id: string;
+    type: 'entry' | 'stop_loss' | 'take_profit';
+    price: number;
+    side: 'LONG' | 'SHORT';
+    color: string;
+  }>>([]);
   const [topTrades, setTopTrades] = useState<TopTrade[]>([]);
   const [activeTab, setActiveTab] = useState<'positions' | 'history' | 'top'>('positions');
 
@@ -300,7 +307,53 @@ export const EnhancedTradingTerminalV2: React.FC<{ className?: string }> = ({ cl
         pnlPercent
       };
     }));
-  }, [symbolData, calculatePnL, checkTPSL]);
+
+    // Update chart lines based on positions
+    const newChartLines: Array<{
+      id: string;
+      type: 'entry' | 'stop_loss' | 'take_profit';
+      price: number;
+      side: 'LONG' | 'SHORT';
+      color: string;
+    }> = [];
+
+    positions.forEach(position => {
+      if (position.status === 'OPEN') {
+        // Entry line
+        newChartLines.push({
+          id: `${position.id}-entry`,
+          type: 'entry',
+          price: position.entryPrice,
+          side: position.side,
+          color: position.side === 'LONG' ? '#00d4aa' : '#ff6b6b'
+        });
+
+        // Stop loss line
+        if (position.stopLoss) {
+          newChartLines.push({
+            id: `${position.id}-sl`,
+            type: 'stop_loss',
+            price: position.stopLoss,
+            side: position.side,
+            color: '#ff6b6b'
+          });
+        }
+
+        // Take profit line
+        if (position.takeProfit) {
+          newChartLines.push({
+            id: `${position.id}-tp`,
+            type: 'take_profit',
+            price: position.takeProfit,
+            side: position.side,
+            color: '#00d4aa'
+          });
+        }
+      }
+    });
+
+    setChartLines(newChartLines);
+  }, [symbolData, calculatePnL, checkTPSL, positions]);
 
   // Place trade
   const placeTrade = async () => {
@@ -345,8 +398,15 @@ export const EnhancedTradingTerminalV2: React.FC<{ className?: string }> = ({ cl
 
       if (response.success) {
         // Refresh positions and balance
+        console.log('🔄 Refreshing positions and balance after successful trade...');
         await loadPositions();
         await loadBalance();
+        
+        // Force refresh balances from the global context
+        if (refreshBalances) {
+          console.log('🔄 Triggering global balance refresh...');
+          await refreshBalances();
+        }
         
         alert(`✅ Position opened successfully! Position ID: ${response.positionId}`);
       } else {
@@ -513,7 +573,7 @@ export const EnhancedTradingTerminalV2: React.FC<{ className?: string }> = ({ cl
               maxWidth: '350px'
             }}
           >
-            <div className="h-full bg-gray-800 rounded-lg p-4">
+            <div className="h-full bg-gray-800 rounded-lg p-4 overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">Place Order</h3>
                 <div className="flex items-center space-x-2">
@@ -730,7 +790,8 @@ export const EnhancedTradingTerminalV2: React.FC<{ className?: string }> = ({ cl
         <div 
           className="p-2 flex-1" 
           style={{ 
-            minWidth: showOrderPanel ? 'calc(100% - 350px)' : '100%'
+            minWidth: showOrderPanel ? 'calc(100% - 350px)' : '100%',
+            overflow: 'hidden'
           }}
         >
           <div className="h-full bg-gray-800 rounded-lg p-2">

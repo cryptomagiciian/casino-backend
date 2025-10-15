@@ -80,7 +80,10 @@ export class OrderService {
       });
 
       // Lock collateral and pay fees
+      this.logger.log(`🔒 Locking ${orderData.collateral} ${quoteCurrency} collateral for position ${position.id} on ${network}`);
       await this.walletsService.lockFunds(userId, quoteCurrency, orderData.collateral.toString(), position.id, network as 'mainnet' | 'testnet');
+      
+      this.logger.log(`💰 Locking ${fees.totalFee} ${quoteCurrency} fees for position ${position.id} on ${network}`);
       await this.walletsService.lockFunds(userId, quoteCurrency, fees.totalFee.toString(), `fee-${position.id}`, network as 'mainnet' | 'testnet');
 
       // Record fees in ledger
@@ -117,6 +120,7 @@ export class OrderService {
 
       this.logger.log(`Position opened: ${position.id} for user ${userId}`);
 
+      this.logger.log(`✅ Position opened successfully: ${position.id} for user ${userId} on ${network}`);
       return {
         success: true,
         positionId: position.id,
