@@ -285,20 +285,13 @@ export const EnhancedTradingTerminalV2: React.FC<{ className?: string }> = ({ cl
     loadBalance();
   }, [network, bettingCurrency, loadBalance]);
 
-  // Update positions with current prices and check TPSL
+  // Update positions with current prices (simplified to prevent infinite loops)
   useEffect(() => {
+    if (positions.length === 0) return;
+    
     setPositions(prev => prev.map(position => {
       const currentPrice = symbolData[position.symbol]?.price || position.currentPrice;
       const { pnl, pnlPercent } = calculatePnL(position.entryPrice, currentPrice, position.side, position.size, position.leverage);
-      
-      // Check for stop loss or take profit
-      const tpslResult = checkTPSL({ ...position, currentPrice });
-      if (tpslResult && position.status === 'OPEN') {
-        // Auto-close position
-        setTimeout(() => {
-          closePosition(position.id, tpslResult);
-        }, 100);
-      }
       
       return {
         ...position,
@@ -307,7 +300,22 @@ export const EnhancedTradingTerminalV2: React.FC<{ className?: string }> = ({ cl
         pnlPercent
       };
     }));
-  }, [symbolData, calculatePnL, checkTPSL]);
+  }, [symbolData.BTC, symbolData.ETH, symbolData.SOL, symbolData.ASTER, symbolData.COAI, symbolData.SUI]); // Only depend on individual price values
+
+  // Check for stop loss and take profit (separate useEffect)
+  useEffect(() => {
+    positions.forEach(position => {
+      if (position.status === 'OPEN') {
+        const tpslResult = checkTPSL(position);
+        if (tpslResult) {
+          // Auto-close position
+          setTimeout(() => {
+            closePosition(position.id, tpslResult);
+          }, 100);
+        }
+      }
+    });
+  }, [positions, checkTPSL]);
 
   // Update chart lines based on positions (separate useEffect to avoid infinite loop)
   useEffect(() => {
