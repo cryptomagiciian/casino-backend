@@ -41,14 +41,18 @@ async function bootstrap() {
       const isCustomDomain = origin.includes('dexinocasino.com');
       const isAllowed = allowedOrigins.includes(origin) || isLovable || isCustomDomain;
       
+      console.log(`🔍 CORS Check - Origin: ${origin}, Allowed: ${isAllowed}, Lovable: ${isLovable}, Custom: ${isCustomDomain}`);
+      
       if (isAllowed) {
         callback(null, true);
       } else {
-        console.warn(`CORS blocked origin: ${origin}`);
+        console.warn(`❌ CORS blocked origin: ${origin}`);
         callback(new Error('Not allowed by CORS'));
       }
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   });
 
   // Global validation pipe
