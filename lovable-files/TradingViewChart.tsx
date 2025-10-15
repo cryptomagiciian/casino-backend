@@ -1,11 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
 
+interface ChartLine {
+  id: string;
+  type: 'entry' | 'stop_loss' | 'take_profit';
+  price: number;
+  side: 'LONG' | 'SHORT';
+  color: string;
+}
+
 interface TradingViewChartProps {
   symbol: string;
   timeframe: string;
   width?: number;
   height?: number;
   autosize?: boolean;
+  chartLines?: ChartLine[];
 }
 
 // TradingView timeframe mapping
@@ -37,7 +46,8 @@ export const TradingViewChart: React.FC<TradingViewChartProps> = ({
   timeframe,
   width = 2000,
   height = 800,
-  autosize = true
+  autosize = true,
+  chartLines = []
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -72,7 +82,7 @@ export const TradingViewChart: React.FC<TradingViewChartProps> = ({
         const tvTimeframe = timeframeMap[timeframe] || '1';
         const tvSymbol = symbolMap[symbol] || 'BINANCE:BTCUSDT';
 
-        new window.TradingView.widget({
+        const widget = new window.TradingView.widget({
           autosize: autosize,
           symbol: tvSymbol,
           interval: tvTimeframe,
@@ -107,6 +117,28 @@ export const TradingViewChart: React.FC<TradingViewChartProps> = ({
           },
           width: autosize ? undefined : width,
           height: autosize ? undefined : height
+        });
+
+        // Add chart lines after widget is ready
+        widget.onChartReady(() => {
+          const chart = widget.chart();
+          chartLines.forEach(line => {
+            const lineStyle = line.type === 'entry' ? 0 : (line.type === 'stop_loss' ? 1 : 2);
+            chart.createShape(
+              { time: Date.now() / 1000, price: line.price },
+              {
+                shape: 'horizontal_line',
+                text: `${line.type.toUpperCase()} ${line.price.toFixed(4)}`,
+                overrides: {
+                  linecolor: line.color,
+                  linestyle: lineStyle,
+                  linewidth: 2,
+                  textcolor: line.color,
+                  fontsize: 12
+                }
+              }
+            );
+          });
         });
 
         setIsLoaded(true);

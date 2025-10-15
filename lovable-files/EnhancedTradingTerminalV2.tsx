@@ -768,19 +768,21 @@ export const EnhancedTradingTerminalV2: React.FC<{ className?: string }> = ({ cl
                 </div>
 
                 {/* Place Order Button */}
-                <button
-                  onClick={placeTrade}
-                  disabled={isTrading || !wagerAmount || parseFloat(wagerAmount) <= 0}
-                  className={`w-full py-3 px-4 rounded-lg font-medium ${
-                    isTrading || !wagerAmount || parseFloat(wagerAmount) <= 0
-                      ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                      : side === 'LONG'
-                      ? 'bg-gradient-to-r from-blue-500 to-green-500 text-white hover:from-blue-600 hover:to-green-600'
-                      : 'bg-gradient-to-r from-orange-500 to-purple-500 text-white hover:from-orange-600 hover:to-purple-600'
-                  }`}
-                >
-                  {isTrading ? 'Placing Trade...' : `Place ${side} Order`}
-                </button>
+                <div className="mt-4 mb-2">
+                  <button
+                    onClick={placeTrade}
+                    disabled={isTrading || !wagerAmount || parseFloat(wagerAmount) <= 0}
+                    className={`w-full py-3 px-4 rounded-lg font-medium ${
+                      isTrading || !wagerAmount || parseFloat(wagerAmount) <= 0
+                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                        : side === 'LONG'
+                        ? 'bg-gradient-to-r from-blue-500 to-green-500 text-white hover:from-blue-600 hover:to-green-600'
+                        : 'bg-gradient-to-r from-orange-500 to-purple-500 text-white hover:from-orange-600 hover:to-purple-600'
+                    }`}
+                  >
+                    {isTrading ? 'Placing Trade...' : `Place ${side} Order`}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -809,9 +811,10 @@ export const EnhancedTradingTerminalV2: React.FC<{ className?: string }> = ({ cl
               <TradingViewChart
                 symbol={selectedSymbol}
                 timeframe={timeframe}
-                width={showOrderPanel ? 1800 : 2200}
+                width={showOrderPanel ? 2000 : 2400}
                 height={chartHeight - 100}
                 autosize={true}
+                chartLines={chartLines}
               />
             </div>
             
