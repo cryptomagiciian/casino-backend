@@ -36,9 +36,10 @@ async function bootstrap() {
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
       
-      // Check if origin matches any allowed origin or is a Lovable domain
+      // Check if origin matches any allowed origin, is a Lovable domain, or is the custom domain
       const isLovable = origin.includes('.lovable.app') || origin.includes('.lovableproject.com');
-      const isAllowed = allowedOrigins.includes(origin) || isLovable;
+      const isCustomDomain = origin.includes('dexinocasino.com');
+      const isAllowed = allowedOrigins.includes(origin) || isLovable || isCustomDomain;
       
       if (isAllowed) {
         callback(null, true);
