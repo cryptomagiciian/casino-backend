@@ -1,6 +1,6 @@
 import React from 'react';
-import { ModernTradingTerminal } from './ModernTradingTerminal';
+import { ProfessionalTradingTerminal } from './ProfessionalTradingTerminal';
 
-export const TradingTerminal: React.FC = () => {
-  return <ModernTradingTerminal />;
+export const TradingTerminal: React.FC<{ className?: string }> = ({ className = '' }) => {
+  return <ProfessionalTradingTerminal className={className} />;
 };

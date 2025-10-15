@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { useNetwork } from './NetworkContext';
-import { apiService } from './api';
+import { usePrices } from './PriceManager';
 
 type CurrencyDisplay = 'crypto' | 'usd';
 type BettingCurrency = 'BTC' | 'ETH' | 'SOL' | 'USDC' | 'USDT';
@@ -38,31 +38,15 @@ export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }
     return 'USDC';
   });
 
-  const [usdRates, setUsdRates] = useState<Record<string, number>>({
-    BTC: 45000,
-    ETH: 2500,
-    SOL: 100,
-    USDC: 1,
-    USDT: 1,
-  });
-
-  // Fetch live prices from Gate.io API
-  const fetchLivePrices = async () => {
-    try {
-      const response = await apiService.getCryptoPrices();
-      const prices = response.prices;
-      
-      const newRates: Record<string, number> = {};
-      prices.forEach((price: any) => {
-        newRates[price.symbol] = parseFloat(price.price);
-      });
-      
-      setUsdRates(newRates);
-      console.log('💰 Live prices fetched:', newRates);
-    } catch (error) {
-      console.error('Failed to fetch live prices:', error);
-      // Keep existing rates as fallback
-    }
+  // Use centralized price manager
+  const { prices } = usePrices();
+  
+  const usdRates = {
+    BTC: prices.BTC || 45000,
+    ETH: prices.ETH || 2500,
+    SOL: prices.SOL || 100,
+    USDC: prices.USDC || 1,
+    USDT: prices.USDT || 1,
   };
 
   useEffect(() => {
@@ -73,13 +57,7 @@ export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   }, [displayCurrency, bettingCurrency]);
 
-  useEffect(() => {
-    // Fetch live prices on component mount and every 30 seconds
-    fetchLivePrices();
-    const interval = setInterval(fetchLivePrices, 30000); // Update every 30 seconds
-    
-    return () => clearInterval(interval);
-  }, []);
+  // Price fetching is now handled by the centralized PriceManager
 
   const convertToUsd = (amount: number, currency: string): number => {
     const rate = usdRates[currency] || 1;

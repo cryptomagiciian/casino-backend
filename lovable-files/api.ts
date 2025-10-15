@@ -224,14 +224,7 @@ class ApiService {
     return this.request('/prices/crypto');
   }
 
-  async getCandlestickData(symbol: string, timeframe: string, limit: number = 100) {
-    const params = new URLSearchParams({
-      symbol,
-      timeframe,
-      limit: limit.toString()
-    });
-    return this.request(`/prices/candlesticks?${params.toString()}`);
-  }
+  // getCandlestickData removed - now using TradingView charts
 
   // Web3 Deposit endpoints
   async createDeposit(data: {

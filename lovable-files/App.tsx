@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './hooks/useAuth';
 import { NetworkProvider } from './NetworkContext';
 import { NetworkToggle } from './NetworkToggle';
 import { BalanceProvider } from './BalanceContext';
+import { PriceProvider } from './PriceManager';
 import { WalletBalance } from './components/wallet/WalletBalance';
 import { GameList } from './components/games/GameList';
 import { LoginForm } from './components/auth/LoginForm';
@@ -78,13 +79,15 @@ const AppContent: React.FC = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <NetworkProvider>
-        <BalanceProvider>
-          <AppContent />
-        </BalanceProvider>
-      </NetworkProvider>
-    </AuthProvider>
+    <PriceProvider>
+      <AuthProvider>
+        <NetworkProvider>
+          <BalanceProvider>
+            <AppContent />
+          </BalanceProvider>
+        </NetworkProvider>
+      </AuthProvider>
+    </PriceProvider>
   );
 }
 
