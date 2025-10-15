@@ -307,8 +307,10 @@ export const EnhancedTradingTerminalV2: React.FC<{ className?: string }> = ({ cl
         pnlPercent
       };
     }));
+  }, [symbolData, calculatePnL, checkTPSL]);
 
-    // Update chart lines based on positions
+  // Update chart lines based on positions (separate useEffect to avoid infinite loop)
+  useEffect(() => {
     const newChartLines: Array<{
       id: string;
       type: 'entry' | 'stop_loss' | 'take_profit';
@@ -353,7 +355,7 @@ export const EnhancedTradingTerminalV2: React.FC<{ className?: string }> = ({ cl
     });
 
     setChartLines(newChartLines);
-  }, [symbolData, calculatePnL, checkTPSL, positions]);
+  }, [positions]);
 
   // Place trade
   const placeTrade = async () => {

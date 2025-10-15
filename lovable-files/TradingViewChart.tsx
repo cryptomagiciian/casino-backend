@@ -119,27 +119,38 @@ export const TradingViewChart: React.FC<TradingViewChartProps> = ({
           height: autosize ? undefined : height
         });
 
-        // Add chart lines after widget is ready
-        widget.onChartReady(() => {
-          const chart = widget.chart();
-          chartLines.forEach(line => {
-            const lineStyle = line.type === 'entry' ? 0 : (line.type === 'stop_loss' ? 1 : 2);
-            chart.createShape(
-              { time: Date.now() / 1000, price: line.price },
-              {
-                shape: 'horizontal_line',
-                text: `${line.type.toUpperCase()} ${line.price.toFixed(4)}`,
-                overrides: {
-                  linecolor: line.color,
-                  linestyle: lineStyle,
-                  linewidth: 2,
-                  textcolor: line.color,
-                  fontsize: 12
-                }
-              }
-            );
-          });
-        });
+        // Add chart lines after widget is ready (simplified)
+        if (chartLines.length > 0) {
+          setTimeout(() => {
+            try {
+              widget.onChartReady(() => {
+                const chart = widget.chart();
+                chartLines.forEach(line => {
+                  try {
+                    chart.createShape(
+                      { time: Date.now() / 1000, price: line.price },
+                      {
+                        shape: 'horizontal_line',
+                        text: `${line.type.toUpperCase()} ${line.price.toFixed(4)}`,
+                        overrides: {
+                          linecolor: line.color,
+                          linestyle: 0,
+                          linewidth: 2,
+                          textcolor: line.color,
+                          fontsize: 12
+                        }
+                      }
+                    );
+                  } catch (error) {
+                    console.warn('Failed to create chart line:', error);
+                  }
+                });
+              });
+            } catch (error) {
+              console.warn('Failed to add chart lines:', error);
+            }
+          }, 1000);
+        }
 
         setIsLoaded(true);
         console.log(`✅ TradingView chart loaded: ${symbol} ${timeframe}`);
