@@ -54,6 +54,11 @@ export class CloseOrderDto {
   @IsNumber()
   @Min(0)
   qty?: number;
+
+  @ApiProperty({ description: 'Network for trading (mainnet/testnet)', required: false })
+  @IsOptional()
+  @IsString()
+  network?: string;
 }
 
 export class OrderResponseDto {

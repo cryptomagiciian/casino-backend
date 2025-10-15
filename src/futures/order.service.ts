@@ -80,8 +80,8 @@ export class OrderService {
       });
 
       // Lock collateral and pay fees
-      await this.walletsService.lockFunds(userId, quoteCurrency, orderData.collateral.toString(), position.id);
-      await this.walletsService.lockFunds(userId, quoteCurrency, fees.totalFee.toString(), `fee-${position.id}`);
+      await this.walletsService.lockFunds(userId, quoteCurrency, orderData.collateral.toString(), position.id, network as 'mainnet' | 'testnet');
+      await this.walletsService.lockFunds(userId, quoteCurrency, fees.totalFee.toString(), `fee-${position.id}`, network as 'mainnet' | 'testnet');
 
       // Record fees in ledger
       await this.ledgerService.createUserTransaction({
@@ -138,7 +138,8 @@ export class OrderService {
    */
   async closePosition(userId: string, orderData: CloseOrderDto): Promise<OrderResponseDto> {
     try {
-      this.logger.log(`Closing position ${orderData.positionId} for user ${userId}`);
+      const network = orderData.network || 'mainnet'; // Default to mainnet if not specified
+      this.logger.log(`Closing position ${orderData.positionId} for user ${userId} on network ${network}`);
 
       // Get position
       const position = await this.prisma.futuresPosition.findFirst({
@@ -196,18 +197,18 @@ export class OrderService {
       
       if (isFullClose) {
         // Release all collateral
-        await this.walletsService.releaseFunds(userId, quoteCurrency, position.collateral.toString(), position.id);
+        await this.walletsService.releaseFunds(userId, quoteCurrency, position.collateral.toString(), position.id, network as 'mainnet' | 'testnet');
       } else {
         // Release proportional collateral
         const releasedCollateral = (closeQty / Number(position.qty)) * Number(position.collateral);
-        await this.walletsService.releaseFunds(userId, quoteCurrency, releasedCollateral.toString(), position.id);
+        await this.walletsService.releaseFunds(userId, quoteCurrency, releasedCollateral.toString(), position.id, network as 'mainnet' | 'testnet');
       }
 
       // Settle PnL
       if (totalSettlement > 0) {
-        await this.walletsService.creditWinnings(userId, quoteCurrency, totalSettlement.toString(), position.id);
+        await this.walletsService.creditWinnings(userId, quoteCurrency, totalSettlement.toString(), position.id, network as 'mainnet' | 'testnet');
       } else if (totalSettlement < 0) {
-        await this.walletsService.lockFunds(userId, quoteCurrency, Math.abs(totalSettlement).toString(), `close-${position.id}`);
+        await this.walletsService.lockFunds(userId, quoteCurrency, Math.abs(totalSettlement).toString(), `close-${position.id}`, network as 'mainnet' | 'testnet');
       }
 
       // Record close fee
