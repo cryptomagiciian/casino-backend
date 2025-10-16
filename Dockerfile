@@ -16,7 +16,7 @@ COPY . .
 RUN npx prisma generate
 
 # Build the application
-RUN echo "Building with TypeScript compiler..." && npx tsc -p tsconfig.build.json
+RUN echo "Building with TypeScript compiler..." && npx tsc
 RUN echo "=== Checking dist folder ===" && ls -laR dist/ | head -50
 
 # Expose port
