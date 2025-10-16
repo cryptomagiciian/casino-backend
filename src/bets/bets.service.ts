@@ -98,6 +98,15 @@ export class BetsService {
     const availableFloat = parseFloat(balance.available);
     
     console.log(`💰 Balance check: Available ${availableFloat} ${actualCurrency}, Required ${stakeFloat} ${actualCurrency}`);
+    console.log(`💰 Balance details:`, {
+      userId,
+      currency: actualCurrency,
+      network: actualNetwork,
+      balance: balance,
+      stakeFloat,
+      availableFloat,
+      comparison: availableFloat >= stakeFloat ? 'SUFFICIENT' : 'INSUFFICIENT'
+    });
     
     if (availableFloat < stakeFloat) {
       throw new BadRequestException(`Insufficient balance. Available: ${availableFloat} ${actualCurrency}, Required: ${stakeFloat} ${actualCurrency}`);
