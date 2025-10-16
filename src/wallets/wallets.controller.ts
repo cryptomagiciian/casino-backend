@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WalletsService } from './wallets.service';
 import { WalletBalance } from '../shared/types';
 import { Currency } from '../shared/constants';
+import { JwtUser } from '../shared/types';
 import { ClearDemoFundsDto } from './dto/clear-demo-funds.dto';
 
 export class FaucetDto {
@@ -27,7 +28,7 @@ export class WalletsController {
   @ApiQuery({ name: 'network', required: false, description: 'Network to get balances for (mainnet/testnet)', enum: ['mainnet', 'testnet'] })
   @ApiResponse({ status: 200, description: 'Wallet balances retrieved successfully' })
   async getBalances(
-    @Request() req: { user: { id: string } },
+    @Request() req: { user: JwtUser },
     @Query('detailed') detailed?: string,
     @Query('network') network?: 'mainnet' | 'testnet',
   ): Promise<WalletBalance[] | any> {
@@ -44,7 +45,7 @@ export class WalletsController {
   @ApiQuery({ name: 'network', required: false, description: 'Network to get balance for (mainnet/testnet)', enum: ['mainnet', 'testnet'] })
   @ApiResponse({ status: 200, description: 'Balance retrieved successfully' })
   async getBalance(
-    @Request() req: { user: { id: string } },
+    @Request() req: { user: JwtUser },
     @Query('currency') currency: Currency,
     @Query('network') network?: 'mainnet' | 'testnet',
   ): Promise<WalletBalance> {
@@ -57,7 +58,7 @@ export class WalletsController {
   @ApiResponse({ status: 200, description: 'Funds credited successfully' })
   @ApiResponse({ status: 400, description: 'Faucet not available or limit exceeded' })
   async faucet(
-    @Request() req: { user: { id: string } },
+    @Request() req: { user: JwtUser },
     @Body() faucetDto: FaucetDto,
   ) {
     return this.walletsService.getTestnetFaucet(req.user.id, faucetDto.currency, 'testnet');
@@ -70,7 +71,7 @@ export class WalletsController {
   @ApiQuery({ name: 'offset', required: false, description: 'Number of entries to skip' })
   @ApiResponse({ status: 200, description: 'Ledger entries retrieved successfully' })
   async getLedgerEntries(
-    @Request() req: { user: { id: string } },
+    @Request() req: { user: JwtUser },
     @Query('currency') currency: Currency,
     @Query('limit') limit?: number,
     @Query('offset') offset?: number,
@@ -88,7 +89,7 @@ export class WalletsController {
   @ApiResponse({ status: 200, description: 'Demo funds cleared successfully' })
   @ApiResponse({ status: 400, description: 'Confirmation required' })
   async clearDemoFunds(
-    @Request() req: { user: { id: string } },
+    @Request() req: { user: JwtUser },
     @Body() clearDto: ClearDemoFundsDto,
   ) {
     if (!clearDto.confirm) {

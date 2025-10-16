@@ -2,6 +2,7 @@ import { Controller, Get, UseGuards, Request, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { LeaderboardService } from './leaderboard.service';
+import { JwtUser } from '../shared/types';
 
 @ApiTags('Leaderboard')
 @Controller('leaderboard')
@@ -28,7 +29,7 @@ export class LeaderboardController {
   @ApiQuery({ name: 'date', required: false, description: 'Date for leaderboard (YYYY-MM-DD)' })
   @ApiResponse({ status: 200, description: 'User position retrieved successfully' })
   async getUserPosition(
-    @Request() req: { user: { id: string } },
+    @Request() req: { user: JwtUser },
     @Query('date') date?: string,
   ) {
     const targetDate = date ? new Date(date) : undefined;
@@ -42,7 +43,7 @@ export class LeaderboardController {
   @ApiQuery({ name: 'days', required: false, description: 'Number of days to retrieve' })
   @ApiResponse({ status: 200, description: 'User history retrieved successfully' })
   async getUserHistory(
-    @Request() req: { user: { id: string } },
+    @Request() req: { user: JwtUser },
     @Query('days') days?: number,
   ) {
     return this.leaderboardService.getUserLeaderboardHistory(req.user.id, days || 30);

@@ -24,16 +24,16 @@ let WithdrawalsController = class WithdrawalsController {
         this.withdrawalsService = withdrawalsService;
     }
     async createWithdrawal(req, createWithdrawalDto) {
-        return this.withdrawalsService.createWithdrawal(req.user.sub, createWithdrawalDto);
+        return this.withdrawalsService.createWithdrawal(req.user.id, createWithdrawalDto);
     }
     async getWithdrawals(req, limit, offset) {
-        return this.withdrawalsService.getWithdrawals(req.user.sub, parseInt(limit || '50'), parseInt(offset || '0'));
+        return this.withdrawalsService.getWithdrawals(req.user.id, parseInt(limit || '50'), parseInt(offset || '0'));
     }
     async getWithdrawal(req, id) {
-        return this.withdrawalsService.getWithdrawal(req.user.sub, id);
+        return this.withdrawalsService.getWithdrawal(req.user.id, id);
     }
     async cancelWithdrawal(req, id) {
-        await this.withdrawalsService.cancelWithdrawal(req.user.sub, id);
+        await this.withdrawalsService.cancelWithdrawal(req.user.id, id);
         return { message: 'Withdrawal cancelled successfully' };
     }
     async getWithdrawalLimits(currency) {

@@ -4,7 +4,7 @@ import { IsString, IsOptional, IsIn } from 'class-validator';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { BetsService } from './bets.service';
-import { BetPreview, BetPlaceRequest } from '../shared/types';
+import { BetPreview, BetPlaceRequest, JwtUser } from '../shared/types';
 import { LiveWinsQueryDto } from './dto/live-wins.dto';
 import { LiveWinsResponseDto } from './dto/live-wins-response.dto';
 import { BetFiltersDto } from './dto/bet-filters.dto';
@@ -71,7 +71,7 @@ export class BetsController {
   @ApiResponse({ status: 201, description: 'Bet placed successfully' })
   @ApiResponse({ status: 400, description: 'Invalid bet parameters' })
   async placeBet(
-    @Request() req: { user: { id: string } },
+    @Request() req: { user: JwtUser },
     @Body() placeDto: BetPlaceDto,
   ) {
     try {
@@ -133,7 +133,7 @@ export class BetsController {
   @ApiOperation({ summary: 'Get user bets with optional filters' })
   @ApiResponse({ status: 200, description: 'User bets retrieved successfully' })
   async getUserBets(
-    @Request() req: { user: { id: string } },
+    @Request() req: { user: JwtUser },
     @Query() filters: BetFiltersDto,
   ) {
     return this.betsService.getUserBetsWithFilters(req.user.id, filters);

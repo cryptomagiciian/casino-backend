@@ -9,6 +9,13 @@ export interface UserPayload {
   exp?: number;
 }
 
+// JWT Strategy return type
+export interface JwtUser {
+  id: string;
+  handle: string;
+  email?: string;
+}
+
 // Wallet types
 export interface WalletBalance {
   currency: Currency;

@@ -2,18 +2,15 @@ import { WithdrawalsService } from './withdrawals.service';
 import { CreateWithdrawalDto } from './dto/create-withdrawal.dto';
 import { WithdrawalResponseDto } from './dto/withdrawal-response.dto';
 import { Currency } from '../shared/constants';
+import { JwtUser } from '../shared/types';
 export declare class WithdrawalsController {
     private readonly withdrawalsService;
     constructor(withdrawalsService: WithdrawalsService);
     createWithdrawal(req: {
-        user: {
-            sub: string;
-        };
+        user: JwtUser;
     }, createWithdrawalDto: CreateWithdrawalDto): Promise<WithdrawalResponseDto>;
     getWithdrawals(req: {
-        user: {
-            sub: string;
-        };
+        user: JwtUser;
     }, limit?: string, offset?: string): Promise<{
         withdrawals: {
             id: string;
@@ -32,14 +29,10 @@ export declare class WithdrawalsController {
         total: number;
     }>;
     getWithdrawal(req: {
-        user: {
-            sub: string;
-        };
+        user: JwtUser;
     }, id: string): Promise<WithdrawalResponseDto>;
     cancelWithdrawal(req: {
-        user: {
-            sub: string;
-        };
+        user: JwtUser;
     }, id: string): Promise<{
         message: string;
     }>;

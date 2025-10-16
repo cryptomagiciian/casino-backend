@@ -6,6 +6,7 @@ import { CreateDepositDto } from './dto/create-deposit.dto';
 import { DepositResponseDto } from './dto/deposit-response.dto';
 import { DepositWebhookDto } from './dto/webhook.dto';
 import { Currency } from '../shared/constants';
+import { JwtUser } from '../shared/types';
 
 @ApiTags('deposits')
 @Controller('deposits')
@@ -19,7 +20,7 @@ export class DepositsController {
   @ApiResponse({ status: 201, description: 'Deposit created successfully', type: DepositResponseDto })
   @ApiResponse({ status: 400, description: 'Invalid deposit data' })
   async createDeposit(
-    @Request() req: { user: { id: string } },
+    @Request() req: { user: JwtUser },
     @Body() createDepositDto: CreateDepositDto,
   ): Promise<DepositResponseDto> {
     return this.depositsService.createDeposit(req.user.id, createDepositDto);
@@ -31,7 +32,7 @@ export class DepositsController {
   @ApiQuery({ name: 'offset', required: false, description: 'Number of deposits to skip', example: '0' })
   @ApiResponse({ status: 200, description: 'Deposits retrieved successfully' })
   async getDeposits(
-    @Request() req: { user: { id: string } },
+    @Request() req: { user: JwtUser },
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
   ) {
@@ -47,7 +48,7 @@ export class DepositsController {
   @ApiResponse({ status: 200, description: 'Deposit retrieved successfully', type: DepositResponseDto })
   @ApiResponse({ status: 404, description: 'Deposit not found' })
   async getDeposit(
-    @Request() req: { user: { id: string } },
+    @Request() req: { user: JwtUser },
     @Param('id') id: string,
   ): Promise<DepositResponseDto> {
     return this.depositsService.getDeposit(req.user.id, id);
@@ -65,7 +66,7 @@ export class DepositsController {
   @ApiParam({ name: 'id', description: 'Deposit ID' })
   @ApiResponse({ status: 200, description: 'Deposit confirmed successfully', type: DepositResponseDto })
   async confirmDeposit(
-    @Request() req: { user: { id: string } },
+    @Request() req: { user: JwtUser },
     @Param('id') id: string,
   ): Promise<DepositResponseDto> {
     return this.depositsService.confirmDeposit(req.user.id, id);

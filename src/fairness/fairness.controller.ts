@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, UseGuards, Request } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { FairnessService } from './fairness.service';
-import { FairnessVerifyRequest } from '../shared/types';
+import { FairnessVerifyRequest, JwtUser } from '../shared/types';
 
 export class RotateSeedDto {
   // No additional fields needed
@@ -22,7 +22,7 @@ export class FairnessController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current fairness seed for user' })
   @ApiResponse({ status: 200, description: 'Current seed retrieved successfully' })
-  async getCurrentSeed(@Request() req: { user: { sub: string } }) {
+  async getCurrentSeed(@Request() req: { user: JwtUser }) {
     return this.fairnessService.getCurrentSeed(req.user.id);
   }
 
@@ -32,7 +32,7 @@ export class FairnessController {
   @ApiOperation({ summary: 'Rotate fairness seed (admin only)' })
   @ApiResponse({ status: 200, description: 'Seed rotated successfully' })
   async rotateSeed(
-    @Request() req: { user: { id: string } },
+    @Request() req: { user: JwtUser },
     @Body() rotateSeedDto: RotateSeedDto,
   ) {
     return this.fairnessService.rotateSeed(req.user.id);
@@ -44,7 +44,7 @@ export class FairnessController {
   @ApiOperation({ summary: 'Reveal fairness seed (admin only)' })
   @ApiResponse({ status: 200, description: 'Seed revealed successfully' })
   async revealSeed(
-    @Request() req: { user: { id: string } },
+    @Request() req: { user: JwtUser },
     @Body() revealSeedDto: RevealSeedDto,
   ) {
     return this.fairnessService.revealSeed(req.user.id, revealSeedDto.seedId);

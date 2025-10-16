@@ -3,7 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiProperty } from '
 import { IsString, IsEmail, MinLength } from 'class-validator';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
-import { UserPayload } from '../shared/types';
+import { UserPayload, JwtUser } from '../shared/types';
 
 export class RegisterDto {
   @ApiProperty()
@@ -71,7 +71,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Get current user info' })
   @ApiResponse({ status: 200, description: 'User info retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getProfile(@Request() req: { user: UserPayload }) {
+  async getProfile(@Request() req: { user: JwtUser }) {
     return {
       id: req.user.id,
       handle: req.user.handle,

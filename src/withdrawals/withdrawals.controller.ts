@@ -5,6 +5,7 @@ import { WithdrawalsService } from './withdrawals.service';
 import { CreateWithdrawalDto } from './dto/create-withdrawal.dto';
 import { WithdrawalResponseDto } from './dto/withdrawal-response.dto';
 import { Currency } from '../shared/constants';
+import { JwtUser } from '../shared/types';
 
 @ApiTags('withdrawals')
 @Controller('withdrawals')
@@ -19,10 +20,10 @@ export class WithdrawalsController {
   @ApiResponse({ status: 400, description: 'Invalid withdrawal data' })
   @ApiResponse({ status: 403, description: 'Insufficient balance or security check failed' })
   async createWithdrawal(
-    @Request() req: { user: { id: string } },
+    @Request() req: { user: JwtUser },
     @Body() createWithdrawalDto: CreateWithdrawalDto,
   ): Promise<WithdrawalResponseDto> {
-    return this.withdrawalsService.createWithdrawal(req.user.sub, createWithdrawalDto);
+    return this.withdrawalsService.createWithdrawal(req.user.id, createWithdrawalDto);
   }
 
   @Get()
@@ -31,7 +32,7 @@ export class WithdrawalsController {
   @ApiQuery({ name: 'offset', required: false, description: 'Number of withdrawals to skip', example: '0' })
   @ApiResponse({ status: 200, description: 'Withdrawals retrieved successfully' })
   async getWithdrawals(
-    @Request() req: { user: { id: string } },
+    @Request() req: { user: JwtUser },
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
   ) {
@@ -47,7 +48,7 @@ export class WithdrawalsController {
   @ApiResponse({ status: 200, description: 'Withdrawal retrieved successfully', type: WithdrawalResponseDto })
   @ApiResponse({ status: 404, description: 'Withdrawal not found' })
   async getWithdrawal(
-    @Request() req: { user: { id: string } },
+    @Request() req: { user: JwtUser },
     @Param('id') id: string,
   ): Promise<WithdrawalResponseDto> {
     return this.withdrawalsService.getWithdrawal(req.user.id, id);
@@ -59,7 +60,7 @@ export class WithdrawalsController {
   @ApiResponse({ status: 400, description: 'Withdrawal cannot be cancelled' })
   @ApiResponse({ status: 404, description: 'Withdrawal not found' })
   async cancelWithdrawal(
-    @Request() req: { user: { id: string } },
+    @Request() req: { user: JwtUser },
     @Param('id') id: string,
   ): Promise<{ message: string }> {
     await this.withdrawalsService.cancelWithdrawal(req.user.id, id);
