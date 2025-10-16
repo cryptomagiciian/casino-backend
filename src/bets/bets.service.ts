@@ -52,7 +52,7 @@ export class BetsService {
     if (network === 'mainnet') {
       try {
         const testnetBalance = await this.walletsService.getWalletBalance(userId, currency, 'testnet');
-        if (testnetBalance.available > 0) {
+        if (parseFloat(testnetBalance.available) > 0) {
           actualNetwork = 'testnet';
           console.log(`🎯 Bet service: User has testnet funds, using testnet for bet placement`);
         }
