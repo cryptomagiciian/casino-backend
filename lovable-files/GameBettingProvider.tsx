@@ -137,6 +137,12 @@ export const GameBettingProvider: React.FC<{ children: ReactNode }> = ({ childre
       // Convert crypto amount to USD for comparison with USD stakes
       const usdAmount = convertToUsd(cryptoAmount, targetCurrency);
       console.log(`💰 Balance check: ${cryptoAmount} ${targetCurrency} = $${usdAmount} USD`);
+      console.log(`💰 Balance check details:`, {
+        targetCurrency,
+        cryptoAmount,
+        usdAmount,
+        bettingCurrency
+      });
       
       return usdAmount || 0;
     } catch (err) {

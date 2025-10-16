@@ -48,6 +48,9 @@ export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }
     USDC: prices.USDC || 1,
     USDT: prices.USDT || 1,
   };
+  
+  // Debug: Log current prices
+  console.log('💰 CurrencySelector prices:', { prices, usdRates });
 
   useEffect(() => {
     // Persist currency preferences to localStorage
@@ -61,7 +64,9 @@ export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   const convertToUsd = (amount: number, currency: string): number => {
     const rate = usdRates[currency] || 1;
-    return amount * rate;
+    const result = amount * rate;
+    console.log(`💰 convertToUsd: ${amount} ${currency} × ${rate} = $${result} USD`);
+    return result;
   };
 
   const convertUsdToCrypto = (usdAmount: number, cryptoCurrency: string): number => {
