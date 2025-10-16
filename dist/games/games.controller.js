@@ -15,13 +15,19 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.GamesController = exports.BetPreviewDto = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
+const throttler_1 = require("@nestjs/throttler");
 const games_service_1 = require("./games.service");
+const game_search_dto_1 = require("./dto/game-search.dto");
+const game_search_response_dto_1 = require("./dto/game-search-response.dto");
 class BetPreviewDto {
 }
 exports.BetPreviewDto = BetPreviewDto;
 let GamesController = class GamesController {
     constructor(gamesService) {
         this.gamesService = gamesService;
+    }
+    async searchGames(query) {
+        return this.gamesService.searchGames(query.q || '', parseInt(query.limit || '10'));
     }
     async getGames() {
         return this.gamesService.getGames();
@@ -31,6 +37,16 @@ let GamesController = class GamesController {
     }
 };
 exports.GamesController = GamesController;
+__decorate([
+    (0, common_1.Get)('search'),
+    (0, common_1.UseGuards)(throttler_1.ThrottlerGuard),
+    (0, swagger_1.ApiOperation)({ summary: 'Search games' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Game search results', type: game_search_response_dto_1.GameSearchResponseDto }),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [game_search_dto_1.GameSearchQueryDto]),
+    __metadata("design:returntype", Promise)
+], GamesController.prototype, "searchGames", null);
 __decorate([
     (0, common_1.Get)(),
     (0, swagger_1.ApiOperation)({ summary: 'Get all available games' }),

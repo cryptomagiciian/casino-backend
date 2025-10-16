@@ -23,7 +23,7 @@ export class FairnessController {
   @ApiOperation({ summary: 'Get current fairness seed for user' })
   @ApiResponse({ status: 200, description: 'Current seed retrieved successfully' })
   async getCurrentSeed(@Request() req: { user: { sub: string } }) {
-    return this.fairnessService.getCurrentSeed(req.user.sub);
+    return this.fairnessService.getCurrentSeed(req.user.id);
   }
 
   @Post('seed/rotate')
@@ -32,10 +32,10 @@ export class FairnessController {
   @ApiOperation({ summary: 'Rotate fairness seed (admin only)' })
   @ApiResponse({ status: 200, description: 'Seed rotated successfully' })
   async rotateSeed(
-    @Request() req: { user: { sub: string } },
+    @Request() req: { user: { id: string } },
     @Body() rotateSeedDto: RotateSeedDto,
   ) {
-    return this.fairnessService.rotateSeed(req.user.sub);
+    return this.fairnessService.rotateSeed(req.user.id);
   }
 
   @Post('seed/reveal')
@@ -44,10 +44,10 @@ export class FairnessController {
   @ApiOperation({ summary: 'Reveal fairness seed (admin only)' })
   @ApiResponse({ status: 200, description: 'Seed revealed successfully' })
   async revealSeed(
-    @Request() req: { user: { sub: string } },
+    @Request() req: { user: { id: string } },
     @Body() revealSeedDto: RevealSeedDto,
   ) {
-    return this.fairnessService.revealSeed(req.user.sub, revealSeedDto.seedId);
+    return this.fairnessService.revealSeed(req.user.id, revealSeedDto.seedId);
   }
 
   @Post('verify')

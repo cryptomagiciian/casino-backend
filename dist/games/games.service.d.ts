@@ -73,11 +73,22 @@ export declare class GamesService {
     }>;
     previewBet(game: Game, currency: string, stake: string, params?: any): Promise<BetPreview>;
     private calculateGameOdds;
+    searchGames(query: string, limit?: number): Promise<{
+        results: {
+            slug: string;
+            name: "Candle Flip" | "Pump or Dump" | "Support or Resistance" | "Bull vs Bear Battle" | "Leverage Ladder" | "Stop Loss Roulette" | "Freeze the Bag" | "To the Moon" | "Diamond Hands";
+            type: string;
+            description: "Predict the next candle color" | "Predict if price goes up or down" | "Predict if price breaks or rejects level" | "Tug-of-war bar direction" | "Press to advance rungs with increasing multipliers" | "Set stop loss distance for dynamic payout" | "Click to cash before crash" | "Classic crash game" | "Mines replica with 5x5 grid";
+            minBet: string;
+            maxBet: string;
+        }[];
+    }>;
+    private getGameSlug;
     updateGameConfig(game: Game, houseEdgeBps?: number, params?: any): Promise<{
+        params: import("@prisma/client/runtime/library").JsonValue | null;
         id: string;
         updatedAt: Date;
         game: string;
         houseEdgeBps: number;
-        params: import("@prisma/client/runtime/library").JsonValue | null;
     }>;
 }

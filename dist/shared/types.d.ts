@@ -12,10 +12,6 @@ export interface WalletBalance {
     locked: string;
     total: string;
 }
-export interface FaucetRequest {
-    currency: Currency;
-    amount: string;
-}
 export interface BetPreview {
     game: Game;
     currency: Currency;
@@ -91,13 +87,49 @@ export interface DiamondHandsParams {
 export interface DepositRequest {
     currency: Currency;
     amount: string;
-    provider: string;
-    txRef?: string;
+    network: 'mainnet' | 'testnet';
+    transactionHash?: string;
+    blockNumber?: number;
 }
 export interface WithdrawalRequest {
     currency: Currency;
     amount: string;
-    address: string;
+    walletAddress: string;
+    network: 'mainnet' | 'testnet';
+    twoFactorCode?: string;
+    withdrawalPassword?: string;
+}
+export interface DepositResponse {
+    id: string;
+    currency: Currency;
+    amount: string;
+    network: string;
+    status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+    walletAddress: string;
+    transactionHash?: string;
+    blockNumber?: number;
+    qrCodeData: string;
+    requiredConfirmations: number;
+    currentConfirmations: number;
+    explorerUrl: string;
+    createdAt: string;
+    completedAt?: string;
+}
+export interface WithdrawalResponse {
+    id: string;
+    currency: Currency;
+    amount: string;
+    fee: string;
+    netAmount: string;
+    walletAddress: string;
+    network: string;
+    status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+    transactionHash?: string;
+    blockNumber?: number;
+    processingTime: string;
+    explorerUrl?: string;
+    createdAt: string;
+    completedAt?: string;
 }
 export interface LeaderboardEntry {
     rank: number;

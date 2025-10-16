@@ -105,6 +105,48 @@ let GamesService = class GamesService {
                 throw new common_1.BadRequestException(`Unknown game: ${game}`);
         }
     }
+    async searchGames(query, limit = 10) {
+        if (!query || query.trim().length === 0) {
+            return { results: [] };
+        }
+        const searchTerm = query.toLowerCase().trim();
+        const allGames = Object.entries(constants_1.GAME_CONFIGS);
+        const results = allGames
+            .filter(([id, config]) => {
+            const name = config.name.toLowerCase();
+            const description = config.description.toLowerCase();
+            const slug = this.getGameSlug(id);
+            return (name.includes(searchTerm) ||
+                description.includes(searchTerm) ||
+                slug.includes(searchTerm) ||
+                id.toLowerCase().includes(searchTerm));
+        })
+            .slice(0, limit)
+            .map(([id, config]) => ({
+            slug: this.getGameSlug(id),
+            name: config.name,
+            type: 'prediction',
+            description: config.description,
+            minBet: '1.00',
+            maxBet: '10000.00',
+        }));
+        return { results };
+    }
+    getGameSlug(gameId) {
+        const gameSlugs = {
+            'pump_or_dump': 'pump-or-dump',
+            'candle_flip': 'candle-flip',
+            'support_or_resistance': 'support-or-resistance',
+            'bull_vs_bear_battle': 'bull-vs-bear',
+            'leverage_ladder': 'leverage-ladder',
+            'stop_loss_roulette': 'bullet-bet',
+            'freeze_the_bag': 'freeze-the-bag',
+            'to_the_moon': 'to-the-moon',
+            'diamond_hands': 'diamond-hands',
+            'crypto_slots': 'crypto-slots',
+        };
+        return gameSlugs[gameId] || gameId;
+    }
     async updateGameConfig(game, houseEdgeBps, params) {
         return this.prisma.gameConfig.upsert({
             where: { game },

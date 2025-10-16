@@ -1,64 +1,53 @@
 import { WithdrawalsService } from './withdrawals.service';
-export declare class WithdrawalDto {
-    currency: string;
-    amount: string;
-    address: string;
-}
+import { CreateWithdrawalDto } from './dto/create-withdrawal.dto';
+import { WithdrawalResponseDto } from './dto/withdrawal-response.dto';
+import { Currency } from '../shared/constants';
 export declare class WithdrawalsController {
-    private withdrawalsService;
+    private readonly withdrawalsService;
     constructor(withdrawalsService: WithdrawalsService);
     createWithdrawal(req: {
         user: {
             sub: string;
         };
-    }, withdrawalDto: WithdrawalDto): Promise<{
-        amount: string;
-        message: string;
-        id: string;
-        currency: string;
-        address: string;
-        status: import(".prisma/client").$Enums.WithdrawalStatus;
-        reviewNeeded: boolean;
-        txHash: string | null;
-        meta: import("@prisma/client/runtime/library").JsonValue | null;
-        createdAt: Date;
-        processedAt: Date | null;
-        userId: string;
-    }>;
-    getUserWithdrawals(req: {
+    }, createWithdrawalDto: CreateWithdrawalDto): Promise<WithdrawalResponseDto>;
+    getWithdrawals(req: {
         user: {
             sub: string;
         };
-    }, limit?: number, offset?: number): Promise<{
+    }, limit?: string, offset?: string): Promise<{
         withdrawals: {
             id: string;
-            currency: string;
+            currency: Currency;
             amount: string;
-            address: string;
+            fee: string;
+            netAmount: string;
+            walletAddress: string;
+            withdrawalMethod: string;
             status: import(".prisma/client").$Enums.WithdrawalStatus;
-            reviewNeeded: boolean;
-            txHash: string;
-            createdAt: Date;
-            processedAt: Date;
+            transactionHash: string;
+            processingTime: string;
+            createdAt: string;
+            completedAt: string;
         }[];
         total: number;
     }>;
-    getPendingWithdrawals(limit?: number, offset?: number): Promise<{
-        withdrawals: {
-            id: string;
-            userId: string;
-            user: {
-                id: string;
-                handle: string;
-                email: string;
-            };
-            currency: string;
-            amount: string;
-            address: string;
-            status: import(".prisma/client").$Enums.WithdrawalStatus;
-            reviewNeeded: boolean;
-            createdAt: Date;
-        }[];
-        total: number;
+    getWithdrawal(req: {
+        user: {
+            sub: string;
+        };
+    }, id: string): Promise<WithdrawalResponseDto>;
+    cancelWithdrawal(req: {
+        user: {
+            sub: string;
+        };
+    }, id: string): Promise<{
+        message: string;
+    }>;
+    getWithdrawalLimits(currency: Currency): Promise<{
+        min: number;
+        max: number;
+        dailyLimit: number;
+        fee: number;
+        processingTime: string;
     }>;
 }

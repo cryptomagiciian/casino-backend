@@ -19,7 +19,7 @@ export class WithdrawalsController {
   @ApiResponse({ status: 400, description: 'Invalid withdrawal data' })
   @ApiResponse({ status: 403, description: 'Insufficient balance or security check failed' })
   async createWithdrawal(
-    @Request() req: { user: { sub: string } },
+    @Request() req: { user: { id: string } },
     @Body() createWithdrawalDto: CreateWithdrawalDto,
   ): Promise<WithdrawalResponseDto> {
     return this.withdrawalsService.createWithdrawal(req.user.sub, createWithdrawalDto);
@@ -31,12 +31,12 @@ export class WithdrawalsController {
   @ApiQuery({ name: 'offset', required: false, description: 'Number of withdrawals to skip', example: '0' })
   @ApiResponse({ status: 200, description: 'Withdrawals retrieved successfully' })
   async getWithdrawals(
-    @Request() req: { user: { sub: string } },
+    @Request() req: { user: { id: string } },
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
   ) {
     return this.withdrawalsService.getWithdrawals(
-      req.user.sub,
+      req.user.id,
       parseInt(limit || '50'),
       parseInt(offset || '0'),
     );
@@ -47,10 +47,10 @@ export class WithdrawalsController {
   @ApiResponse({ status: 200, description: 'Withdrawal retrieved successfully', type: WithdrawalResponseDto })
   @ApiResponse({ status: 404, description: 'Withdrawal not found' })
   async getWithdrawal(
-    @Request() req: { user: { sub: string } },
+    @Request() req: { user: { id: string } },
     @Param('id') id: string,
   ): Promise<WithdrawalResponseDto> {
-    return this.withdrawalsService.getWithdrawal(req.user.sub, id);
+    return this.withdrawalsService.getWithdrawal(req.user.id, id);
   }
 
   @Delete(':id')
@@ -59,10 +59,10 @@ export class WithdrawalsController {
   @ApiResponse({ status: 400, description: 'Withdrawal cannot be cancelled' })
   @ApiResponse({ status: 404, description: 'Withdrawal not found' })
   async cancelWithdrawal(
-    @Request() req: { user: { sub: string } },
+    @Request() req: { user: { id: string } },
     @Param('id') id: string,
   ): Promise<{ message: string }> {
-    await this.withdrawalsService.cancelWithdrawal(req.user.sub, id);
+    await this.withdrawalsService.cancelWithdrawal(req.user.id, id);
     return { message: 'Withdrawal cancelled successfully' };
   }
 

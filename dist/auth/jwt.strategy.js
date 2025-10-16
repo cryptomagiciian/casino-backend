@@ -30,7 +30,11 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
         if (!user) {
             throw new common_1.UnauthorizedException();
         }
-        return user;
+        return {
+            id: user.sub,
+            handle: user.handle,
+            email: user.email,
+        };
     }
 };
 exports.JwtStrategy = JwtStrategy;

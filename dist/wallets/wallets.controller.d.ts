@@ -1,9 +1,9 @@
 import { WalletsService } from './wallets.service';
 import { WalletBalance } from '../shared/types';
 import { Currency } from '../shared/constants';
+import { ClearDemoFundsDto } from './dto/clear-demo-funds.dto';
 export declare class FaucetDto {
     currency: Currency;
-    amount: string;
 }
 export declare class WalletsController {
     private walletsService;
@@ -12,19 +12,20 @@ export declare class WalletsController {
         user: {
             sub: string;
         };
-    }): Promise<WalletBalance[]>;
+    }, detailed?: string, network?: 'mainnet' | 'testnet'): Promise<WalletBalance[] | any>;
     getBalance(req: {
         user: {
             sub: string;
         };
-    }, currency: Currency): Promise<WalletBalance>;
+    }, currency: Currency, network?: 'mainnet' | 'testnet'): Promise<WalletBalance>;
     faucet(req: {
         user: {
             sub: string;
         };
     }, faucetDto: FaucetDto): Promise<{
         currency: Currency;
-        amount: string;
+        amount: 0.01 | 0.001 | 0.1 | 10;
+        network: string;
         message: string;
     }>;
     getLedgerEntries(req: {
@@ -35,13 +36,22 @@ export declare class WalletsController {
         entries: {
             amount: string;
             id: string;
-            currency: string;
-            meta: import("@prisma/client/runtime/library").JsonValue | null;
             createdAt: Date;
-            accountId: string;
+            currency: string;
             type: string;
             refId: string | null;
+            meta: import("@prisma/client/runtime/library").JsonValue | null;
+            accountId: string;
         }[];
         total: number;
+    }>;
+    clearDemoFunds(req: {
+        user: {
+            sub: string;
+        };
+    }, clearDto: ClearDemoFundsDto): Promise<{
+        message: string;
+        accountsReset: number;
+        ledgerEntriesCleared: number;
     }>;
 }

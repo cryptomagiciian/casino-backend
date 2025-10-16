@@ -11,6 +11,7 @@ const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
 const throttler_1 = require("@nestjs/throttler");
 const cache_manager_1 = require("@nestjs/cache-manager");
+const schedule_1 = require("@nestjs/schedule");
 const prisma_module_1 = require("./prisma/prisma.module");
 const auth_module_1 = require("./auth/auth.module");
 const users_module_1 = require("./users/users.module");
@@ -23,6 +24,10 @@ const deposits_module_1 = require("./deposits/deposits.module");
 const withdrawals_module_1 = require("./withdrawals/withdrawals.module");
 const leaderboard_module_1 = require("./leaderboard/leaderboard.module");
 const health_module_1 = require("./health/health.module");
+const prices_module_1 = require("./prices/prices.module");
+const wallet_module_1 = require("./wallet/wallet.module");
+const blockchain_module_1 = require("./blockchain/blockchain.module");
+const futures_module_1 = require("./futures/futures.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -35,14 +40,31 @@ exports.AppModule = AppModule = __decorate([
             }),
             throttler_1.ThrottlerModule.forRoot([
                 {
+                    name: 'default',
                     ttl: parseInt(process.env.THROTTLE_TTL || '60') * 1000,
                     limit: parseInt(process.env.THROTTLE_LIMIT || '100'),
+                },
+                {
+                    name: 'crypto-prices',
+                    ttl: 60 * 1000,
+                    limit: 10,
+                },
+                {
+                    name: 'live-wins',
+                    ttl: 60 * 1000,
+                    limit: 10,
+                },
+                {
+                    name: 'game-search',
+                    ttl: 60 * 1000,
+                    limit: 30,
                 },
             ]),
             cache_manager_1.CacheModule.register({
                 isGlobal: true,
                 store: 'memory',
             }),
+            schedule_1.ScheduleModule.forRoot(),
             prisma_module_1.PrismaModule,
             auth_module_1.AuthModule,
             users_module_1.UsersModule,
@@ -55,6 +77,10 @@ exports.AppModule = AppModule = __decorate([
             withdrawals_module_1.WithdrawalsModule,
             leaderboard_module_1.LeaderboardModule,
             health_module_1.HealthModule,
+            prices_module_1.PricesModule,
+            wallet_module_1.WalletModule,
+            blockchain_module_1.BlockchainModule,
+            futures_module_1.FuturesModule,
         ],
     })
 ], AppModule);

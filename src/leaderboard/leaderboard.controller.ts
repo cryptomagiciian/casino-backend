@@ -28,11 +28,11 @@ export class LeaderboardController {
   @ApiQuery({ name: 'date', required: false, description: 'Date for leaderboard (YYYY-MM-DD)' })
   @ApiResponse({ status: 200, description: 'User position retrieved successfully' })
   async getUserPosition(
-    @Request() req: { user: { sub: string } },
+    @Request() req: { user: { id: string } },
     @Query('date') date?: string,
   ) {
     const targetDate = date ? new Date(date) : undefined;
-    return this.leaderboardService.getUserLeaderboardPosition(req.user.sub, targetDate);
+    return this.leaderboardService.getUserLeaderboardPosition(req.user.id, targetDate);
   }
 
   @Get('history')
@@ -42,9 +42,9 @@ export class LeaderboardController {
   @ApiQuery({ name: 'days', required: false, description: 'Number of days to retrieve' })
   @ApiResponse({ status: 200, description: 'User history retrieved successfully' })
   async getUserHistory(
-    @Request() req: { user: { sub: string } },
+    @Request() req: { user: { id: string } },
     @Query('days') days?: number,
   ) {
-    return this.leaderboardService.getUserLeaderboardHistory(req.user.sub, days || 30);
+    return this.leaderboardService.getUserLeaderboardHistory(req.user.id, days || 30);
   }
 }

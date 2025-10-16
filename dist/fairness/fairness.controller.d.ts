@@ -20,11 +20,11 @@ export declare class FairnessController {
     }, rotateSeedDto: RotateSeedDto): Promise<{
         id: string;
         createdAt: Date;
-        userId: string | null;
-        serverSeedHash: string;
         serverSeed: string;
+        serverSeedHash: string;
         active: boolean;
         revealedAt: Date | null;
+        userId: string | null;
     }>;
     revealSeed(req: {
         user: {
@@ -33,11 +33,11 @@ export declare class FairnessController {
     }, revealSeedDto: RevealSeedDto): Promise<{
         id: string;
         createdAt: Date;
-        userId: string | null;
-        serverSeedHash: string;
         serverSeed: string;
+        serverSeedHash: string;
         active: boolean;
         revealedAt: Date | null;
+        userId: string | null;
     }>;
     verifyFairness(verifyRequest: FairnessVerifyRequest): Promise<import("../shared/types").FairnessVerifyResult>;
 }

@@ -89,18 +89,29 @@ export declare const GAME_CONFIGS: {
 export declare const LEDGER_TYPES: {
     readonly DEPOSIT: "DEPOSIT";
     readonly WITHDRAWAL: "WITHDRAWAL";
+    readonly WITHDRAWAL_LOCK: "WITHDRAWAL_LOCK";
+    readonly WITHDRAWAL_UNLOCK: "WITHDRAWAL_UNLOCK";
     readonly BET_STAKE: "BET_STAKE";
     readonly BET_WIN: "BET_WIN";
     readonly BET_REFUND: "BET_REFUND";
     readonly FAUCET: "FAUCET";
     readonly TRANSFER: "TRANSFER";
+    readonly FUTURES_OPEN_FEE: "FUTURES_OPEN_FEE";
+    readonly FUTURES_CLOSE_FEE: "FUTURES_CLOSE_FEE";
+    readonly FUTURES_IMPACT_FEE: "FUTURES_IMPACT_FEE";
+    readonly FUTURES_BORROW_FEE: "FUTURES_BORROW_FEE";
+    readonly FUTURES_FUNDING: "FUTURES_FUNDING";
+    readonly FUTURES_LIQUIDATION_FEE: "FUTURES_LIQUIDATION_FEE";
+    readonly FUTURES_PNL_WIN: "FUTURES_PNL_WIN";
+    readonly FUTURES_PNL_LOSS: "FUTURES_PNL_LOSS";
+    readonly FUTURES_LIQUIDATION_LOSS: "FUTURES_LIQUIDATION_LOSS";
 };
 export type LedgerType = typeof LEDGER_TYPES[keyof typeof LEDGER_TYPES];
 export declare const DEFAULT_HOUSE_EDGE_BPS = 200;
-export declare const FAUCET_DAILY_LIMITS: {
-    readonly BTC: 1000000;
-    readonly ETH: 10000000000000000000n;
-    readonly SOL: 10000000000;
-    readonly USDC: 100000000000;
-    readonly USDT: 100000000000;
+export declare const TESTNET_FAUCET_AMOUNTS: {
+    readonly BTC: 0.001;
+    readonly ETH: 0.01;
+    readonly SOL: 0.1;
+    readonly USDC: 10;
+    readonly USDT: 10;
 };

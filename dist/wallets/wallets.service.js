@@ -20,12 +20,13 @@ let WalletsService = class WalletsService {
         this.prisma = prisma;
         this.ledgerService = ledgerService;
     }
-    async getOrCreateAccount(userId, currency) {
+    async getOrCreateAccount(userId, currency, network = 'mainnet') {
         let account = await this.prisma.walletAccount.findUnique({
             where: {
-                userId_currency: {
+                userId_currency_network: {
                     userId,
                     currency,
+                    network,
                 },
             },
         });
@@ -34,6 +35,7 @@ let WalletsService = class WalletsService {
                 data: {
                     userId,
                     currency,
+                    network,
                     available: 0n,
                     locked: 0n,
                 },
@@ -41,14 +43,23 @@ let WalletsService = class WalletsService {
         }
         return account;
     }
-    async getWalletBalances(userId) {
+    async getWalletBalance(userId, currency, network = 'mainnet') {
+        const account = await this.getOrCreateAccount(userId, currency, network);
+        return {
+            currency,
+            available: (0, utils_1.fromSmallestUnits)(account.available, currency),
+            locked: (0, utils_1.fromSmallestUnits)(account.locked, currency),
+            total: (0, utils_1.fromSmallestUnits)(account.available + account.locked, currency),
+        };
+    }
+    async getWalletBalances(userId, network = 'mainnet') {
         const accounts = await this.prisma.walletAccount.findMany({
-            where: { userId },
+            where: { userId, network },
         });
         const balances = [];
         for (const currency of Object.values(constants_1.CURRENCIES)) {
             const account = accounts.find(acc => acc.currency === currency);
-            const available = account ? await this.ledgerService.getAccountBalanceByCurrency(account.id, currency) : 0n;
+            const available = account ? account.available : 0n;
             const locked = account ? account.locked : 0n;
             const total = available + locked;
             balances.push({
@@ -60,9 +71,9 @@ let WalletsService = class WalletsService {
         }
         return balances;
     }
-    async getBalance(userId, currency) {
-        const account = await this.getOrCreateAccount(userId, currency);
-        const available = await this.ledgerService.getAccountBalanceByCurrency(account.id, currency);
+    async getBalance(userId, currency, network = 'mainnet') {
+        const account = await this.getOrCreateAccount(userId, currency, network);
+        const available = account.available;
         const locked = account.locked;
         const total = available + locked;
         return {
@@ -72,70 +83,84 @@ let WalletsService = class WalletsService {
             total: (0, utils_1.fromSmallestUnits)(total, currency),
         };
     }
-    async faucet(userId, request) {
-        if (!(0, utils_1.isDemoMode)()) {
-            throw new common_1.BadRequestException('Faucet is only available in demo mode');
+    async getTestnetFaucet(userId, currency, network = 'testnet') {
+        if (network !== 'testnet') {
+            throw new common_1.BadRequestException('Faucet is only available on testnet');
         }
-        const { currency, amount } = request;
-        const amountSmallest = (0, utils_1.toSmallestUnits)(amount, currency);
-        const dailyLimit = BigInt(constants_1.FAUCET_DAILY_LIMITS[currency]);
-        if (amountSmallest > dailyLimit) {
-            throw new common_1.BadRequestException(`Amount exceeds daily faucet limit for ${currency}`);
-        }
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const todayFaucetUsage = await this.prisma.ledgerEntry.aggregate({
-            where: {
-                account: {
-                    userId,
-                    currency,
-                },
-                type: 'FAUCET',
-                createdAt: {
-                    gte: today,
-                },
-            },
-            _sum: { amount: true },
-        });
-        const usedToday = todayFaucetUsage._sum.amount || 0n;
-        if (usedToday + amountSmallest > dailyLimit) {
-            throw new common_1.BadRequestException(`Daily faucet limit exceeded for ${currency}`);
-        }
-        const account = await this.getOrCreateAccount(userId, currency);
-        await this.ledgerService.createEntry({
-            accountId: account.id,
-            amount,
+        const amount = constants_1.TESTNET_FAUCET_AMOUNTS[currency];
+        const amountSmallest = (0, utils_1.toSmallestUnits)(amount.toString(), currency);
+        const account = await this.getOrCreateAccount(userId, currency, 'testnet');
+        await this.ledgerService.createUserTransaction({
+            userId,
+            amount: amount.toString(),
             currency,
             type: 'FAUCET',
-            meta: { faucet: true, dailyLimit: dailyLimit.toString() },
+            network: 'testnet',
+            description: `Testnet faucet: ${amount} ${currency}`,
+            meta: { faucet: true, network: 'testnet', testnet: true },
         });
         return {
             currency,
             amount,
-            message: `Successfully credited ${amount} ${currency} from faucet`,
+            network: 'testnet',
+            message: `Successfully credited ${amount} ${currency} from testnet faucet`,
         };
     }
-    async lockFunds(userId, currency, amount, refId) {
-        const account = await this.getOrCreateAccount(userId, currency);
+    async clearDemoFunds(userId) {
+        const result = await this.prisma.walletAccount.updateMany({
+            where: { userId },
+            data: {
+                available: 0n,
+                locked: 0n,
+            },
+        });
+        const ledgerResult = await this.prisma.ledgerEntry.deleteMany({
+            where: {
+                account: { userId },
+                type: 'FAUCET',
+                meta: {
+                    path: ['faucet'],
+                    equals: true,
+                },
+            },
+        });
+        return {
+            message: 'Demo funds cleared successfully',
+            accountsReset: result.count,
+            ledgerEntriesCleared: ledgerResult.count,
+        };
+    }
+    async lockFunds(userId, currency, amount, refId, network = 'mainnet') {
+        const account = await this.getOrCreateAccount(userId, currency, network);
+        console.log(`💰 LOCK FUNDS: User ${userId}, Currency ${currency}, Amount ${amount}, RefId ${refId}, Network ${network}`);
+        console.log(`💰 Account before lock: Available ${account.available}, Locked ${account.locked}`);
         await this.ledgerService.lockFunds(account.id, amount, currency, refId);
         const amountSmallest = (0, utils_1.toSmallestUnits)(amount, currency);
-        await this.prisma.walletAccount.update({
+        console.log(`💰 Locking ${amountSmallest} funds`);
+        const updatedAccount = await this.prisma.walletAccount.update({
             where: { id: account.id },
             data: {
+                available: {
+                    decrement: amountSmallest,
+                },
                 locked: {
                     increment: amountSmallest,
                 },
             },
         });
+        console.log(`💰 Account after lock: Available ${updatedAccount.available}, Locked ${updatedAccount.locked}`);
         return { success: true };
     }
-    async releaseFunds(userId, currency, amount, refId) {
-        const account = await this.getOrCreateAccount(userId, currency);
+    async releaseFunds(userId, currency, amount, refId, network = 'mainnet') {
+        const account = await this.getOrCreateAccount(userId, currency, network);
         await this.ledgerService.releaseFunds(account.id, amount, currency, refId);
         const amountSmallest = (0, utils_1.toSmallestUnits)(amount, currency);
         await this.prisma.walletAccount.update({
             where: { id: account.id },
             data: {
+                available: {
+                    increment: amountSmallest,
+                },
                 locked: {
                     decrement: amountSmallest,
                 },
@@ -143,10 +168,65 @@ let WalletsService = class WalletsService {
         });
         return { success: true };
     }
-    async creditWinnings(userId, currency, amount, refId) {
-        const account = await this.getOrCreateAccount(userId, currency);
+    async creditWinnings(userId, currency, amount, refId, network = 'mainnet') {
+        const account = await this.getOrCreateAccount(userId, currency, network);
         await this.ledgerService.creditWinnings(account.id, amount, currency, refId);
+        const amountSmallest = (0, utils_1.toSmallestUnits)(amount, currency);
+        await this.prisma.walletAccount.update({
+            where: { id: account.id },
+            data: {
+                available: {
+                    increment: amountSmallest,
+                },
+            },
+        });
         return { success: true };
+    }
+    async processBetLoss(userId, currency, amount, refId, network = 'mainnet') {
+        const account = await this.getOrCreateAccount(userId, currency, network);
+        console.log(`💰 PROCESS BET LOSS: User ${userId}, Currency ${currency}, Amount ${amount}, RefId ${refId}, Network ${network}`);
+        console.log(`💰 Account before loss: Available ${account.available}, Locked ${account.locked}`);
+        await this.ledgerService.releaseFunds(account.id, amount, currency, refId);
+        const amountSmallest = (0, utils_1.toSmallestUnits)(amount, currency);
+        console.log(`💰 Deducting ${amountSmallest} from locked funds`);
+        const updatedAccount = await this.prisma.walletAccount.update({
+            where: { id: account.id },
+            data: {
+                locked: {
+                    decrement: amountSmallest,
+                },
+            },
+        });
+        console.log(`💰 Account after loss: Available ${updatedAccount.available}, Locked ${updatedAccount.locked}`);
+        return { success: true };
+    }
+    async getDetailedWalletBalances(userId, network = 'mainnet') {
+        const balances = await this.getWalletBalances(userId, network);
+        const usdRates = {
+            BTC: 45000,
+            ETH: 2500,
+            SOL: 100,
+            USDC: 1,
+            USDT: 1,
+        };
+        const detailedBalances = balances.map(balance => {
+            const balanceFloat = parseFloat(balance.available);
+            const usdValue = balanceFloat * (usdRates[balance.currency] || 1);
+            return {
+                currency: balance.currency,
+                available: balance.available,
+                locked: balance.locked,
+                total: balance.total,
+                usdValue: usdValue.toFixed(2),
+            };
+        });
+        const totalUsdValue = detailedBalances.reduce((sum, balance) => {
+            return sum + parseFloat(balance.usdValue);
+        }, 0);
+        return {
+            balances: detailedBalances,
+            totalUsdValue: totalUsdValue.toFixed(2),
+        };
     }
     async getLedgerEntries(userId, currency, limit = 50, offset = 0) {
         const account = await this.getOrCreateAccount(userId, currency);

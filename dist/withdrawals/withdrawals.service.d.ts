@@ -1,67 +1,52 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { LedgerService } from '../ledger/ledger.service';
-import { WithdrawalRequest } from '../shared/types';
+import { WalletsService } from '../wallets/wallets.service';
+import { WalletService } from '../wallet/wallet.service';
+import { CreateWithdrawalDto } from './dto/create-withdrawal.dto';
+import { WithdrawalResponseDto } from './dto/withdrawal-response.dto';
+import { Currency } from '../shared/constants';
 export declare class WithdrawalsService {
     private prisma;
     private ledgerService;
-    constructor(prisma: PrismaService, ledgerService: LedgerService);
-    createWithdrawal(userId: string, request: WithdrawalRequest): Promise<{
-        amount: string;
-        message: string;
-        id: string;
-        currency: string;
-        address: string;
-        status: import(".prisma/client").$Enums.WithdrawalStatus;
-        reviewNeeded: boolean;
-        txHash: string | null;
-        meta: import("@prisma/client/runtime/library").JsonValue | null;
-        createdAt: Date;
-        processedAt: Date | null;
-        userId: string;
-    }>;
-    processWithdrawal(withdrawalId: string, action: 'approve' | 'reject', txHash?: string): Promise<{
-        id: string;
-        currency: string;
-        amount: bigint;
-        address: string;
-        status: import(".prisma/client").$Enums.WithdrawalStatus;
-        reviewNeeded: boolean;
-        txHash: string | null;
-        meta: import("@prisma/client/runtime/library").JsonValue | null;
-        createdAt: Date;
-        processedAt: Date | null;
-        userId: string;
-    }>;
-    getUserWithdrawals(userId: string, limit?: number, offset?: number): Promise<{
+    private walletsService;
+    private walletService;
+    private readonly logger;
+    private readonly MIN_WITHDRAWALS;
+    private readonly WITHDRAWAL_FEES;
+    private readonly DAILY_LIMITS;
+    constructor(prisma: PrismaService, ledgerService: LedgerService, walletsService: WalletsService, walletService: WalletService);
+    createWithdrawal(userId: string, createWithdrawalDto: CreateWithdrawalDto): Promise<WithdrawalResponseDto>;
+    getWithdrawals(userId: string, limit?: number, offset?: number): Promise<{
         withdrawals: {
             id: string;
-            currency: string;
+            currency: Currency;
             amount: string;
-            address: string;
+            fee: string;
+            netAmount: string;
+            walletAddress: string;
+            withdrawalMethod: string;
             status: import(".prisma/client").$Enums.WithdrawalStatus;
-            reviewNeeded: boolean;
-            txHash: string;
-            createdAt: Date;
-            processedAt: Date;
+            transactionHash: string;
+            processingTime: string;
+            createdAt: string;
+            completedAt: string;
         }[];
         total: number;
     }>;
-    getPendingWithdrawals(limit?: number, offset?: number): Promise<{
-        withdrawals: {
-            id: string;
-            userId: string;
-            user: {
-                id: string;
-                handle: string;
-                email: string;
-            };
-            currency: string;
-            amount: string;
-            address: string;
-            status: import(".prisma/client").$Enums.WithdrawalStatus;
-            reviewNeeded: boolean;
-            createdAt: Date;
-        }[];
-        total: number;
+    getWithdrawal(userId: string, withdrawalId: string): Promise<WithdrawalResponseDto>;
+    cancelWithdrawal(userId: string, withdrawalId: string): Promise<void>;
+    private checkDailyWithdrawalLimit;
+    private performSecurityChecks;
+    private getProcessingTime;
+    private generateExplorerUrl;
+    private processWithdrawal;
+    private completeWithdrawal;
+    private failWithdrawal;
+    getWithdrawalLimits(currency: Currency): Promise<{
+        min: number;
+        max: number;
+        dailyLimit: number;
+        fee: number;
+        processingTime: string;
     }>;
 }

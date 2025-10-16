@@ -16,8 +16,12 @@ exports.BetsController = exports.BetPlaceDto = exports.BetPreviewDto = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
+const throttler_1 = require("@nestjs/throttler");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 const bets_service_1 = require("./bets.service");
+const live_wins_dto_1 = require("./dto/live-wins.dto");
+const live_wins_response_dto_1 = require("./dto/live-wins-response.dto");
+const bet_filters_dto_1 = require("./dto/bet-filters.dto");
 class BetPreviewDto {
 }
 exports.BetPreviewDto = BetPreviewDto;
@@ -81,8 +85,8 @@ let BetsController = class BetsController {
     }
     async placeBet(req, placeDto) {
         try {
-            console.log(`🎲 Placing bet for user ${req.user.sub}: game=${placeDto.game}, stake=${placeDto.stake}`);
-            const result = await this.betsService.placeBet(req.user.sub, placeDto);
+            console.log(`🎲 Placing bet for user ${req.user.id}: game=${placeDto.game}, stake=${placeDto.stake}`);
+            const result = await this.betsService.placeBet(req.user.id, placeDto);
             console.log(`✅ Bet placed: ${result.id}`);
             return result;
         }
@@ -91,10 +95,10 @@ let BetsController = class BetsController {
             throw error;
         }
     }
-    async resolveBet(betId) {
+    async resolveBet(betId, resolveParams) {
         try {
-            console.log(`🎲 Resolving bet: ${betId}`);
-            const result = await this.betsService.resolveBet(betId);
+            console.log(`🎲 Resolving bet: ${betId}`, resolveParams ? `with params: ${JSON.stringify(resolveParams)}` : '');
+            const result = await this.betsService.resolveBet(betId, resolveParams);
             console.log(`✅ Bet resolved: ${betId}, outcome: ${result.outcome}, multiplier: ${result.resultMultiplier}`);
             return result;
         }
@@ -109,8 +113,11 @@ let BetsController = class BetsController {
     async getBet(betId) {
         return this.betsService.getBet(betId);
     }
-    async getUserBets(req, limit, offset) {
-        return this.betsService.getUserBets(req.user.sub, limit || 50, offset || 0);
+    async getUserBets(req, filters) {
+        return this.betsService.getUserBetsWithFilters(req.user.id, filters);
+    }
+    async getLiveWins(query) {
+        return this.betsService.getLiveWins(parseInt(query.limit || '20'));
     }
 };
 exports.BetsController = BetsController;
@@ -144,8 +151,9 @@ __decorate([
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Bet resolved successfully' }),
     (0, swagger_1.ApiResponse)({ status: 404, description: 'Bet not found' }),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], BetsController.prototype, "resolveBet", null);
 __decorate([
@@ -178,15 +186,24 @@ __decorate([
     (0, common_1.Get)(),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, swagger_1.ApiBearerAuth)(),
-    (0, swagger_1.ApiOperation)({ summary: 'Get user bets' }),
+    (0, swagger_1.ApiOperation)({ summary: 'Get user bets with optional filters' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'User bets retrieved successfully' }),
     __param(0, (0, common_1.Request)()),
-    __param(1, (0, common_1.Query)('limit')),
-    __param(2, (0, common_1.Query)('offset')),
+    __param(1, (0, common_1.Query)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Number, Number]),
+    __metadata("design:paramtypes", [Object, bet_filters_dto_1.BetFiltersDto]),
     __metadata("design:returntype", Promise)
 ], BetsController.prototype, "getUserBets", null);
+__decorate([
+    (0, common_1.Get)('live-wins'),
+    (0, common_1.UseGuards)(throttler_1.ThrottlerGuard),
+    (0, swagger_1.ApiOperation)({ summary: 'Get recent wins across all users' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Recent wins retrieved successfully', type: live_wins_response_dto_1.LiveWinsResponseDto }),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [live_wins_dto_1.LiveWinsQueryDto]),
+    __metadata("design:returntype", Promise)
+], BetsController.prototype, "getLiveWins", null);
 exports.BetsController = BetsController = __decorate([
     (0, swagger_1.ApiTags)('Bets'),
     (0, common_1.Controller)('bets'),

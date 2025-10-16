@@ -31,6 +31,51 @@ let LedgerService = class LedgerService {
             },
         });
     }
+    async createUserTransaction(data) {
+        const network = data.network || 'mainnet';
+        let account = await this.prisma.walletAccount.findUnique({
+            where: {
+                userId_currency_network: {
+                    userId: data.userId,
+                    currency: data.currency,
+                    network,
+                },
+            },
+        });
+        if (!account) {
+            account = await this.prisma.walletAccount.create({
+                data: {
+                    userId: data.userId,
+                    currency: data.currency,
+                    network,
+                    available: 0n,
+                    locked: 0n,
+                },
+            });
+        }
+        const amountSmallest = (0, utils_1.toSmallestUnits)(data.amount, data.currency);
+        const isCredit = amountSmallest > 0n;
+        const updateData = isCredit
+            ? { available: { increment: amountSmallest } }
+            : { available: { decrement: -amountSmallest } };
+        await this.prisma.walletAccount.update({
+            where: { id: account.id },
+            data: updateData,
+        });
+        return this.prisma.ledgerEntry.create({
+            data: {
+                accountId: account.id,
+                amount: amountSmallest,
+                currency: data.currency,
+                type: data.type,
+                refId: data.refId,
+                meta: {
+                    ...data.meta,
+                    description: data.description,
+                },
+            },
+        });
+    }
     async createTransaction(debitData, creditData) {
         const debitAmount = (0, utils_1.toSmallestUnits)(debitData.amount, debitData.currency);
         const creditAmount = (0, utils_1.toSmallestUnits)(creditData.amount, creditData.currency);

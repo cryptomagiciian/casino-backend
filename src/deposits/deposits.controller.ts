@@ -19,10 +19,10 @@ export class DepositsController {
   @ApiResponse({ status: 201, description: 'Deposit created successfully', type: DepositResponseDto })
   @ApiResponse({ status: 400, description: 'Invalid deposit data' })
   async createDeposit(
-    @Request() req: { user: { sub: string } },
+    @Request() req: { user: { id: string } },
     @Body() createDepositDto: CreateDepositDto,
   ): Promise<DepositResponseDto> {
-    return this.depositsService.createDeposit(req.user.sub, createDepositDto);
+    return this.depositsService.createDeposit(req.user.id, createDepositDto);
   }
 
   @Get()
@@ -31,12 +31,12 @@ export class DepositsController {
   @ApiQuery({ name: 'offset', required: false, description: 'Number of deposits to skip', example: '0' })
   @ApiResponse({ status: 200, description: 'Deposits retrieved successfully' })
   async getDeposits(
-    @Request() req: { user: { sub: string } },
+    @Request() req: { user: { id: string } },
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
   ) {
     return this.depositsService.getDeposits(
-      req.user.sub,
+      req.user.id,
       parseInt(limit || '50'),
       parseInt(offset || '0'),
     );
@@ -47,10 +47,10 @@ export class DepositsController {
   @ApiResponse({ status: 200, description: 'Deposit retrieved successfully', type: DepositResponseDto })
   @ApiResponse({ status: 404, description: 'Deposit not found' })
   async getDeposit(
-    @Request() req: { user: { sub: string } },
+    @Request() req: { user: { id: string } },
     @Param('id') id: string,
   ): Promise<DepositResponseDto> {
-    return this.depositsService.getDeposit(req.user.sub, id);
+    return this.depositsService.getDeposit(req.user.id, id);
   }
 
   @Get('limits/:currency')
@@ -65,10 +65,10 @@ export class DepositsController {
   @ApiParam({ name: 'id', description: 'Deposit ID' })
   @ApiResponse({ status: 200, description: 'Deposit confirmed successfully', type: DepositResponseDto })
   async confirmDeposit(
-    @Request() req: { user: { sub: string } },
+    @Request() req: { user: { id: string } },
     @Param('id') id: string,
   ): Promise<DepositResponseDto> {
-    return this.depositsService.confirmDeposit(req.user.sub, id);
+    return this.depositsService.confirmDeposit(req.user.id, id);
   }
 
   @Post('webhook')

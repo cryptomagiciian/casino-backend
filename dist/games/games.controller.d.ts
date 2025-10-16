@@ -1,5 +1,6 @@
 import { GamesService } from './games.service';
 import { Game } from '../shared/constants';
+import { GameSearchQueryDto } from './dto/game-search.dto';
 export declare class BetPreviewDto {
     game: Game;
     currency: string;
@@ -9,6 +10,16 @@ export declare class BetPreviewDto {
 export declare class GamesController {
     private gamesService;
     constructor(gamesService: GamesService);
+    searchGames(query: GameSearchQueryDto): Promise<{
+        results: {
+            slug: string;
+            name: "Candle Flip" | "Pump or Dump" | "Support or Resistance" | "Bull vs Bear Battle" | "Leverage Ladder" | "Stop Loss Roulette" | "Freeze the Bag" | "To the Moon" | "Diamond Hands";
+            type: string;
+            description: "Predict the next candle color" | "Predict if price goes up or down" | "Predict if price breaks or rejects level" | "Tug-of-war bar direction" | "Press to advance rungs with increasing multipliers" | "Set stop loss distance for dynamic payout" | "Click to cash before crash" | "Classic crash game" | "Mines replica with 5x5 grid";
+            minBet: string;
+            maxBet: string;
+        }[];
+    }>;
     getGames(): Promise<{
         id: string;
         name: "Candle Flip" | "Pump or Dump" | "Support or Resistance" | "Bull vs Bear Battle" | "Leverage Ladder" | "Stop Loss Roulette" | "Freeze the Bag" | "To the Moon" | "Diamond Hands";

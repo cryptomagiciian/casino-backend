@@ -1,5 +1,7 @@
 import { BetsService } from './bets.service';
 import { BetPreview } from '../shared/types';
+import { LiveWinsQueryDto } from './dto/live-wins.dto';
+import { BetFiltersDto } from './dto/bet-filters.dto';
 export declare class BetPreviewDto {
     game: string;
     currency: string;
@@ -19,7 +21,7 @@ export declare class BetsController {
     previewBet(previewDto: BetPreviewDto): Promise<BetPreview>;
     placeBet(req: {
         user: {
-            sub: string;
+            id: string;
         };
     }, placeDto: BetPlaceDto): Promise<{
         id: string;
@@ -32,13 +34,13 @@ export declare class BetsController {
         nonce: number;
         status: string;
     }>;
-    resolveBet(betId: string): Promise<{
+    resolveBet(betId: string, resolveParams?: any): Promise<{
         id: string;
         game: import("../shared/constants").Game;
         currency: import("../shared/constants").Currency;
         stake: string;
-        outcome: string;
-        resultMultiplier: number;
+        outcome: any;
+        resultMultiplier: any;
         payout: string;
         status: string;
         rngTrace: import("@prisma/client/runtime/library").JsonValue;
@@ -75,9 +77,9 @@ export declare class BetsController {
     }>;
     getUserBets(req: {
         user: {
-            sub: string;
+            id: string;
         };
-    }, limit?: number, offset?: number): Promise<{
+    }, filters: BetFiltersDto): Promise<{
         bets: {
             id: string;
             game: import("../shared/constants").Game;
@@ -91,5 +93,18 @@ export declare class BetsController {
             resolvedAt: Date;
         }[];
         total: number;
+    }>;
+    getLiveWins(query: LiveWinsQueryDto): Promise<{
+        wins: {
+            id: string;
+            username: string;
+            game: string;
+            gameSlug: string;
+            amount: string;
+            multiplier: number;
+            payout: string;
+            currency: string;
+            timestamp: string;
+        }[];
     }>;
 }

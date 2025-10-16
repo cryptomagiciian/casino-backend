@@ -27,15 +27,15 @@ export class WalletsController {
   @ApiQuery({ name: 'network', required: false, description: 'Network to get balances for (mainnet/testnet)', enum: ['mainnet', 'testnet'] })
   @ApiResponse({ status: 200, description: 'Wallet balances retrieved successfully' })
   async getBalances(
-    @Request() req: { user: { sub: string } },
+    @Request() req: { user: { id: string } },
     @Query('detailed') detailed?: string,
     @Query('network') network?: 'mainnet' | 'testnet',
   ): Promise<WalletBalance[] | any> {
     const targetNetwork = network || 'mainnet';
     if (detailed === 'true') {
-      return this.walletsService.getDetailedWalletBalances(req.user.sub, targetNetwork);
+      return this.walletsService.getDetailedWalletBalances(req.user.id, targetNetwork);
     }
-    return this.walletsService.getWalletBalances(req.user.sub, targetNetwork);
+    return this.walletsService.getWalletBalances(req.user.id, targetNetwork);
   }
 
   @Get('balance')
@@ -44,12 +44,12 @@ export class WalletsController {
   @ApiQuery({ name: 'network', required: false, description: 'Network to get balance for (mainnet/testnet)', enum: ['mainnet', 'testnet'] })
   @ApiResponse({ status: 200, description: 'Balance retrieved successfully' })
   async getBalance(
-    @Request() req: { user: { sub: string } },
+    @Request() req: { user: { id: string } },
     @Query('currency') currency: Currency,
     @Query('network') network?: 'mainnet' | 'testnet',
   ): Promise<WalletBalance> {
     const targetNetwork = network || 'mainnet';
-    return this.walletsService.getBalance(req.user.sub, currency, targetNetwork);
+    return this.walletsService.getBalance(req.user.id, currency, targetNetwork);
   }
 
   @Post('faucet')
@@ -57,10 +57,10 @@ export class WalletsController {
   @ApiResponse({ status: 200, description: 'Funds credited successfully' })
   @ApiResponse({ status: 400, description: 'Faucet not available or limit exceeded' })
   async faucet(
-    @Request() req: { user: { sub: string } },
+    @Request() req: { user: { id: string } },
     @Body() faucetDto: FaucetDto,
   ) {
-    return this.walletsService.getTestnetFaucet(req.user.sub, faucetDto.currency, 'testnet');
+    return this.walletsService.getTestnetFaucet(req.user.id, faucetDto.currency, 'testnet');
   }
 
   @Get('ledger')
@@ -70,13 +70,13 @@ export class WalletsController {
   @ApiQuery({ name: 'offset', required: false, description: 'Number of entries to skip' })
   @ApiResponse({ status: 200, description: 'Ledger entries retrieved successfully' })
   async getLedgerEntries(
-    @Request() req: { user: { sub: string } },
+    @Request() req: { user: { id: string } },
     @Query('currency') currency: Currency,
     @Query('limit') limit?: number,
     @Query('offset') offset?: number,
   ) {
     return this.walletsService.getLedgerEntries(
-      req.user.sub,
+      req.user.id,
       currency,
       limit || 50,
       offset || 0,
@@ -88,12 +88,12 @@ export class WalletsController {
   @ApiResponse({ status: 200, description: 'Demo funds cleared successfully' })
   @ApiResponse({ status: 400, description: 'Confirmation required' })
   async clearDemoFunds(
-    @Request() req: { user: { sub: string } },
+    @Request() req: { user: { id: string } },
     @Body() clearDto: ClearDemoFundsDto,
   ) {
     if (!clearDto.confirm) {
       throw new BadRequestException('Confirmation required to clear demo funds');
     }
-    return this.walletsService.clearDemoFunds(req.user.sub);
+    return this.walletsService.clearDemoFunds(req.user.id);
   }
 }

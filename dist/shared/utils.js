@@ -11,24 +11,26 @@ exports.calculateHouseEdgeMultiplier = calculateHouseEdgeMultiplier;
 exports.validateCurrencyAmount = validateCurrencyAmount;
 exports.formatCurrency = formatCurrency;
 exports.generateIdempotencyKey = generateIdempotencyKey;
-exports.isDemoMode = isDemoMode;
-exports.isDemoOnly = isDemoOnly;
+exports.isTestnetMode = isTestnetMode;
+exports.generateId = generateId;
 const crypto = require("crypto");
 const constants_1 = require("./constants");
 function fromSmallestUnits(amount, currency) {
     const decimals = constants_1.CURRENCY_DECIMALS[currency];
     const divisor = BigInt(10 ** decimals);
-    const whole = amount / divisor;
-    const remainder = amount % divisor;
+    const isNegative = amount < 0n;
+    const absAmount = isNegative ? -amount : amount;
+    const whole = absAmount / divisor;
+    const remainder = absAmount % divisor;
     if (remainder === 0n) {
-        return whole.toString();
+        return isNegative ? `-${whole.toString()}` : whole.toString();
     }
     const remainderStr = remainder.toString().padStart(decimals, '0');
     const trimmed = remainderStr.replace(/0+$/, '');
     if (trimmed === '') {
-        return whole.toString();
+        return isNegative ? `-${whole.toString()}` : whole.toString();
     }
-    return `${whole}.${trimmed}`;
+    return isNegative ? `-${whole}.${trimmed}` : `${whole}.${trimmed}`;
 }
 function toSmallestUnits(amount, currency) {
     const decimals = constants_1.CURRENCY_DECIMALS[currency];
@@ -86,10 +88,12 @@ function formatCurrency(amount, currency) {
 function generateIdempotencyKey() {
     return `idemp_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
 }
-function isDemoMode() {
-    return process.env.DEMO_MODE === 'true';
+function isTestnetMode() {
+    return process.env.NETWORK === 'testnet';
 }
-function isDemoOnly() {
-    return process.env.DEMO_ONLY === 'true';
+function generateId(prefix) {
+    const timestamp = Date.now().toString(36);
+    const random = Math.random().toString(36).substring(2, 15);
+    return `${prefix}_${timestamp}${random}`;
 }
 //# sourceMappingURL=utils.js.map

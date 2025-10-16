@@ -4,6 +4,7 @@ import { FairnessService } from '../fairness/fairness.service';
 import { GamesService } from '../games/games.service';
 import { BetPreview, BetPlaceRequest } from '../shared/types';
 import { Currency, Game } from '../shared/constants';
+import { BetFiltersDto } from './dto/bet-filters.dto';
 export declare class BetsService {
     private prisma;
     private walletsService;
@@ -22,13 +23,13 @@ export declare class BetsService {
         nonce: number;
         status: string;
     }>;
-    resolveBet(betId: string): Promise<{
+    resolveBet(betId: string, resolveParams?: any): Promise<{
         id: string;
         game: Game;
         currency: Currency;
         stake: string;
-        outcome: string;
-        resultMultiplier: number;
+        outcome: any;
+        resultMultiplier: any;
         payout: string;
         status: string;
         rngTrace: import("@prisma/client/runtime/library").JsonValue;
@@ -76,5 +77,36 @@ export declare class BetsService {
         }[];
         total: number;
     }>;
+    getUserBetsWithFilters(userId: string, filters: BetFiltersDto): Promise<{
+        bets: {
+            id: string;
+            game: Game;
+            currency: Currency;
+            stake: string;
+            potentialPayout: string;
+            outcome: string;
+            resultMultiplier: number;
+            status: import(".prisma/client").$Enums.BetStatus;
+            createdAt: Date;
+            resolvedAt: Date;
+        }[];
+        total: number;
+    }>;
+    private generatePumpOrDumpOutcome;
     private generateGameOutcome;
+    getLiveWins(limit?: number): Promise<{
+        wins: {
+            id: string;
+            username: string;
+            game: string;
+            gameSlug: string;
+            amount: string;
+            multiplier: number;
+            payout: string;
+            currency: string;
+            timestamp: string;
+        }[];
+    }>;
+    private formatGameName;
+    private getGameSlug;
 }

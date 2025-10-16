@@ -18,6 +18,7 @@ const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 const wallets_service_1 = require("./wallets.service");
+const clear_demo_funds_dto_1 = require("./dto/clear-demo-funds.dto");
 class FaucetDto {
 }
 exports.FaucetDto = FaucetDto;
@@ -27,52 +28,64 @@ __decorate([
     (0, class_validator_1.IsIn)(['BTC', 'ETH', 'SOL', 'USDC', 'USDT']),
     __metadata("design:type", String)
 ], FaucetDto.prototype, "currency", void 0);
-__decorate([
-    (0, swagger_1.ApiProperty)({ description: 'Amount to request', example: '1000' }),
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], FaucetDto.prototype, "amount", void 0);
 let WalletsController = class WalletsController {
     constructor(walletsService) {
         this.walletsService = walletsService;
     }
-    async getBalances(req) {
-        return this.walletsService.getWalletBalances(req.user.sub);
+    async getBalances(req, detailed, network) {
+        const targetNetwork = network || 'mainnet';
+        if (detailed === 'true') {
+            return this.walletsService.getDetailedWalletBalances(req.user.sub, targetNetwork);
+        }
+        return this.walletsService.getWalletBalances(req.user.sub, targetNetwork);
     }
-    async getBalance(req, currency) {
-        return this.walletsService.getBalance(req.user.sub, currency);
+    async getBalance(req, currency, network) {
+        const targetNetwork = network || 'mainnet';
+        return this.walletsService.getBalance(req.user.sub, currency, targetNetwork);
     }
     async faucet(req, faucetDto) {
-        return this.walletsService.faucet(req.user.sub, faucetDto);
+        return this.walletsService.getTestnetFaucet(req.user.sub, faucetDto.currency, 'testnet');
     }
     async getLedgerEntries(req, currency, limit, offset) {
         return this.walletsService.getLedgerEntries(req.user.sub, currency, limit || 50, offset || 0);
+    }
+    async clearDemoFunds(req, clearDto) {
+        if (!clearDto.confirm) {
+            throw new common_1.BadRequestException('Confirmation required to clear demo funds');
+        }
+        return this.walletsService.clearDemoFunds(req.user.sub);
     }
 };
 exports.WalletsController = WalletsController;
 __decorate([
     (0, common_1.Get)(),
     (0, swagger_1.ApiOperation)({ summary: 'Get all wallet balances' }),
+    (0, swagger_1.ApiQuery)({ name: 'detailed', required: false, description: 'Include detailed balance information' }),
+    (0, swagger_1.ApiQuery)({ name: 'network', required: false, description: 'Network to get balances for (mainnet/testnet)', enum: ['mainnet', 'testnet'] }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Wallet balances retrieved successfully' }),
     __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Query)('detailed')),
+    __param(2, (0, common_1.Query)('network')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, String, String]),
     __metadata("design:returntype", Promise)
 ], WalletsController.prototype, "getBalances", null);
 __decorate([
     (0, common_1.Get)('balance'),
     (0, swagger_1.ApiOperation)({ summary: 'Get balance for specific currency' }),
     (0, swagger_1.ApiQuery)({ name: 'currency', description: 'Currency to get balance for' }),
+    (0, swagger_1.ApiQuery)({ name: 'network', required: false, description: 'Network to get balance for (mainnet/testnet)', enum: ['mainnet', 'testnet'] }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Balance retrieved successfully' }),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Query)('currency')),
+    __param(2, (0, common_1.Query)('network')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:paramtypes", [Object, String, String]),
     __metadata("design:returntype", Promise)
 ], WalletsController.prototype, "getBalance", null);
 __decorate([
     (0, common_1.Post)('faucet'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get demo funds from faucet (demo mode only)' }),
+    (0, swagger_1.ApiOperation)({ summary: 'Get testnet funds from faucet (testnet only)' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Funds credited successfully' }),
     (0, swagger_1.ApiResponse)({ status: 400, description: 'Faucet not available or limit exceeded' }),
     __param(0, (0, common_1.Request)()),
@@ -96,6 +109,17 @@ __decorate([
     __metadata("design:paramtypes", [Object, String, Number, Number]),
     __metadata("design:returntype", Promise)
 ], WalletsController.prototype, "getLedgerEntries", null);
+__decorate([
+    (0, common_1.Post)('clear-demo-funds'),
+    (0, swagger_1.ApiOperation)({ summary: 'Clear old demo funds (for testing)' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Demo funds cleared successfully' }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: 'Confirmation required' }),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, clear_demo_funds_dto_1.ClearDemoFundsDto]),
+    __metadata("design:returntype", Promise)
+], WalletsController.prototype, "clearDemoFunds", null);
 exports.WalletsController = WalletsController = __decorate([
     (0, swagger_1.ApiTags)('Wallets'),
     (0, common_1.Controller)('wallets'),

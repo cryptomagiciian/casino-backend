@@ -1,48 +1,58 @@
 import { DepositsService } from './deposits.service';
-export declare class DepositDto {
-    currency: string;
-    amount: string;
-    provider: string;
-    txRef?: string;
-}
+import { CreateDepositDto } from './dto/create-deposit.dto';
+import { DepositResponseDto } from './dto/deposit-response.dto';
+import { DepositWebhookDto } from './dto/webhook.dto';
+import { Currency } from '../shared/constants';
 export declare class DepositsController {
-    private depositsService;
+    private readonly depositsService;
     constructor(depositsService: DepositsService);
     createDeposit(req: {
         user: {
             sub: string;
         };
-    }, depositDto: DepositDto): Promise<{
-        id: string;
-        currency: string;
-        amount: bigint;
-        status: import(".prisma/client").$Enums.DepositStatus;
-        meta: import("@prisma/client/runtime/library").JsonValue | null;
-        createdAt: Date;
-        userId: string;
-        provider: string;
-        txRef: string | null;
-    }>;
-    processWebhook(body: {
-        provider: string;
-        payload: any;
-    }): Promise<{
-        success: boolean;
-    }>;
-    getUserDeposits(req: {
+    }, createDepositDto: CreateDepositDto): Promise<DepositResponseDto>;
+    getDeposits(req: {
         user: {
             sub: string;
         };
-    }, limit?: number, offset?: number): Promise<{
+    }, limit?: string, offset?: string): Promise<{
         deposits: {
             id: string;
-            currency: string;
+            currency: Currency;
             amount: string;
-            provider: string;
+            paymentMethod: string;
             status: import(".prisma/client").$Enums.DepositStatus;
-            txRef: string;
-            createdAt: Date;
+            walletAddress: string;
+            transactionHash: string;
+            requiredConfirmations: number;
+            currentConfirmations: number;
+            createdAt: string;
+            completedAt: string;
         }[];
         total: number;
+    }>;
+    getDeposit(req: {
+        user: {
+            sub: string;
+        };
+    }, id: string): Promise<DepositResponseDto>;
+    getDepositLimits(currency: Currency): Promise<{
+        min: number;
+        max: number;
+        dailyLimit: number;
+        fees: {
+            crypto: number;
+            card: number;
+            bank_transfer: number;
+        };
+    }>;
+    confirmDeposit(req: {
+        user: {
+            sub: string;
+        };
+    }, id: string): Promise<DepositResponseDto>;
+    processWebhook(webhookData: DepositWebhookDto, signature?: string): Promise<{
+        success: boolean;
+        message: string;
     }>;
 }

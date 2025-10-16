@@ -10,5 +10,5 @@ export declare function calculateHouseEdgeMultiplier(winChance: number, houseEdg
 export declare function validateCurrencyAmount(amount: string, currency: Currency): boolean;
 export declare function formatCurrency(amount: string, currency: Currency): string;
 export declare function generateIdempotencyKey(): string;
-export declare function isDemoMode(): boolean;
-export declare function isDemoOnly(): boolean;
+export declare function isTestnetMode(): boolean;
+export declare function generateId(prefix: string): string;
