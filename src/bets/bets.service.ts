@@ -61,6 +61,17 @@ export class BetsService {
       }
     }
     
+    // Check available balance before attempting to lock funds
+    const balance = await this.walletsService.getWalletBalance(userId, currency, actualNetwork);
+    const stakeFloat = parseFloat(stake);
+    const availableFloat = parseFloat(balance.available);
+    
+    console.log(`💰 Balance check: Available ${availableFloat} ${currency}, Required ${stakeFloat} ${currency}`);
+    
+    if (availableFloat < stakeFloat) {
+      throw new BadRequestException(`Insufficient balance. Available: ${availableFloat} ${currency}, Required: ${stakeFloat} ${currency}`);
+    }
+    
     // Lock funds using the correct network
     await this.walletsService.lockFunds(userId, currency, stake, 'bet_placement', actualNetwork);
 
