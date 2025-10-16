@@ -43,7 +43,7 @@ export class BetsService {
     
     if ((currency as string) === 'USD') {
       // Get the user's display currency from params
-      const displayCurrency = params?.displayCurrency || 'USDC';
+      const displayCurrency = (params?.displayCurrency || 'USDC').toUpperCase();
       actualCurrency = displayCurrency;
       
       // Convert USD stake to crypto amount using real-time prices
