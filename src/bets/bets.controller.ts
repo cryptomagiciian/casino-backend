@@ -71,12 +71,12 @@ export class BetsController {
   @ApiResponse({ status: 201, description: 'Bet placed successfully' })
   @ApiResponse({ status: 400, description: 'Invalid bet parameters' })
   async placeBet(
-    @Request() req: { user: { sub: string } },
+    @Request() req: { user: { id: string } },
     @Body() placeDto: BetPlaceDto,
   ) {
     try {
-      console.log(`🎲 Placing bet for user ${req.user.sub}: game=${placeDto.game}, stake=${placeDto.stake}`);
-      const result = await this.betsService.placeBet(req.user.sub, placeDto as BetPlaceRequest);
+      console.log(`🎲 Placing bet for user ${req.user.id}: game=${placeDto.game}, stake=${placeDto.stake}`);
+      const result = await this.betsService.placeBet(req.user.id, placeDto as BetPlaceRequest);
       console.log(`✅ Bet placed: ${result.id}`);
       return result;
     } catch (error) {
@@ -133,10 +133,10 @@ export class BetsController {
   @ApiOperation({ summary: 'Get user bets with optional filters' })
   @ApiResponse({ status: 200, description: 'User bets retrieved successfully' })
   async getUserBets(
-    @Request() req: { user: { sub: string } },
+    @Request() req: { user: { id: string } },
     @Query() filters: BetFiltersDto,
   ) {
-    return this.betsService.getUserBetsWithFilters(req.user.sub, filters);
+    return this.betsService.getUserBetsWithFilters(req.user.id, filters);
   }
 
   @Get('live-wins')
