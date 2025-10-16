@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { WalletsService } from '../wallets/wallets.service';
 import { FairnessService } from '../fairness/fairness.service';
 import { GamesService } from '../games/games.service';
+import { PricesService } from '../prices/prices.service';
 import { BetPreview, BetPlaceRequest, BetResult } from '../shared/types';
 import { Currency, Game } from '../shared/constants';
 import { generateClientSeed, generateRng, toSmallestUnits, fromSmallestUnits } from '../shared/utils';
@@ -15,6 +16,7 @@ export class BetsService {
     private walletsService: WalletsService,
     private fairnessService: FairnessService,
     private gamesService: GamesService,
+    private pricesService: PricesService,
   ) {}
 
   /**
@@ -44,25 +46,39 @@ export class BetsService {
       const displayCurrency = params?.displayCurrency || 'USDC';
       actualCurrency = displayCurrency;
       
-      // Convert USD stake to crypto amount using current prices
+      // Convert USD stake to crypto amount using real-time prices
       const usdStakeFloat = parseFloat(stake);
       let cryptoStakeFloat = usdStakeFloat;
       
-      // Simple conversion rates (should be replaced with real-time prices)
-      const conversionRates = {
-        'BTC': 45000, // $45,000 per BTC
-        'ETH': 2500,  // $2,500 per ETH
-        'SOL': 100,   // $100 per SOL
-        'USDC': 1,    // $1 per USDC
-        'USDT': 1,    // $1 per USDT
-      };
-      
-      const rate = conversionRates[displayCurrency] || 1;
-      cryptoStakeFloat = usdStakeFloat / rate;
-      actualStake = cryptoStakeFloat.toString();
-      
-      console.log(`💰 USD Conversion: $${usdStakeFloat} USD → ${cryptoStakeFloat} ${displayCurrency}`);
-      console.log(`💰 Conversion rate: ${rate}, Crypto stake: ${cryptoStakeFloat}`);
+      try {
+        // Get real-time prices from PricesService
+        const prices = await this.pricesService.getCryptoPrices();
+        const rate = prices[displayCurrency] || 1;
+        
+        cryptoStakeFloat = usdStakeFloat / rate;
+        actualStake = cryptoStakeFloat.toString();
+        
+        console.log(`💰 USD Conversion (Real-time): $${usdStakeFloat} USD → ${cryptoStakeFloat} ${displayCurrency}`);
+        console.log(`💰 Real-time rate: ${rate}, Crypto stake: ${cryptoStakeFloat}`);
+      } catch (error) {
+        console.warn('⚠️ Failed to fetch real-time prices, using fallback rates:', error.message);
+        
+        // Fallback to static rates if real-time prices fail
+        const fallbackRates = {
+          'BTC': 45000, // $45,000 per BTC
+          'ETH': 2500,  // $2,500 per ETH
+          'SOL': 100,   // $100 per SOL
+          'USDC': 1,    // $1 per USDC
+          'USDT': 1,    // $1 per USDT
+        };
+        
+        const rate = fallbackRates[displayCurrency] || 1;
+        cryptoStakeFloat = usdStakeFloat / rate;
+        actualStake = cryptoStakeFloat.toString();
+        
+        console.log(`💰 USD Conversion (Fallback): $${usdStakeFloat} USD → ${cryptoStakeFloat} ${displayCurrency}`);
+        console.log(`💰 Fallback rate: ${rate}, Crypto stake: ${cryptoStakeFloat}`);
+      }
     }
 
     // Preview bet to validate (using converted currency and stake)
