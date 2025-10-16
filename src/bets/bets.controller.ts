@@ -16,7 +16,7 @@ export class BetPreviewDto {
 
   @ApiProperty({ description: 'Currency to bet with', example: 'USDC' })
   @IsString()
-  @IsIn(['BTC', 'ETH', 'SOL', 'USDC', 'USDT'])
+  @IsIn(['BTC', 'ETH', 'SOL', 'USDC', 'USDT', 'USD'])
   currency: string;
 
   @ApiProperty({ description: 'Bet amount', example: '100' })
@@ -35,7 +35,7 @@ export class BetPlaceDto {
 
   @ApiProperty({ description: 'Currency to bet with', example: 'USDC' })
   @IsString()
-  @IsIn(['BTC', 'ETH', 'SOL', 'USDC', 'USDT'])
+  @IsIn(['BTC', 'ETH', 'SOL', 'USDC', 'USDT', 'USD'])
   currency: string;
 
   @ApiProperty({ description: 'Bet amount', example: '100' })
