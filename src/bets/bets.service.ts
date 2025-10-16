@@ -51,7 +51,7 @@ export class BetsService {
     let actualCurrency = currency;
     let actualStake = stake;
     
-    if (currency === 'USD') {
+    if ((currency as string) === 'USD') {
       // Get the user's display currency from params
       const displayCurrency = params?.displayCurrency || 'USDC';
       actualCurrency = displayCurrency;
