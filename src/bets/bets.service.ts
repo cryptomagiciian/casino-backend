@@ -75,6 +75,7 @@ export class BetsService {
       actualStake = cryptoStakeFloat.toString();
       
       console.log(`💰 USD Conversion: $${usdStakeFloat} USD → ${cryptoStakeFloat} ${displayCurrency}`);
+      console.log(`💰 Conversion rate: ${rate}, Crypto stake: ${cryptoStakeFloat}`);
     }
     
     // Check if user has funds in testnet first, then mainnet
