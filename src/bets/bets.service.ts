@@ -47,8 +47,22 @@ export class BetsService {
     // Extract network from params, default to mainnet
     const network = params?.network || 'mainnet';
     
+    // Check if user has funds in testnet first, then mainnet
+    let actualNetwork = network;
+    if (network === 'mainnet') {
+      try {
+        const testnetBalance = await this.walletsService.getWalletBalance(userId, currency, 'testnet');
+        if (testnetBalance.available > 0) {
+          actualNetwork = 'testnet';
+          console.log(`🎯 Bet service: User has testnet funds, using testnet for bet placement`);
+        }
+      } catch (error) {
+        console.log(`🎯 Bet service: No testnet funds, using mainnet`);
+      }
+    }
+    
     // Lock funds using the correct network
-    await this.walletsService.lockFunds(userId, currency, stake, 'bet_placement', network);
+    await this.walletsService.lockFunds(userId, currency, stake, 'bet_placement', actualNetwork);
 
     // Create bet record
     const bet = await this.prisma.bet.create({
