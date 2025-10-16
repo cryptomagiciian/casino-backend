@@ -53,7 +53,14 @@ export class BetsService {
       try {
         // Get real-time prices from PricesService
         const prices = await this.pricesService.getCryptoPrices();
+        console.log(`💰 PricesService response:`, prices);
+        
         const rate = prices[displayCurrency] || 1;
+        console.log(`💰 Rate for ${displayCurrency}: ${rate} (type: ${typeof rate})`);
+        
+        if (isNaN(rate) || rate <= 0) {
+          throw new Error(`Invalid rate for ${displayCurrency}: ${rate}`);
+        }
         
         cryptoStakeFloat = usdStakeFloat / rate;
         actualStake = cryptoStakeFloat.toString();
@@ -82,6 +89,14 @@ export class BetsService {
     }
 
     // Preview bet to validate (using converted currency and stake)
+    console.log(`💰 Preview bet params:`, {
+      originalCurrency: currency,
+      originalStake: stake,
+      actualCurrency,
+      actualStake,
+      displayCurrency: params?.displayCurrency
+    });
+    
     const preview = await this.previewBet({
       ...request,
       currency: actualCurrency,
