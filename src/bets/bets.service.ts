@@ -35,19 +35,7 @@ export class BetsService {
   async placeBet(userId: string, request: BetPlaceRequest) {
     const { game, currency, stake, clientSeed, params } = request;
 
-    // Preview bet to validate
-    const preview = await this.previewBet(request);
-
-    // Get current fairness seed
-    const fairnessSeed = await this.fairnessService.getCurrentSeed(userId);
-
-    // Use provided client seed or generate one
-    const finalClientSeed = clientSeed || generateClientSeed();
-
-    // Extract network from params, default to mainnet
-    const network = params?.network || 'mainnet';
-    
-    // Handle USD currency - convert to user's display currency
+    // Handle USD currency conversion first
     let actualCurrency = currency;
     let actualStake = stake;
     
@@ -57,7 +45,6 @@ export class BetsService {
       actualCurrency = displayCurrency;
       
       // Convert USD stake to crypto amount using current prices
-      // For now, we'll use a simple conversion (this should be improved with real-time prices)
       const usdStakeFloat = parseFloat(stake);
       let cryptoStakeFloat = usdStakeFloat;
       
@@ -77,6 +64,22 @@ export class BetsService {
       console.log(`💰 USD Conversion: $${usdStakeFloat} USD → ${cryptoStakeFloat} ${displayCurrency}`);
       console.log(`💰 Conversion rate: ${rate}, Crypto stake: ${cryptoStakeFloat}`);
     }
+
+    // Preview bet to validate (using converted currency and stake)
+    const preview = await this.previewBet({
+      ...request,
+      currency: actualCurrency,
+      stake: actualStake,
+    });
+
+    // Get current fairness seed
+    const fairnessSeed = await this.fairnessService.getCurrentSeed(userId);
+
+    // Use provided client seed or generate one
+    const finalClientSeed = clientSeed || generateClientSeed();
+
+    // Extract network from params, default to mainnet
+    const network = params?.network || 'mainnet';
     
     // Check if user has funds in testnet first, then mainnet
     let actualNetwork = network;
