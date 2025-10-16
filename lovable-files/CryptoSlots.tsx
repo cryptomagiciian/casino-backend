@@ -398,7 +398,7 @@ export function CryptoSlots() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-cyan-300 mb-2">
-                Stake (USD):
+                Bet Amount (USD):
               </label>
               <input
                 type="number"

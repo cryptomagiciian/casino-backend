@@ -200,7 +200,7 @@ export const CandleFlip: React.FC = () => {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Stake (USDC):
+              Bet Amount (USD):
             </label>
             <input
               type="number"

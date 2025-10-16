@@ -47,11 +47,41 @@ export class BetsService {
     // Extract network from params, default to mainnet
     const network = params?.network || 'mainnet';
     
+    // Handle USD currency - convert to user's display currency
+    let actualCurrency = currency;
+    let actualStake = stake;
+    
+    if (currency === 'USD') {
+      // Get the user's display currency from params
+      const displayCurrency = params?.displayCurrency || 'USDC';
+      actualCurrency = displayCurrency;
+      
+      // Convert USD stake to crypto amount using current prices
+      // For now, we'll use a simple conversion (this should be improved with real-time prices)
+      const usdStakeFloat = parseFloat(stake);
+      let cryptoStakeFloat = usdStakeFloat;
+      
+      // Simple conversion rates (should be replaced with real-time prices)
+      const conversionRates = {
+        'BTC': 45000, // $45,000 per BTC
+        'ETH': 2500,  // $2,500 per ETH
+        'SOL': 100,   // $100 per SOL
+        'USDC': 1,    // $1 per USDC
+        'USDT': 1,    // $1 per USDT
+      };
+      
+      const rate = conversionRates[displayCurrency] || 1;
+      cryptoStakeFloat = usdStakeFloat / rate;
+      actualStake = cryptoStakeFloat.toString();
+      
+      console.log(`💰 USD Conversion: $${usdStakeFloat} USD → ${cryptoStakeFloat} ${displayCurrency}`);
+    }
+    
     // Check if user has funds in testnet first, then mainnet
     let actualNetwork = network;
     if (network === 'mainnet') {
       try {
-        const testnetBalance = await this.walletsService.getWalletBalance(userId, currency, 'testnet');
+        const testnetBalance = await this.walletsService.getWalletBalance(userId, actualCurrency, 'testnet');
         if (parseFloat(testnetBalance.available) > 0) {
           actualNetwork = 'testnet';
           console.log(`🎯 Bet service: User has testnet funds, using testnet for bet placement`);
@@ -62,31 +92,35 @@ export class BetsService {
     }
     
     // Check available balance before attempting to lock funds
-    const balance = await this.walletsService.getWalletBalance(userId, currency, actualNetwork);
-    const stakeFloat = parseFloat(stake);
+    const balance = await this.walletsService.getWalletBalance(userId, actualCurrency, actualNetwork);
+    const stakeFloat = parseFloat(actualStake);
     const availableFloat = parseFloat(balance.available);
     
-    console.log(`💰 Balance check: Available ${availableFloat} ${currency}, Required ${stakeFloat} ${currency}`);
+    console.log(`💰 Balance check: Available ${availableFloat} ${actualCurrency}, Required ${stakeFloat} ${actualCurrency}`);
     
     if (availableFloat < stakeFloat) {
-      throw new BadRequestException(`Insufficient balance. Available: ${availableFloat} ${currency}, Required: ${stakeFloat} ${currency}`);
+      throw new BadRequestException(`Insufficient balance. Available: ${availableFloat} ${actualCurrency}, Required: ${stakeFloat} ${actualCurrency}`);
     }
     
-    // Lock funds using the correct network
-    await this.walletsService.lockFunds(userId, currency, stake, 'bet_placement', actualNetwork);
+    // Lock funds using the correct network and currency
+    await this.walletsService.lockFunds(userId, actualCurrency, actualStake, 'bet_placement', actualNetwork);
 
     // Create bet record
     const bet = await this.prisma.bet.create({
       data: {
         userId,
         game,
-        currency,
-        stake: toSmallestUnits(stake, currency),
-        potentialPayout: toSmallestUnits(preview.potentialPayout, currency),
+        currency: actualCurrency as Currency,
+        stake: toSmallestUnits(actualStake, actualCurrency as Currency),
+        potentialPayout: toSmallestUnits(preview.potentialPayout, actualCurrency as Currency),
         serverSeedHash: fairnessSeed.serverSeedHash,
         clientSeed: finalClientSeed,
         nonce: fairnessSeed.nonce,
-        params: params || {},
+        params: {
+          ...params,
+          originalCurrency: currency, // Store original currency (USD)
+          originalStake: stake, // Store original stake amount
+        },
         status: 'PENDING',
       },
     });
@@ -94,8 +128,8 @@ export class BetsService {
     return {
       id: bet.id,
       game: bet.game as Game,
-      currency: bet.currency as Currency,
-      stake,
+      currency: currency as Currency, // Return original currency (USD) for display
+      stake, // Return original stake for display
       potentialPayout: preview.potentialPayout,
       clientSeed: finalClientSeed,
       serverSeedHash: fairnessSeed.serverSeedHash,

@@ -39,25 +39,19 @@ export const GameBettingProvider: React.FC<{ children: ReactNode }> = ({ childre
       setIsBetting(true);
       setError(null);
 
-      // Always place bets in USD, but use selected crypto currency for transaction
+      // Always place bets in USD - no conversion needed
       const usdStake = gameData.stake; // Stake is always in USD
-      const actualCurrency = bettingCurrency; // Use selected crypto currency for transaction
       
-      // Convert USD stake to crypto amount for the transaction using live prices
-      const cryptoStake = convertUsdToCrypto(usdStake, actualCurrency);
-
       const betData = {
         game: gameData.game,
-        stake: cryptoStake.toString(), // Send crypto amount to backend
-        currency: actualCurrency, // Use crypto currency for transaction
+        stake: usdStake.toString(), // Send USD amount to backend
+        currency: 'USD', // Always use USD for betting
         clientSeed: Math.random().toString(36), // Generate client seed for provably fair
         params: {
           ...gameData.prediction,
           // Store meta data in params since backend doesn't accept meta
           network,
-          usdStake: usdStake, // Store original USD amount
-          originalCurrency: 'USD', // Always USD for display
-          originalStake: usdStake,
+          displayCurrency: bettingCurrency, // Store selected currency for display only
           ...gameData.meta,
         },
       };
